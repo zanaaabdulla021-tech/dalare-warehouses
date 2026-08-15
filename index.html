@@ -1187,6 +1187,9 @@
   }
   .cd-group{margin-bottom:18px;}
   .cd-group h3{margin:0 0 8px;font-size:.85rem;color:#000;font-weight:800;}
+  .site-text-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .site-text-row label{flex:0 0 150px;font-size:.74rem;color:#666;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .site-text-row input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;min-width:0;}
   .cd-field-row{
     display:flex;align-items:center;gap:8px;border:1px solid var(--line);
     border-radius:8px;padding:7px 9px;background:#fff;margin-bottom:6px;
@@ -1431,6 +1434,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <span id="customTabsSlot"></span>
     <button id="addSectionBtn" class="add-section-btn" onclick="openSectionBuilder()" style="display:none;" title="Add a new section">+ Add Section</button>
     <button id="reorderTabsBtn" class="add-section-btn" onclick="openTabOrderManager()" style="display:none;" title="Reorder tabs">🔀 Reorder Tabs</button>
+    <button id="siteTextBtn" class="add-section-btn" onclick="openSiteTextEditor()" style="display:none;" title="Edit site text">🎨 Edit Site Text</button>
   </div>
 </div>
 
@@ -1556,7 +1560,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="seal">Verified<br>Official</div>
     <div style="text-align:center;">
       <h1><span class="stars">★★★</span> Accounting Verification Report Form <span class="stars">★★★</span></h1>
-      <div style="font-size:1.1rem;font-weight:700;">For Companies</div>
+      <div style="font-size:1.1rem;font-weight:700;" data-label-key="inv.subtitle2">For Companies</div>
     </div>
     <div class="qr-block">
       <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&color=229949&bgcolor=ffffff&data=https://www.dalarecompany.com" alt="QR code - www.dalarecompany.com">
@@ -1586,31 +1590,31 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 
   <!-- Section 2: Black List -->
-  <div class="section-header"><div class="num">1</div><div class="title">Black List</div></div>
+  <div class="section-header"><div class="num">1</div><div class="title" data-label-key="inv.sec.blacklist">Black List</div></div>
   <div class="blacklist-row">
     <label class="opt yes">✔ Not on Black List <input type="radio" name="blacklist" class="checkbox"></label>
     <label class="opt no">✘ On Black List <input type="radio" name="blacklist" class="checkbox no"></label>
   </div>
 
   <!-- Price list -->
-  <div class="section-header"><div class="num">★</div><div class="title">Invoice List</div></div>
+  <div class="section-header"><div class="num">★</div><div class="title" data-label-key="inv.sec.invoicelist">Invoice List</div></div>
   <div class="price-table-wrap">
     <table class="pricelist" id="priceTable">
       <thead>
         <tr>
           <th>No.</th>
-          <th>Date</th>
-          <th>Invoice Number</th>
-          <th>Price (IQD)</th>
-          <th>Bonus (IQD)</th>
-          <th>Cash Back (%)</th>
-          <th>Discount (%)</th>
-          <th>Before Discount</th>
-          <th>After Discount</th>
-          <th>Price Verified</th>
-          <th>Bonus Verified</th>
-          <th>Qty Verified</th>
-          <th>Notes</th>
+          <th data-label-key="inv.col.date">Date</th>
+          <th data-label-key="inv.col.invoiceno">Invoice Number</th>
+          <th data-label-key="inv.col.price">Price (IQD)</th>
+          <th data-label-key="inv.col.bonus">Bonus (IQD)</th>
+          <th data-label-key="inv.col.cashback">Cash Back (%)</th>
+          <th data-label-key="inv.col.discount">Discount (%)</th>
+          <th data-label-key="inv.col.beforediscount">Before Discount</th>
+          <th data-label-key="inv.col.afterdiscount">After Discount</th>
+          <th data-label-key="inv.col.priceverified">Price Verified</th>
+          <th data-label-key="inv.col.bonusverified">Bonus Verified</th>
+          <th data-label-key="inv.col.qtyverified">Qty Verified</th>
+          <th data-label-key="inv.col.notes">Notes</th>
           <th id="invExtraHead"></th>
           <th></th>
         </tr>
@@ -1622,20 +1626,20 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="btn-small" onclick="addRow()">+ Add Row</button>
   </div>
   <div class="totals-row">
-    <span>Grand Total (IQD)</span>
+    <span data-label-key="inv.grandtotal">Grand Total (IQD)</span>
     <span id="grandTotal">0</span>
   </div>
 
   <!-- Section 4 & 5 -->
   <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:18px;">
     <div class="mono-section" style="flex:1;min-width:280px;">
-      <div class="section-header" style="margin:0;"><div class="num">2</div><div class="title">Google Chat Verification</div></div>
+      <div class="section-header" style="margin:0;"><div class="num">2</div><div class="title" data-label-key="inv.sec.googlechat">Google Chat Verification</div></div>
       <div class="qa-list">
         <div class="qa-row"><span class="qa-text">Google Chat Verified</span><div class="qa-opts"><label class="opt"><input type="radio" name="gc1" class="checkbox">Yes</label><label class="opt"><input type="radio" name="gc1" class="checkbox no">No</label></div></div>
       </div>
     </div>
     <div class="mono-section" style="flex:1;min-width:280px;">
-      <div class="section-header" style="margin:0;"><div class="num">3</div><div class="title">System Verification</div></div>
+      <div class="section-header" style="margin:0;"><div class="num">3</div><div class="title" data-label-key="inv.sec.systemverif">System Verification</div></div>
       <div class="qa-list">
         <div class="qa-row"><span class="qa-text">Entered into System</span><div class="qa-opts"><label class="opt"><input type="radio" name="sy1" class="checkbox">Yes</label><label class="opt"><input type="radio" name="sy1" class="checkbox no">No</label></div></div>
       </div>
@@ -1647,11 +1651,11 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 
   <!-- Section 6 -->
-  <div class="section-header"><div class="num">4</div><div class="title">Notes & Comments</div></div>
+  <div class="section-header"><div class="num">4</div><div class="title" data-label-key="inv.sec.notes">Notes & Comments</div></div>
   <div class="notes-box"><textarea placeholder="Write your notes here..."></textarea></div>
 
   <!-- Section 7 -->
-  <div class="section-header"><div class="num">5</div><div class="title">Signatures & Approval</div></div>
+  <div class="section-header"><div class="num">5</div><div class="title" data-label-key="inv.sec.signatures">Signatures & Approval</div></div>
   <div class="signatures">
     <div class="sig-col">
       <div class="role">Accounting Staff</div>
@@ -1674,7 +1678,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 
   <!-- Final status -->
-  <div class="section-header"><div class="num">★</div><div class="title">Final Report Status</div></div>
+  <div class="section-header"><div class="num">★</div><div class="title" data-label-key="inv.sec.finalstatus">Final Report Status</div></div>
   <div class="final-status">
     <label style="color:#1a7a3d;">✔ Approved <input type="radio" name="finalstatus" onchange="setFormTheme('approved')"></label>
     <label style="color:#a8462e;">✘ Rejected <input type="radio" name="finalstatus" onchange="setFormTheme('rejected')"></label>
@@ -1695,7 +1699,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="seal">Verified<br>Official</div>
     <div style="text-align:center;">
       <h1><span class="stars">★★★</span> Cash Flow Report Form <span class="stars">★★★</span></h1>
-      <div style="font-size:1.1rem;font-weight:700;">For Companies</div>
+      <div style="font-size:1.1rem;font-weight:700;" data-label-key="cf.subtitle2">For Companies</div>
     </div>
     <div class="qr-block">
       <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&color=229949&bgcolor=ffffff&data=https://www.dalarecompany.com" alt="QR code - www.dalarecompany.com">
@@ -1716,16 +1720,16 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 
   <!-- Section 1: Cash Flow Table -->
-  <div class="section-header"><div class="num">1</div><div class="title">Cash Flow</div></div>
+  <div class="section-header"><div class="num">1</div><div class="title" data-label-key="cf.sec.title">Cash Flow</div></div>
   <div class="price-table-wrap">
     <table class="pricelist" id="cashTable">
       <thead>
         <tr>
           <th>No.</th>
-          <th>Product</th>
-          <th>Cash Flow</th>
-          <th>Stock Dalare</th>
-          <th>Note</th>
+          <th data-label-key="cf.col.product">Product</th>
+          <th data-label-key="cf.col.cashflow">Cash Flow</th>
+          <th data-label-key="cf.col.stock">Stock Dalare</th>
+          <th data-label-key="cf.col.note">Note</th>
           <th id="cfExtraHead"></th>
           <th></th>
         </tr>
@@ -1737,7 +1741,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="btn-small" onclick="addRowCF()">+ Add Row</button>
   </div>
   <div class="totals-row">
-    <span>Total Cash Flow (IQD)</span>
+    <span data-label-key="cf.grandtotal">Total Cash Flow (IQD)</span>
     <span id="cfGrandTotal">0</span>
   </div>
 
@@ -1934,6 +1938,36 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveTabOrder()">Save Order</button>
         <button class="mgr-btn del-b" onclick="closeTabOrderManager()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="siteTextOverlay">
+  <div class="mgr-panel">
+    <div class="mgr-head">
+      <h2>Edit Site Text</h2>
+      <button class="mgr-close" onclick="closeSiteTextEditor()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="adm-hint">
+        Change any section title or column name shown across the app. Changes apply
+        everywhere at once, on every device.
+      </div>
+      <div class="cd-group">
+        <h3>Brand Color</h3>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="color" id="brandColorInput" value="#229949" style="width:48px;height:38px;border:1px solid var(--line);border-radius:8px;padding:2px;">
+          <span style="font-size:.8rem;color:#666;">Main accent color used across the app</span>
+        </div>
+      </div>
+      <div class="cd-group">
+        <h3>Section Titles &amp; Column Names</h3>
+        <div id="siteTextFields"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveSiteText()">Save All</button>
+        <button class="mgr-btn del-b" onclick="closeSiteTextEditor()">Cancel</button>
       </div>
     </div>
   </div>
@@ -3370,6 +3404,8 @@ function applyTabOrder(){
 function updateReorderTabsButton(){
   const btn = document.getElementById('reorderTabsBtn');
   if(btn) btn.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
+  const btn2 = document.getElementById('siteTextBtn');
+  if(btn2) btn2.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
 }
 
 function openTabOrderManager(){
@@ -3428,8 +3464,12 @@ async function loadSiteSettings(){
     const rows = await res.json();
     if(rows.length && rows[0].subtitle) siteSubtitle = rows[0].subtitle;
     if(rows.length && rows[0].contact_text) siteContactText = rows[0].contact_text;
+    if(rows.length && rows[0].labels) siteLabels = rows[0].labels;
+    if(rows.length && rows[0].theme_color) siteThemeColor = rows[0].theme_color;
     applySubtitleText();
     applyContactText();
+    applySiteLabels();
+    applyThemeColor();
   }catch(e){ /* keep default text */ }
 }
 
@@ -3486,6 +3526,76 @@ async function saveContactText(){
     closeContactEditor();
     logActivity('save_contact_text', null, text);
     flash('Contact footer updated');
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+/* =======================  SITE-WIDE TEXT & BRAND COLOR (super_admin)  ======================= */
+let siteLabels = {};
+let siteThemeColor = '#229949';
+
+function applySiteLabels(){
+  document.querySelectorAll('[data-label-key]').forEach(el => {
+    const key = el.dataset.labelKey;
+    if(siteLabels[key] !== undefined) el.textContent = siteLabels[key];
+  });
+}
+
+function darkenHex(hex, amount){
+  hex = hex.replace('#','');
+  const num = parseInt(hex, 16);
+  let r = Math.max(0, (num >> 16) - amount);
+  let g = Math.max(0, ((num >> 8) & 0xff) - amount);
+  let bl = Math.max(0, (num & 0xff) - amount);
+  return '#' + [r,g,bl].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+function applyThemeColor(){
+  document.documentElement.style.setProperty('--forest', siteThemeColor);
+  document.documentElement.style.setProperty('--forest-deep', darkenHex(siteThemeColor, 55));
+}
+
+function openSiteTextEditor(){
+  if(!isSuperAdmin()){ flash('Only a super admin can edit site text.', true); return; }
+  document.getElementById('brandColorInput').value = siteThemeColor;
+
+  const seen = {};
+  document.querySelectorAll('[data-label-key]').forEach(el => {
+    const key = el.dataset.labelKey;
+    if(!seen[key]) seen[key] = el.textContent.trim();
+  });
+
+  const box = document.getElementById('siteTextFields');
+  box.innerHTML = Object.keys(seen).map(key => `
+    <div class="site-text-row">
+      <label title="${key}">${key}</label>
+      <input type="text" data-key="${key}" value="${seen[key].replace(/"/g,'&quot;')}">
+    </div>
+  `).join('');
+
+  document.getElementById('siteTextOverlay').classList.add('open');
+}
+function closeSiteTextEditor(){ document.getElementById('siteTextOverlay').classList.remove('open'); }
+
+async function saveSiteText(){
+  const labels = {};
+  document.querySelectorAll('#siteTextFields input[data-key]').forEach(inp => {
+    labels[inp.dataset.key] = inp.value;
+  });
+  const color = document.getElementById('brandColorInput').value;
+
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({ id:'default', labels, theme_color: color, updated_by: session.email, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    siteLabels = labels;
+    siteThemeColor = color;
+    applySiteLabels();
+    applyThemeColor();
+    closeSiteTextEditor();
+    logActivity('save_site_text', null, 'labels + color updated');
+    flash('Site text & color updated');
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
