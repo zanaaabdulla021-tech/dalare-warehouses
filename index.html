@@ -2109,6 +2109,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <div class="adm-hint">
         Deleted forms land here first. Restore them, or delete forever to remove permanently.
       </div>
+      <select id="trashFilterSelect" class="stage-select" style="width:100%;margin-bottom:12px;" onchange="renderTrashItems()">
+        <option value="all">All sections</option>
+      </select>
       <div id="trashResults"><div class="mgr-empty">Loading…</div></div>
     </div>
   </div>
@@ -3798,8 +3801,11 @@ const TRASH_TABLES = [
   { table:'custom_section_forms',label:'Custom',     icon:'📁' },
 ];
 
+let trashItemsCache = [];
+
 function openTrash(){
   if(!isSuperAdmin()){ flash('Only a super admin can manage Trash.', true); return; }
+  document.getElementById('trashFilterSelect').value = 'all';
   document.getElementById('trashOverlay').classList.add('open');
   loadTrashItems();
 }
@@ -3807,7 +3813,7 @@ function closeTrash(){ document.getElementById('trashOverlay').classList.remove(
 
 async function loadTrashItems(){
   const box = document.getElementById('trashResults');
-  box.innerHTML = '<div class="mgr-empty">Loading…</div>';
+  box.innerHTML = '<div class="mgr-empty">Loading\u2026</div>';
   if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
   try{
     const calls = TRASH_TABLES.map(t =>
@@ -3816,21 +3822,36 @@ async function loadTrashItems(){
         .then(rows => rows.map(r => ({ ...r, table:t.table, label: t.table === 'custom_section_forms' ? ((customSections[r.section_id]||{}).name || 'Custom') : t.label, icon:t.icon })))
         .catch(() => [])
     );
-    const items = (await Promise.all(calls)).flat().sort((a,b) => new Date(b.deleted_at) - new Date(a.deleted_at));
-    if(!items.length){ box.innerHTML = '<div class="mgr-empty">Trash is empty.</div>'; return; }
-    box.innerHTML = items.map(r => `
-      <div class="ep-kpi-row" style="cursor:default;">
-        <div>
-          <div style="font-weight:700;font-size:.82rem;">${r.icon} ${(r.company_name || '(unnamed)').replace(/</g,'&lt;')}</div>
-          <div style="font-size:.72rem;color:#777;">${r.label} · ${r.id.replace(/</g,'&lt;')} · deleted ${timeAgo(r.deleted_at)}</div>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="mgr-btn open-b" style="padding:6px 10px;font-size:.72rem;" onclick="restoreTrashItem('${r.table}','${r.id.replace(/'/g,"\\'")}')">Restore</button>
-          <button class="mgr-btn del-b" style="padding:6px 10px;font-size:.72rem;" onclick="permanentlyDeleteTrashItem('${r.table}','${r.id.replace(/'/g,"\\'")}')">Delete Forever</button>
-        </div>
-      </div>
-    `).join('');
+    trashItemsCache = (await Promise.all(calls)).flat().sort((a,b) => new Date(b.deleted_at) - new Date(a.deleted_at));
+
+    const select = document.getElementById('trashFilterSelect');
+    const prevValue = select.value || 'all';
+    const uniqueLabels = [...new Set(trashItemsCache.map(r => r.label))];
+    select.innerHTML = '<option value="all">All sections</option>' +
+      uniqueLabels.map(l => `<option value="${l.replace(/"/g,'&quot;')}">${l.replace(/</g,'&lt;')}</option>`).join('');
+    select.value = uniqueLabels.includes(prevValue) ? prevValue : 'all';
+
+    renderTrashItems();
   }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">Could not load Trash.</div>'; }
+}
+
+function renderTrashItems(){
+  const box = document.getElementById('trashResults');
+  const filter = document.getElementById('trashFilterSelect').value;
+  const items = filter === 'all' ? trashItemsCache : trashItemsCache.filter(r => r.label === filter);
+  if(!items.length){ box.innerHTML = `<div class="mgr-empty">${trashItemsCache.length ? 'No items match this filter.' : 'Trash is empty.'}</div>`; return; }
+  box.innerHTML = items.map(r => `
+    <div class="ep-kpi-row" style="cursor:default;">
+      <div>
+        <div style="font-weight:700;font-size:.82rem;">${r.icon} ${(r.company_name || '(unnamed)').replace(/</g,'&lt;')}</div>
+        <div style="font-size:.72rem;color:#777;">${r.label} \u00b7 ${r.id.replace(/</g,'&lt;')} \u00b7 deleted ${timeAgo(r.deleted_at)}</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="mgr-btn open-b" style="padding:6px 10px;font-size:.72rem;" onclick="restoreTrashItem('${r.table}','${r.id.replace(/'/g,"\\'")}')">Restore</button>
+        <button class="mgr-btn del-b" style="padding:6px 10px;font-size:.72rem;" onclick="permanentlyDeleteTrashItem('${r.table}','${r.id.replace(/'/g,"\\'")}')">Delete Forever</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 async function restoreTrashItem(table, id){
