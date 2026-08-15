@@ -3811,7 +3811,7 @@ async function loadTrashItems(){
   if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
   try{
     const calls = TRASH_TABLES.map(t =>
-      fetch(`${SUPABASE_URL}/rest/v1/${t.table}?select=id,company_name,deleted_at,section_id&deleted_at=not.is.null&order=deleted_at.desc&limit=100`, { headers: sbHeaders() })
+      fetch(`${SUPABASE_URL}/rest/v1/${t.table}?select=id,company_name,deleted_at${t.table==='custom_section_forms' ? ',section_id' : ''}&deleted_at=not.is.null&order=deleted_at.desc&limit=100`, { headers: sbHeaders() })
         .then(r => r.ok ? r.json() : [])
         .then(rows => rows.map(r => ({ ...r, table:t.table, label: t.table === 'custom_section_forms' ? ((customSections[r.section_id]||{}).name || 'Custom') : t.label, icon:t.icon })))
         .catch(() => [])
