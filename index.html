@@ -2200,8 +2200,6 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <div class="idb-qr">
           <img id="idbQrImg" src="" alt="QR">
         </div>
-        <div class="idb-qr-text">QR &bull; <span id="idbId">&mdash;</span></div>
-        <div class="idf-footer">DALARE EMPLOYEE CARD</div>
       </div>
     </div>
 
@@ -3164,7 +3162,6 @@ function showQr(id){
   const photoBox = document.getElementById('idfPhotoBox');
   photoBox.innerHTML = row.photo ? `<img src="${row.photo}" alt="">` : 'PHOTO';
 
-  document.getElementById('idbId').textContent = id;
   document.getElementById('idbQrImg').src = qrSrc;
 
   document.getElementById('qrModal').classList.add('open');
