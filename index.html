@@ -1006,11 +1006,15 @@
   .pub-note{margin-top:16px;font-size:.72rem;color:#888;}
   .tabbar{
     max-width:960px;margin:0 auto 12px;display:flex;gap:8px;
+    overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;
+    padding-bottom:2px;
   }
+  .tabbar::-webkit-scrollbar{display:none;}
   .tabbar button{
-    flex:1;border:1px solid var(--line);background:var(--paper-card);
-    color:#555;border-radius:10px;padding:11px 14px;cursor:pointer;
-    font-size:.9rem;font-weight:800;font-family:"IBM Plex Sans",sans-serif;
+    flex:0 0 auto;border:1px solid var(--line);background:var(--paper-card);
+    color:#555;border-radius:10px;padding:11px 16px;cursor:pointer;
+    font-size:.88rem;font-weight:800;font-family:"IBM Plex Sans",sans-serif;
+    white-space:nowrap;
     transition:background .15s ease, color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .12s ease;
     box-shadow:0 1px 2px rgba(10,36,23,.04);
   }
@@ -1320,10 +1324,10 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
 <div class="tabbar">
   <button id="tabHome" class="active" onclick="switchTab('home')">🏠 Home</button>
-  <button id="tabInv" onclick="switchTab('inv')">Invoice Verification</button>
-  <button id="tabCf" onclick="switchTab('cf')">Cash Flow</button>
-  <button id="tabSop" onclick="switchTab('sop')">SOP</button>
-  <button id="tabStaff" onclick="switchTab('staff')">Staff</button>
+  <button id="tabInv" onclick="switchTab('inv')">🧾 Invoice Verification</button>
+  <button id="tabCf" onclick="switchTab('cf')">💵 Cash Flow</button>
+  <button id="tabSop" onclick="switchTab('sop')">📋 SOP</button>
+  <button id="tabStaff" onclick="switchTab('staff')">🪪 Staff</button>
   <span id="customTabsSlot"></span>
   <button id="addSectionBtn" class="add-section-btn" onclick="openSectionBuilder()" style="display:none;" title="Add a new section">+</button>
   <button id="reorderTabsBtn" class="add-section-btn" onclick="openTabOrderManager()" style="display:none;" title="Reorder tabs">🔀</button>
@@ -3499,7 +3503,7 @@ function rebuildCustomSectionStructure(id){
 
   const tabBtn = document.getElementById('tab_custom_' + id);
   if(tabBtn){
-    tabBtn.innerHTML = `${section.name.replace(/</g,'&lt;')}<span class="custom-tab-edit" title="Edit section" onclick="event.stopPropagation(); openSectionBuilder('${id}')">✎</span><span class="custom-tab-del" title="Delete section" onclick="event.stopPropagation(); deleteCustomSection('${id}')">×</span>`;
+    tabBtn.innerHTML = `📁 ${section.name.replace(/</g,'&lt;')}<span class="custom-tab-edit" title="Edit section" onclick="event.stopPropagation(); openSectionBuilder('${id}')">✎</span><span class="custom-tab-del" title="Delete section" onclick="event.stopPropagation(); deleteCustomSection('${id}')">×</span>`;
   }
 
   const sheet = document.getElementById('customForm_' + id);
@@ -3548,7 +3552,7 @@ function mountCustomSection(section){
   tabBtn.className = 'custom-tab-btn';
   tabBtn.id = 'tab_custom_' + section.id;
   tabBtn.onclick = () => switchTab('custom:' + section.id);
-  tabBtn.innerHTML = `${section.name.replace(/</g,'&lt;')}<span class="custom-tab-edit" title="Edit section" onclick="event.stopPropagation(); openSectionBuilder('${section.id}')">✎</span><span class="custom-tab-del" title="Delete section" onclick="event.stopPropagation(); deleteCustomSection('${section.id}')">×</span>`;
+  tabBtn.innerHTML = `📁 ${section.name.replace(/</g,'&lt;')}<span class="custom-tab-edit" title="Edit section" onclick="event.stopPropagation(); openSectionBuilder('${section.id}')">✎</span><span class="custom-tab-del" title="Delete section" onclick="event.stopPropagation(); deleteCustomSection('${section.id}')">×</span>`;
   document.getElementById('customTabsSlot').appendChild(tabBtn);
 
   const logoSrc = document.querySelector('.logo-badge img').src;
