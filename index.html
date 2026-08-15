@@ -1062,6 +1062,37 @@
   .home-card .ic{font-size:1.9rem;transition:transform .18s cubic-bezier(.2,.8,.3,1);}
   .home-card .nm{font-weight:800;color:#000;font-size:.95rem;}
   .home-card .dsc{font-size:.74rem;color:#666;line-height:1.4;}
+  .home-stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;
+  }
+  .stat-card{
+    background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;
+    box-shadow:0 1px 2px rgba(10,36,23,.04);
+  }
+  .stat-ic{font-size:1.3rem;margin-bottom:6px;}
+  .stat-val{font-size:1.4rem;font-weight:800;color:#000;font-family:"IBM Plex Mono",monospace;}
+  .stat-label{font-size:.72rem;color:#777;font-weight:600;margin-top:2px;}
+  .home-card{text-align:left;align-items:stretch;}
+  .home-card .card-top{display:flex;align-items:center;gap:10px;}
+  .home-card .card-top .ic{font-size:1.6rem;}
+  .home-card .checklist{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;}
+  .home-card .checklist li{font-size:.76rem;color:#444;display:flex;align-items:center;gap:6px;}
+  .home-card .checklist li::before{content:"✓";color:var(--forest);font-weight:800;}
+  .home-card .go-btn{
+    margin-top:12px;align-self:flex-start;background:var(--forest);color:#fff;border:none;
+    border-radius:8px;padding:8px 14px;font-size:.78rem;font-weight:700;cursor:pointer;
+  }
+  .home-card .go-btn:hover{background:var(--forest-deep);}
+  .home-activities{
+    margin-top:18px;background:#fff;border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;box-shadow:0 1px 2px rgba(10,36,23,.04);
+  }
+  .activities-head{font-weight:800;font-size:.9rem;color:#000;margin-bottom:10px;}
+  .activity-row{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-top:1px solid var(--line);}
+  .activity-row:first-child{border-top:none;}
+  .activity-dot{width:7px;height:7px;border-radius:50%;background:var(--forest);margin-top:6px;flex-shrink:0;}
+  .activity-text{font-size:.8rem;color:#222;}
+  .activity-time{font-size:.68rem;color:#999;margin-top:1px;}
   .custom-tab-del{
     position:absolute;top:-6px;right:-6px;width:18px;height:18px;
     border-radius:50%;background:#a8462e;color:#fff;border:2px solid #fff;
@@ -1440,7 +1471,12 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <p>Building trust, delivering quality</p>
     <div class="home-user" id="homeUserLine">Welcome</div>
   </div>
+  <div class="home-stats" id="homeStats"></div>
   <div class="home-grid" id="homeGrid"></div>
+  <div class="home-activities" id="homeActivities" style="display:none;">
+    <div class="activities-head">Recent Activity</div>
+    <div class="activities-list"></div>
+  </div>
 </div>
 
 <div class="sheet" id="form">
@@ -3722,23 +3758,104 @@ function renderHomeGrid(){
   const grid = document.getElementById('homeGrid');
   if(!grid) return;
   const cards = [];
-  if(canViewTab('inv'))  cards.push({ic:'🧾', nm:'Invoice Verification', dsc:'Accounting verification & pricing', tab:'inv'});
-  if(canViewTab('cf'))   cards.push({ic:'💵', nm:'Cash Flow', dsc:'Product, cash flow & stock tracking', tab:'cf'});
-  if(canViewTab('sop'))  cards.push({ic:'📋', nm:'SOP', dsc:'Standard operating procedures', tab:'sop'});
-  if(canViewTab('staff')) cards.push({ic:'🪪', nm:'Staff', dsc:'Employee directory & ID cards', tab:'staff'});
+  if(canViewTab('inv'))  cards.push({ic:'🧾', nm:'Invoice Verification', dsc:'Accounting verification & pricing', tab:'inv',
+    bullets:['Verify invoices','Check pricing','Approve & record']});
+  if(canViewTab('cf'))   cards.push({ic:'💵', nm:'Cash Flow', dsc:'Product, cash flow & stock tracking', tab:'cf',
+    bullets:['Track cash flow entries','Monitor stock','Save & print reports']});
+  if(canViewTab('sop'))  cards.push({ic:'📋', nm:'SOP', dsc:'Standard operating procedures', tab:'sop',
+    bullets:['View SOP documents','Department procedures','Work instructions']});
+  if(canViewTab('staff')) cards.push({ic:'🪪', nm:'Staff', dsc:'Employee directory & ID cards', tab:'staff',
+    bullets:['View staff directory','Manage ID cards','Design & QR codes']});
   Object.values(customSections).forEach(s=>{
-    if(canViewTab('custom:'+s.id)) cards.push({ic:'📁', nm:s.name, dsc:'Custom section', tab:'custom:'+s.id});
+    if(canViewTab('custom:'+s.id)) cards.push({ic:'📁', nm:s.name, dsc:'Custom section', tab:'custom:'+s.id,
+      bullets:['View records','Add new entries','Save & print']});
   });
   grid.innerHTML = cards.map(c => `
     <div class="home-card" onclick="switchTab('${c.tab}')">
-      <div class="ic">${c.ic}</div>
-      <div class="nm">${c.nm.replace(/</g,'&lt;')}</div>
-      <div class="dsc">${c.dsc}</div>
+      <div class="card-top">
+        <div class="ic">${c.ic}</div>
+        <div>
+          <div class="nm">${c.nm.replace(/</g,'&lt;')}</div>
+          <div class="dsc">${c.dsc}</div>
+        </div>
+      </div>
+      <ul class="checklist">${c.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>
+      <button class="go-btn" onclick="event.stopPropagation(); switchTab('${c.tab}')">Go to Module →</button>
     </div>
   `).join('');
 
   const line = document.getElementById('homeUserLine');
   if(line && session.email) line.textContent = `${session.email} · ${session.role.replace('_',' ')}`;
+
+  renderHomeStats();
+  renderRecentActivities();
+}
+
+async function renderHomeStats(){
+  const box = document.getElementById('homeStats');
+  if(!box) return;
+  if(!backendReady() || isEmployee()){ box.innerHTML = ''; return; }
+  try{
+    const calls = [
+      canViewTab('inv')  ? fetch(`${SUPABASE_URL}/rest/v1/forms?select=id`, { headers: sbHeaders() }) : null,
+      canViewTab('cf')   ? fetch(`${SUPABASE_URL}/rest/v1/cashflow_forms?select=data`, { headers: sbHeaders() }) : null,
+      canViewTab('sop')  ? fetch(`${SUPABASE_URL}/rest/v1/sop_forms?select=id`, { headers: sbHeaders() }) : null,
+      canViewTab('staff')? fetch(`${SUPABASE_URL}/rest/v1/employees?select=id`, { headers: sbHeaders() }) : null,
+    ];
+    const [invRes, cfRes, sopRes, empRes] = await Promise.all(calls.map(c => c ? c.catch(()=>null) : null));
+
+    const stats = [];
+    if(invRes && invRes.ok) stats.push({ic:'🧾', label:'Total Invoices', val: (await invRes.json()).length});
+    if(cfRes && cfRes.ok){
+      const rows = await cfRes.json();
+      let total = 0;
+      rows.forEach(r=>{
+        const rrows = (r.data && r.data.rows) ? r.data.rows : [];
+        rrows.forEach(row=>{ total += parseFloat(String(row.cashflow||'0').replace(/,/g,'')) || 0; });
+      });
+      stats.push({ic:'💵', label:'Total Cash Flow', val: total.toLocaleString() + ' IQD'});
+    }
+    if(sopRes && sopRes.ok) stats.push({ic:'📋', label:'SOP Documents', val: (await sopRes.json()).length});
+    if(empRes && empRes.ok) stats.push({ic:'🪪', label:'Staff Members', val: (await empRes.json()).length});
+
+    box.innerHTML = stats.map(s => `
+      <div class="stat-card">
+        <div class="stat-ic">${s.ic}</div>
+        <div class="stat-val">${s.val}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+    `).join('');
+  }catch(e){ box.innerHTML = ''; }
+}
+
+function timeAgo(iso){
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if(diff < 60) return 'just now';
+  if(diff < 3600) return Math.floor(diff/60) + ' min ago';
+  if(diff < 86400) return Math.floor(diff/3600) + ' hr ago';
+  const days = Math.floor(diff/86400);
+  return days + (days > 1 ? ' days ago' : ' day ago');
+}
+
+async function renderRecentActivities(){
+  const box = document.getElementById('homeActivities');
+  if(!box) return;
+  if(!isSuperAdmin() || !backendReady()){ box.style.display = 'none'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/activity_log?select=*&order=created_at.desc&limit=5`, { headers: sbHeaders() });
+    if(!res.ok) throw new Error();
+    const rows = await res.json();
+    box.style.display = '';
+    box.querySelector('.activities-list').innerHTML = rows.length ? rows.map(r => `
+      <div class="activity-row">
+        <span class="activity-dot"></span>
+        <div>
+          <div class="activity-text">${(r.user_email||'someone').replace(/</g,'&lt;')} — ${(r.action||'').replace(/</g,'&lt;')}${r.form_id ? ' (' + r.form_id.replace(/</g,'&lt;') + ')' : ''}</div>
+          <div class="activity-time">${timeAgo(r.created_at)}</div>
+        </div>
+      </div>
+    `).join('') : '<div class="mgr-empty">No recent activity.</div>';
+  }catch(e){ box.style.display = 'none'; }
 }
 
 async function deleteCustomSection(sectionId){
