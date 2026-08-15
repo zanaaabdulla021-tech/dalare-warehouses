@@ -845,6 +845,10 @@
   }
   .adm-toolrow .t{font-size:.85rem;font-weight:700;color:#000;}
   .adm-toolrow .d{font-size:.74rem;color:#666;margin-top:2px;}
+  .adm-section-label{
+    font-size:.72rem;font-weight:800;color:var(--forest-deep);text-transform:uppercase;
+    letter-spacing:.6px;margin:18px 0 8px;padding-top:14px;border-top:1px solid var(--line);
+  }
   /* ---------- Employee ID card (physical 85.6x54mm, front + back) ---------- */
   .idcards-wrap{display:flex;flex-direction:column;align-items:center;}
   .idcards-row{
@@ -1510,6 +1514,36 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
             </select>
             <button class="mgr-btn del-b" onclick="bulkDelete()">Delete</button>
           </div>
+        </div>
+
+        <div class="adm-section-label">Design &amp; Customization</div>
+        <div class="adm-toolrow">
+          <div>
+            <div class="t">🎨 Edit Site Text</div>
+            <div class="d">Section titles, column names, and brand color across the app.</div>
+          </div>
+          <button class="mgr-btn open-b" onclick="closeAdmin(); openSiteTextEditor();">Open</button>
+        </div>
+        <div class="adm-toolrow">
+          <div>
+            <div class="t">🪪 Design Employee Card</div>
+            <div class="d">Choose which fields show on the ID card and public scan screen.</div>
+          </div>
+          <button class="mgr-btn open-b" onclick="closeAdmin(); switchTab('staff'); openCardDesigner();">Open</button>
+        </div>
+        <div class="adm-toolrow">
+          <div>
+            <div class="t">🔀 Reorder Tabs</div>
+            <div class="d">Change the order sections appear in for everyone.</div>
+          </div>
+          <button class="mgr-btn open-b" onclick="closeAdmin(); openTabOrderManager();">Open</button>
+        </div>
+        <div class="adm-toolrow">
+          <div>
+            <div class="t">+ Add New Section</div>
+            <div class="d">Create a brand new custom tab with your own fields.</div>
+          </div>
+          <button class="mgr-btn open-b" onclick="closeAdmin(); openSectionBuilder();">Open</button>
         </div>
       </div>
     </div>
