@@ -1608,6 +1608,13 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
           </div>
           <button class="mgr-btn open-b" onclick="closeAdmin(); openPermissionsManager();">Open</button>
         </div>
+        <div class="adm-toolrow">
+          <div>
+            <div class="t">📊 Reorder KPI Tasks</div>
+            <div class="d">Drag to reorder KPI evaluation tasks and adjust their weights.</div>
+          </div>
+          <button class="mgr-btn open-b" onclick="closeAdmin(); openKpiOrderManager();">Open</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2094,6 +2101,24 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveTabOrder()">Save Order</button>
         <button class="mgr-btn del-b" onclick="closeTabOrderManager()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="kpiOrderOverlay">
+  <div class="mgr-panel">
+    <div class="mgr-head">
+      <h2>Reorder KPI Tasks</h2>
+      <button class="mgr-close" onclick="closeKpiOrderManager()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="adm-hint">Drag ⋮⋮ to reorder tasks, or edit names and weights. Weights should add up to 100.</div>
+      <div id="kpiOrderList" class="sb-fields"></div>
+      <div id="kpiOrderTotal" style="font-size:.8rem;font-weight:700;margin-top:8px;color:#666;"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveKpiOrder()">Save</button>
+        <button class="mgr-btn del-b" onclick="closeKpiOrderManager()">Cancel</button>
       </div>
     </div>
   </div>
@@ -3626,6 +3651,7 @@ async function loadTabOrder(){
     const rows = await res.json();
     if(rows.length && rows[0].order) tabOrder = rows[0].order;
     applyTabOrder();
+    renderHomeGrid();
   }catch(e){ /* keep default order */ }
 }
 
@@ -3682,11 +3708,67 @@ async function saveTabOrder(){
     if(!res.ok) throw new Error(await res.text());
     tabOrder = newOrder;
     applyTabOrder();
+    renderHomeGrid();
     closeTabOrderManager();
     logActivity('save_tab_order', null, newOrder.join(','));
     flash('Tab order saved');
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
+
+function openKpiOrderManager(){
+  if(!isSuperAdmin()){ flash('Only a super admin can reorder KPI tasks.', true); return; }
+  const list = document.getElementById('kpiOrderList');
+  list.innerHTML = '';
+  KPI_DEFS.forEach(k => {
+    const row = document.createElement('div');
+    row.className = 'sb-field-row';
+    row.draggable = true;
+    row.dataset.taskId = k.id;
+    row.innerHTML = `
+      <span class="sb-drag">⋮⋮</span>
+      <input type="text" value="${k.label.replace(/"/g,'&quot;')}" style="flex:1;">
+      <input type="number" min="0" max="100" value="${k.weight}" class="kpi-order-weight" style="width:60px;">
+      <span style="font-size:.7rem;color:#888;">%</span>
+    `;
+    row.addEventListener('dragstart', ()=>{ row.classList.add('dragging'); });
+    row.addEventListener('dragend', ()=>{ row.classList.remove('dragging'); updateKpiOrderTotal(); });
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.kpi-order-weight').forEach(inp => inp.addEventListener('input', updateKpiOrderTotal));
+  updateKpiOrderTotal();
+  document.getElementById('kpiOrderOverlay').classList.add('open');
+}
+function closeKpiOrderManager(){ document.getElementById('kpiOrderOverlay').classList.remove('open'); }
+
+function updateKpiOrderTotal(){
+  const total = Array.from(document.querySelectorAll('#kpiOrderList .kpi-order-weight'))
+    .reduce((sum, inp) => sum + (parseFloat(inp.value) || 0), 0);
+  const box = document.getElementById('kpiOrderTotal');
+  box.textContent = `Total weight: ${total}%` + (total !== 100 ? ' (should be 100)' : ' ✓');
+  box.style.color = total === 100 ? '#0f7a3d' : '#a8462e';
+}
+
+async function saveKpiOrder(){
+  const rows = Array.from(document.querySelectorAll('#kpiOrderList .sb-field-row'));
+  const newDefs = rows.map(row => ({
+    id: row.dataset.taskId,
+    label: row.querySelector('input[type=text]').value.trim() || 'Untitled',
+    weight: parseFloat(row.querySelector('.kpi-order-weight').value) || 0
+  }));
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({ id:'default', kpi_defs: newDefs, updated_by: session.email, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    KPI_DEFS = newDefs;
+    if(document.getElementById('kpiBody')) renderKpiRows();
+    closeKpiOrderManager();
+    logActivity('save_kpi_order', null, newDefs.map(d=>d.label).join(','));
+    flash('KPI tasks updated');
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
 
 let editingSectionId = null;
 
@@ -3963,6 +4045,10 @@ async function loadSiteSettings(){
     if(rows.length && rows[0].contact_text) siteContactText = rows[0].contact_text;
     if(rows.length && rows[0].labels) siteLabels = rows[0].labels;
     if(rows.length && rows[0].theme_color) siteThemeColor = rows[0].theme_color;
+    if(rows.length && rows[0].kpi_defs && rows[0].kpi_defs.length){
+      KPI_DEFS = rows[0].kpi_defs;
+      if(document.getElementById('kpiBody')) renderKpiRows();
+    }
     applySubtitleText();
     applyContactText();
     applySiteLabels();
@@ -4434,21 +4520,29 @@ async function loadCustomSections(){
 function renderHomeGrid(){
   const grid = document.getElementById('homeGrid');
   if(!grid) return;
-  const cards = [];
-  if(canViewTab('inv'))  cards.push({ic:'🧾', nm:'Invoice Verification', tab:'inv', key:'inv',
-    dsc:'Accounting verification & pricing', bullets:['Verify invoices','Check pricing','Approve & record']});
-  if(canViewTab('cf'))   cards.push({ic:'💵', nm:'Cash Flow', tab:'cf', key:'cf',
-    dsc:'Product, cash flow & stock tracking', bullets:['Track cash flow entries','Monitor stock','Save & print reports']});
-  if(canViewTab('sop'))  cards.push({ic:'📋', nm:'SOP', tab:'sop', key:'sop',
-    dsc:'Standard operating procedures', bullets:['View SOP documents','Department procedures','Work instructions']});
-  if(canViewTab('staff')) cards.push({ic:'🪪', nm:'Staff', tab:'staff', key:'staff',
-    dsc:'Employee directory & ID cards', bullets:['View staff directory','Manage ID cards','Design & QR codes']});
-  if(canViewTab('kpi')) cards.push({ic:'📊', nm:'KPI Evaluation', tab:'kpi', key:'kpi',
-    dsc:'Score employee performance', bullets:['Set targets & accuracy','Auto-calculated scores','Supervisor notes']});
-  Object.values(customSections).forEach(s=>{
-    if(canViewTab('custom:'+s.id)) cards.push({ic:'📁', nm:s.name, tab:'custom:'+s.id, key:null,
-      dsc:'Custom section', bullets:['View records','Add new entries','Save & print']});
+  const cardDefs = {
+    inv: {ic:'🧾', nm:'Invoice Verification', tab:'inv', key:'inv',
+      dsc:'Accounting verification & pricing', bullets:['Verify invoices','Check pricing','Approve & record']},
+    cf: {ic:'💵', nm:'Cash Flow', tab:'cf', key:'cf',
+      dsc:'Product, cash flow & stock tracking', bullets:['Track cash flow entries','Monitor stock','Save & print reports']},
+    sop: {ic:'📋', nm:'SOP', tab:'sop', key:'sop',
+      dsc:'Standard operating procedures', bullets:['View SOP documents','Department procedures','Work instructions']},
+    staff: {ic:'🪪', nm:'Staff', tab:'staff', key:'staff',
+      dsc:'Employee directory & ID cards', bullets:['View staff directory','Manage ID cards','Design & QR codes']},
+    kpi: {ic:'📊', nm:'KPI Evaluation', tab:'kpi', key:'kpi',
+      dsc:'Score employee performance', bullets:['Set targets & accuracy','Auto-calculated scores','Supervisor notes']},
+  };
+  Object.keys(cardDefs).forEach(id => { if(!canViewTab(id)) delete cardDefs[id]; });
+
+  const customIds = Object.keys(customSections).filter(id => canViewTab('custom:'+id));
+  // Order: whatever sequence Reorder Tabs has set, core tabs first then any custom ids not yet in tabOrder.
+  const orderedIds = [...tabOrder.filter(id => cardDefs[id]), ...Object.keys(cardDefs).filter(id => !tabOrder.includes(id))];
+  const cards = orderedIds.map(id => cardDefs[id]);
+  customIds.forEach(id => {
+    const s = customSections[id];
+    cards.push({ic:'📁', nm:s.name, tab:'custom:'+id, key:null, dsc:'Custom section', bullets:['View records','Add new entries','Save & print']});
   });
+
   grid.innerHTML = cards.map(c => `
     <div class="home-card" onclick="switchTab('${c.tab}')">
       <div class="card-top">
@@ -4990,26 +5084,26 @@ function activeTable(){
 
 
 /* =======================  KPI PERFORMANCE EVALUATION  ======================= */
-const KPI_DEFS = [
-  {label:'Invoice Entry', weight:15},
-  {label:'Invoice Return', weight:20},
-  {label:'Definition', weight:10},
-  {label:'Barcode', weight:5},
-  {label:'Audit & Edit', weight:15},
-  {label:'Branch Maintenance', weight:10},
-  {label:'Account Statement', weight:5},
-  {label:'Transit', weight:5},
-  {label:'Errors', weight:8},
-  {label:'Uniform Compliance', weight:2},
-  {label:'Management Evaluation', weight:5},
+let KPI_DEFS = [
+  {id:'invoice-entry', label:'Invoice Entry', weight:15},
+  {id:'invoice-return', label:'Invoice Return', weight:20},
+  {id:'definition', label:'Definition', weight:10},
+  {id:'barcode', label:'Barcode', weight:5},
+  {id:'audit-edit', label:'Audit & Edit', weight:15},
+  {id:'branch-maintenance', label:'Branch Maintenance', weight:10},
+  {id:'account-statement', label:'Account Statement', weight:5},
+  {id:'transit', label:'Transit', weight:5},
+  {id:'errors', label:'Errors', weight:8},
+  {id:'uniform-compliance', label:'Uniform Compliance', weight:2},
+  {id:'management-evaluation', label:'Management Evaluation', weight:5},
 ];
 let kpiFormId = null;
 
 function renderKpiRows(){
   const body = document.getElementById('kpiBody');
-  body.innerHTML = KPI_DEFS.map((k,i) => `
-    <tr data-i="${i}">
-      <td>${k.label}</td>
+  body.innerHTML = KPI_DEFS.map(k => `
+    <tr data-task-id="${k.id}">
+      <td>${k.label.replace(/</g,'&lt;')}</td>
       <td><input type="number" min="0" value="100" class="kpi-target"></td>
       <td><input type="number" min="0" value="0" class="kpi-actual"></td>
       <td><input type="number" min="0" max="100" value="100" class="kpi-accuracy"></td>
@@ -5057,6 +5151,7 @@ function calcKpi(){
 
 function serializeKpi(){
   const rows = Array.from(document.querySelectorAll('#kpiBody tr')).map(tr => ({
+    taskId: tr.dataset.taskId,
     target: tr.querySelector('.kpi-target').value,
     actual: tr.querySelector('.kpi-actual').value,
     accuracy: tr.querySelector('.kpi-accuracy').value,
@@ -5078,12 +5173,15 @@ function restoreKpi(d){
   document.querySelector('.kpi-month').value = d.month || '';
   document.querySelector('.kpi-supervisor').value = d.supervisor || '';
   document.querySelector('.kpi-notes').value = d.notes || '';
-  const rows = document.querySelectorAll('#kpiBody tr');
-  (d.rows || []).forEach((r, i) => {
-    if(!rows[i]) return;
-    if(r.target !== undefined) rows[i].querySelector('.kpi-target').value = r.target;
-    if(r.actual !== undefined) rows[i].querySelector('.kpi-actual').value = r.actual;
-    if(r.accuracy !== undefined) rows[i].querySelector('.kpi-accuracy').value = r.accuracy;
+  const savedRows = d.rows || [];
+  document.querySelectorAll('#kpiBody tr').forEach((tr, i) => {
+    // Prefer matching by stable task id (safe across reordering); fall back to
+    // array position for older saved forms recorded before this existed.
+    const r = savedRows.find(x => x.taskId === tr.dataset.taskId) || savedRows[i];
+    if(!r) return;
+    if(r.target !== undefined) tr.querySelector('.kpi-target').value = r.target;
+    if(r.actual !== undefined) tr.querySelector('.kpi-actual').value = r.actual;
+    if(r.accuracy !== undefined) tr.querySelector('.kpi-accuracy').value = r.accuracy;
   });
   calcKpi();
   applyViewerLock();
@@ -5158,7 +5256,7 @@ async function openKPI(id){
 function computeKpiScoreFromData(d){
   let weightedScore = 0, totalWeight = 0;
   (d.rows || []).forEach((r, i) => {
-    const def = KPI_DEFS[i];
+    const def = (r.taskId && KPI_DEFS.find(k => k.id === r.taskId)) || KPI_DEFS[i];
     if(!def) return;
     const t = parseFloat(r.target) || 0;
     const a = parseFloat(r.actual) || 0;
