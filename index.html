@@ -1059,6 +1059,18 @@
     border:1px dashed var(--line) !important;margin-top:4px;
   }
   .custom-tab-btn{position:relative;}
+
+  /* ---------- Desktop: pin the drawer open as a permanent sidebar ---------- */
+  @media (min-width:900px){
+    .hamburger-btn{display:none;}
+    .drawer-overlay{display:none !important;}
+    .drawer{
+      transform:none;box-shadow:1px 0 0 var(--line), 4px 0 20px -12px rgba(10,36,23,.15);
+    }
+    .drawer-close{display:none;}
+    body{padding-left:308px;}
+  }
+
   /* ---------- Home dashboard ---------- */
   .home-screen{max-width:960px;margin:0 auto;}
   .home-hero{
