@@ -928,21 +928,16 @@
   }
 
   /* ---- BACK ---- */
-  .card.idback{padding:5mm;}
-  .idb-top{display:flex;align-items:center;gap:3mm;position:relative;z-index:2;}
-  .idb-logo{width:11.5mm;height:11.5mm;object-fit:contain;background:#fff;padding:1mm;border-radius:3mm;border:1px solid #eee;}
-  .idb-title{font-size:16px;font-weight:800;color:var(--forest);letter-spacing:.5px;}
-  .idb-subtitle{font-size:8px;color:#66766e;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-left:36px;}
-  .idb-description{margin-top:3mm;font-size:6.4px;line-height:1.55;color:#4d5d56;position:relative;z-index:2;max-width:52mm;}
-  .idb-signature{position:absolute;left:5mm;bottom:8mm;width:32mm;z-index:2;}
-  .idb-signature-line{border-bottom:1px solid #567267;margin-bottom:1mm;}
-  .idb-signature span{font-size:5.5px;color:#60726a;}
-  .idb-contact{position:absolute;left:5mm;bottom:1.8mm;font-size:5px;color:#60726a;z-index:2;}
+  .card.idback{padding:5mm;display:flex;flex-direction:column;}
+  .idb-top{display:flex;align-items:center;gap:3mm;position:relative;z-index:2;flex:1;justify-content:center;max-width:56mm;}
+  .idb-logo{width:16mm;height:16mm;object-fit:contain;background:#fff;padding:1.2mm;border-radius:3.5mm;border:1px solid #eee;flex-shrink:0;}
+  .idb-title{font-size:19px;font-weight:800;color:var(--forest);letter-spacing:.5px;white-space:nowrap;}
+  .idb-subtitle{font-size:9.5px;color:#66766e;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-left:40px;white-space:nowrap;}
   .idb-qr{
-    position:absolute;right:4.5mm;bottom:9.5mm;background:#fff;padding:1mm;
+    position:absolute;right:4.5mm;bottom:9.5mm;background:#fff;padding:1.2mm;
     border-radius:2mm;box-shadow:0 0 0 1px var(--forest);z-index:5;
   }
-  .idb-qr img{display:block;width:13mm;height:13mm;}
+  .idb-qr img{display:block;width:16mm;height:16mm;}
   .idb-qr-text{position:absolute;right:4.5mm;bottom:7.6mm;width:15mm;text-align:center;font-size:4.8px;letter-spacing:.3px;color:var(--forest);font-weight:bold;z-index:2;}
 
   .idc-btns{display:flex;gap:8px;margin-top:16px;}
@@ -2202,18 +2197,6 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
             <div class="idb-subtitle">WAREHOUSE</div>
           </div>
         </div>
-        <div class="idb-description">
-          This identification card belongs to the authorized employee of DALARE.
-          If found, please return it to the company administration.
-        </div>
-        <div class="idb-description">
-          This card is company property and must be returned upon termination of employment.
-        </div>
-        <div class="idb-signature">
-          <div class="idb-signature-line"></div>
-          <span>AUTHORIZED SIGNATURE</span>
-        </div>
-        <div class="idb-contact">DALARE &bull; ERBIL &bull; IRAQ</div>
         <div class="idb-qr">
           <img id="idbQrImg" src="" alt="QR">
         </div>
