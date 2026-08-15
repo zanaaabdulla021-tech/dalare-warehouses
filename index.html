@@ -1478,6 +1478,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
   <div class="tabbar">
     <button id="tabHome" class="active" onclick="switchTab('home')">🏠 Home</button>
+    <button id="globalSearchTabBtn" onclick="openGlobalSearch()" style="display:none;">🔍 Search All Forms</button>
     <button id="tabInv" onclick="switchTab('inv')">🧾 Invoice Verification</button>
     <button id="tabCf" onclick="switchTab('cf')">💵 Cash Flow</button>
     <button id="tabSop" onclick="switchTab('sop')">📋 SOP</button>
@@ -1551,7 +1552,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <div class="adm-toolrow">
           <div>
             <div class="t">Delete forms older than…</div>
-            <div class="d">Permanently removes old forms from the current tab.</div>
+            <div class="d">Moves old forms from the current tab to Trash.</div>
           </div>
           <div style="display:flex;gap:6px;align-items:center;">
             <select id="admBulkDays" class="stage-select">
@@ -1562,6 +1563,13 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
             </select>
             <button class="mgr-btn del-b" onclick="bulkDelete()">Delete</button>
           </div>
+        </div>
+        <div class="adm-toolrow">
+          <div>
+            <div class="t">🗑️ Trash</div>
+            <div class="d">View, restore, or permanently remove deleted forms.</div>
+          </div>
+          <button class="mgr-btn open-b" onclick="closeAdmin(); openTrash();">Open</button>
         </div>
 
         <div class="adm-section-label">Design &amp; Customization</div>
@@ -2087,6 +2095,36 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveTabOrder()">Save Order</button>
         <button class="mgr-btn del-b" onclick="closeTabOrderManager()">Cancel</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="trashOverlay">
+  <div class="mgr-panel" style="max-width:640px;">
+    <div class="mgr-head">
+      <h2>🗑️ Trash</h2>
+      <button class="mgr-close" onclick="closeTrash()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="adm-hint">
+        Deleted forms land here first. Restore them, or delete forever to remove permanently.
+      </div>
+      <div id="trashResults"><div class="mgr-empty">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="globalSearchOverlay">
+  <div class="mgr-panel" style="max-width:640px;">
+    <div class="mgr-head">
+      <h2>Search All Forms</h2>
+      <button class="mgr-close" onclick="closeGlobalSearch()">×</button>
+    </div>
+    <div class="mgr-body">
+      <input type="text" id="globalSearchInput" placeholder="Search by company, employee, or Form ID…"
+             style="width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:.9rem;margin-bottom:14px;"
+             oninput="debouncedGlobalSearch()">
+      <div id="globalSearchResults"><div class="mgr-empty">Start typing to search across every section.</div></div>
     </div>
   </div>
 </div>
@@ -2708,7 +2746,7 @@ async function loadFormsList(){
     const extraFilter = (activeTab && activeTab.startsWith('custom:'))
       ? `&section_id=eq.${encodeURIComponent(activeTab.slice(7))}` : '';
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/${activeTable()}?select=id,company_name,stage,updated_at${extraFilter}&order=updated_at.desc`,
+      `${SUPABASE_URL}/rest/v1/${activeTable()}?select=id,company_name,stage,updated_at&deleted_at=is.null${extraFilter}&order=updated_at.desc`,
       { headers: sbHeaders() }
     );
     if(!res.ok) throw new Error(await res.text());
@@ -2968,15 +3006,17 @@ function printForm(){
 
 async function deleteFormActive(id){
   if(!isSuperAdmin()){ flash('Only a super admin can delete forms.', true); return; }
-  if(!confirm(`Permanently delete form ${id}? This cannot be undone.`)) return;
+  if(!confirm(`Move form ${id} to Trash? You can restore it later from Admin → Trash.`)) return;
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${activeTable()}?id=eq.${encodeURIComponent(id)}`,
-      { method:'DELETE', headers: sbHeaders() });
+      { method:'PATCH', headers: sbHeaders(), body: JSON.stringify({ deleted_at: new Date().toISOString() }) });
     if(!res.ok) throw new Error(await res.text());
     if(activeTab === 'cf'){ if(cfFormId === id) newFormCF(); }
     else if(activeTab === 'sop'){ if(sopFormId === id) newFormSOP(); }
+    else if(activeTab === 'kpi'){ if(kpiFormId === id) newFormKPI(); }
+    else if(activeTab && activeTab.startsWith('custom:')){ /* custom section forms don't track a "current id" the same way */ }
     else { if(currentFormId === id) newInv(); }
-    flash('Deleted ' + id);
+    flash('Moved to Trash: ' + id);
     loadFormsList();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
@@ -3663,12 +3703,157 @@ function refreshTabVisibility(){
   document.getElementById('tabSop').style.display   = canViewTab('sop')   ? '' : 'none';
   document.getElementById('tabStaff').style.display = canViewTab('staff') ? 'block' : 'none';
   document.getElementById('tabKpi').style.display = canViewTab('kpi') ? '' : 'none';
+  document.getElementById('globalSearchTabBtn').style.display = isEmployee() ? 'none' : '';
   if(!canViewTab(activeTab)){
     const firstOk = ['home','inv','cf','sop','staff','kpi'].find(canViewTab);
     if(firstOk) switchTab(firstOk);
   }
   applyViewerLock();
   renderHomeGrid();
+}
+
+/* =======================  GLOBAL SEARCH ACROSS ALL FORMS  ======================= */
+let globalSearchTimer = null;
+
+function openGlobalSearch(){
+  document.getElementById('globalSearchInput').value = '';
+  document.getElementById('globalSearchResults').innerHTML = '<div class="mgr-empty">Start typing to search across every section.</div>';
+  document.getElementById('globalSearchOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('globalSearchInput').focus(), 100);
+}
+function closeGlobalSearch(){ document.getElementById('globalSearchOverlay').classList.remove('open'); }
+
+function debouncedGlobalSearch(){
+  clearTimeout(globalSearchTimer);
+  globalSearchTimer = setTimeout(performGlobalSearch, 300);
+}
+
+async function performGlobalSearch(){
+  const q = document.getElementById('globalSearchInput').value.trim();
+  const box = document.getElementById('globalSearchResults');
+  if(!q){ box.innerHTML = '<div class="mgr-empty">Start typing to search across every section.</div>'; return; }
+  if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
+  box.innerHTML = '<div class="mgr-empty">Searching…</div>';
+
+  const sources = [];
+  if(canViewTab('inv'))  sources.push({ type:'inv',  table:'forms',          label:'Invoice',  icon:'🧾' });
+  if(canViewTab('cf'))   sources.push({ type:'cf',   table:'cashflow_forms', label:'Cash Flow', icon:'💵' });
+  if(canViewTab('sop'))  sources.push({ type:'sop',  table:'sop_forms',      label:'SOP',       icon:'📋' });
+  if(canViewTab('kpi'))  sources.push({ type:'kpi',  table:'kpi_forms',      label:'KPI',       icon:'📊' });
+
+  try{
+    const calls = sources.map(s =>
+      fetch(`${SUPABASE_URL}/rest/v1/${s.table}?select=id,company_name,updated_at&deleted_at=is.null&order=updated_at.desc&limit=100`, { headers: sbHeaders() })
+        .then(r => r.ok ? r.json() : [])
+        .then(rows => rows.map(r => ({ ...r, ...s })))
+        .catch(() => [])
+    );
+
+    // Custom sections share one table; search it once and tag each row with its section.
+    const customPromise = fetch(`${SUPABASE_URL}/rest/v1/custom_section_forms?select=id,company_name,updated_at,section_id&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() })
+      .then(r => r.ok ? r.json() : [])
+      .then(rows => rows.map(r => ({
+        ...r, type:'custom:'+r.section_id, table:'custom_section_forms',
+        icon:'📁', label:(customSections[r.section_id]||{}).name || 'Custom'
+      })))
+      .catch(() => []);
+
+    const results = (await Promise.all([...calls, customPromise])).flat();
+    const qLower = q.toLowerCase();
+    const filtered = results.filter(r =>
+      (r.id || '').toLowerCase().includes(qLower) ||
+      (r.company_name || '').toLowerCase().includes(qLower)
+    ).sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 40);
+
+    if(!filtered.length){ box.innerHTML = '<div class="mgr-empty">No matching forms found.</div>'; return; }
+
+    box.innerHTML = filtered.map(r => `
+      <div class="ep-kpi-row" onclick="openGlobalSearchResult('${r.type}','${r.id.replace(/'/g,"\\'")}')">
+        <div>
+          <div style="font-weight:700;font-size:.82rem;">${r.icon} ${(r.company_name || '(unnamed)').replace(/</g,'&lt;')}</div>
+          <div style="font-size:.72rem;color:#777;">${r.label} · ${r.id.replace(/</g,'&lt;')}</div>
+        </div>
+        <div style="font-size:.7rem;color:#999;">${timeAgo(r.updated_at)}</div>
+      </div>
+    `).join('');
+  }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">Search failed. Try again.</div>'; }
+}
+
+function openGlobalSearchResult(type, id){
+  closeGlobalSearch();
+  switchTab(type);
+  if(type === 'inv') openInv(id);
+  else if(type === 'cf') openCF(id);
+  else if(type === 'sop') openSOP(id);
+  else if(type === 'kpi') openKPI(id);
+  else if(type.startsWith('custom:')) openCustomSectionForm(type.slice(7), id);
+}
+
+/* =======================  TRASH / RECOVER  ======================= */
+const TRASH_TABLES = [
+  { table:'forms',               label:'Invoice',   icon:'🧾' },
+  { table:'cashflow_forms',      label:'Cash Flow',  icon:'💵' },
+  { table:'sop_forms',           label:'SOP',        icon:'📋' },
+  { table:'kpi_forms',           label:'KPI',        icon:'📊' },
+  { table:'custom_section_forms',label:'Custom',     icon:'📁' },
+];
+
+function openTrash(){
+  if(!isSuperAdmin()){ flash('Only a super admin can manage Trash.', true); return; }
+  document.getElementById('trashOverlay').classList.add('open');
+  loadTrashItems();
+}
+function closeTrash(){ document.getElementById('trashOverlay').classList.remove('open'); }
+
+async function loadTrashItems(){
+  const box = document.getElementById('trashResults');
+  box.innerHTML = '<div class="mgr-empty">Loading…</div>';
+  if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
+  try{
+    const calls = TRASH_TABLES.map(t =>
+      fetch(`${SUPABASE_URL}/rest/v1/${t.table}?select=id,company_name,deleted_at,section_id&deleted_at=not.is.null&order=deleted_at.desc&limit=100`, { headers: sbHeaders() })
+        .then(r => r.ok ? r.json() : [])
+        .then(rows => rows.map(r => ({ ...r, table:t.table, label: t.table === 'custom_section_forms' ? ((customSections[r.section_id]||{}).name || 'Custom') : t.label, icon:t.icon })))
+        .catch(() => [])
+    );
+    const items = (await Promise.all(calls)).flat().sort((a,b) => new Date(b.deleted_at) - new Date(a.deleted_at));
+    if(!items.length){ box.innerHTML = '<div class="mgr-empty">Trash is empty.</div>'; return; }
+    box.innerHTML = items.map(r => `
+      <div class="ep-kpi-row" style="cursor:default;">
+        <div>
+          <div style="font-weight:700;font-size:.82rem;">${r.icon} ${(r.company_name || '(unnamed)').replace(/</g,'&lt;')}</div>
+          <div style="font-size:.72rem;color:#777;">${r.label} · ${r.id.replace(/</g,'&lt;')} · deleted ${timeAgo(r.deleted_at)}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="mgr-btn open-b" style="padding:6px 10px;font-size:.72rem;" onclick="restoreTrashItem('${r.table}','${r.id.replace(/'/g,"\\'")}')">Restore</button>
+          <button class="mgr-btn del-b" style="padding:6px 10px;font-size:.72rem;" onclick="permanentlyDeleteTrashItem('${r.table}','${r.id.replace(/'/g,"\\'")}')">Delete Forever</button>
+        </div>
+      </div>
+    `).join('');
+  }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">Could not load Trash.</div>'; }
+}
+
+async function restoreTrashItem(table, id){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,
+      { method:'PATCH', headers: sbHeaders(), body: JSON.stringify({ deleted_at: null }) });
+    if(!res.ok) throw new Error(await res.text());
+    flash('Restored ' + id);
+    loadTrashItems();
+    if(activeTable() === table) loadFormsList();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function permanentlyDeleteTrashItem(table, id){
+  if(!confirm(`Permanently delete ${id}? This cannot be undone.`)) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,
+      { method:'DELETE', headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('permanent_delete', id, table);
+    flash('Permanently deleted ' + id);
+    loadTrashItems();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 async function loadRolePermissions(){
@@ -4524,20 +4709,21 @@ async function exportCSV(){
 async function bulkDelete(){
   const days = parseInt(document.getElementById('admBulkDays').value, 10);
   const label = days === 0 ? 'ALL forms' : `forms older than ${days} days`;
-  if(!confirm(`Permanently delete ${label} from "${activeTable()}"? This cannot be undone.`)) return;
+  if(!confirm(`Move ${label} in "${activeTable()}" to Trash? You can restore them later.`)) return;
   try{
-    let url = `${SUPABASE_URL}/rest/v1/${activeTable()}`;
-    if(days === 0){
-      url += '?id=not.is.null';
-    }else{
+    let url = `${SUPABASE_URL}/rest/v1/${activeTable()}?deleted_at=is.null`;
+    if(days !== 0){
       const cutoff = new Date(Date.now() - days*24*60*60*1000).toISOString();
-      url += `?updated_at=lt.${cutoff}`;
+      url += `&updated_at=lt.${cutoff}`;
     }
-    const res = await fetch(url, { method:'DELETE', headers: sbHeaders({'Prefer':'return=representation'}) });
+    const res = await fetch(url, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=representation'}),
+      body: JSON.stringify({ deleted_at: new Date().toISOString() })
+    });
     if(!res.ok) throw new Error(await res.text());
-    const removed = await res.json();
-    logActivity('bulk_delete', null, `${removed.length} from ${activeTable()}`);
-    flash('Deleted ' + removed.length + ' forms');
+    const moved = await res.json();
+    logActivity('bulk_delete', null, `${moved.length} from ${activeTable()} moved to trash`);
+    flash('Moved ' + moved.length + ' forms to Trash');
     loadFormsList();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
@@ -4983,6 +5169,7 @@ async function openEmployeeProfile(id){
       <div class="ep-info-item"><small>Phone</small><span>${e.phone || '—'}</span></div>
       <div class="ep-info-item"><small>Start Date</small><span>${e.start_date || '—'}</span></div>
     </div>
+    <div id="epKpiSummary"></div>
     <div class="activities-head">KPI Evaluation History</div>
     <div id="epKpiList"><div class="mgr-empty">Loading…</div></div>
   `;
@@ -4997,9 +5184,27 @@ async function openEmployeeProfile(id){
     if(!res.ok) throw new Error();
     const rows = await res.json();
     const list = document.getElementById('epKpiList');
-    if(!rows.length){ list.innerHTML = '<div class="mgr-empty">No KPI evaluations yet.</div>'; return; }
-    list.innerHTML = rows.map(r => {
-      const score = computeKpiScoreFromData(r.data || {});
+    const summaryBox = document.getElementById('epKpiSummary');
+    if(!rows.length){
+      list.innerHTML = '<div class="mgr-empty">No KPI evaluations yet.</div>';
+      summaryBox.innerHTML = '';
+      return;
+    }
+    const scores = rows.map(r => computeKpiScoreFromData(r.data || {}));
+    const avg = scores.reduce((a,b) => a+b, 0) / scores.length;
+    const latest = scores[0];
+    const levelFor = s => s>=90?'Excellent':s>=75?'Good':s>=60?'Average':'Needs Improvement';
+    const colorFor = s => s>=90?'#0f7a3d':s>=75?'#2f7d32':s>=60?'#b9770e':'#a8462e';
+    summaryBox.innerHTML = `
+      <div class="kpi-summary-grid" style="padding:0 0 14px;">
+        <div class="kpi-stat"><small>Average Score</small><strong style="color:${colorFor(avg)};">${avg.toFixed(1)}%</strong></div>
+        <div class="kpi-stat"><small>Latest Score</small><strong style="color:${colorFor(latest)};">${latest.toFixed(1)}%</strong></div>
+        <div class="kpi-stat"><small>Performance Level</small><strong style="color:${colorFor(avg)};font-size:1.1rem;">${levelFor(avg)}</strong></div>
+      </div>
+      <div style="font-size:.72rem;color:#777;margin:-8px 0 12px;">${rows.length} evaluation${rows.length>1?'s':''} on record</div>
+    `;
+    list.innerHTML = rows.map((r,i) => {
+      const score = scores[i];
       const month = (r.data && r.data.month) || 'No month set';
       const color = score>=90?'#0f7a3d':score>=75?'#2f7d32':score>=60?'#b9770e':'#a8462e';
       return `
