@@ -1511,9 +1511,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </div>
     <div class="mgr-body">
       <div class="adm-tabs">
-        <button id="admTabUsers"  class="active" onclick="admTab('users')">Users</button>
-        <button id="admTabLog"    onclick="admTab('log')">Activity Log</button>
-        <button id="admTabTools"  onclick="admTab('tools')">Tools</button>
+        <button id="admTabUsers"  class="active" onclick="admTab('users')" data-label-key="admin.tab.users">Users</button>
+        <button id="admTabLog"    onclick="admTab('log')" data-label-key="admin.tab.log">Activity Log</button>
+        <button id="admTabTools"  onclick="admTab('tools')" data-label-key="admin.tab.tools">Tools</button>
       </div>
 
       <div class="adm-pane active" id="admPaneUsers">
@@ -2109,11 +2109,11 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 <div class="mgr-overlay" id="kpiOrderOverlay">
   <div class="mgr-panel">
     <div class="mgr-head">
-      <h2>Reorder KPI Tasks</h2>
+      <h2 data-label-key="modal.kpiorder.title">Reorder KPI Tasks</h2>
       <button class="mgr-close" onclick="closeKpiOrderManager()">×</button>
     </div>
     <div class="mgr-body">
-      <div class="adm-hint">Drag ⋮⋮ to reorder tasks, or edit names and weights. Weights should add up to 100.</div>
+      <div class="adm-hint" data-label-key="modal.kpiorder.hint">Drag ⋮⋮ to reorder tasks, or edit names and weights. Weights should add up to 100.</div>
       <div id="kpiOrderList" class="sb-fields"></div>
       <div id="kpiOrderTotal" style="font-size:.8rem;font-weight:700;margin-top:8px;color:#666;"></div>
       <div style="display:flex;gap:8px;margin-top:16px;">
@@ -2127,11 +2127,11 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 <div class="mgr-overlay" id="trashOverlay">
   <div class="mgr-panel" style="max-width:640px;">
     <div class="mgr-head">
-      <h2>🗑️ Trash</h2>
+      <h2 data-label-key="modal.trash.title">🗑️ Trash</h2>
       <button class="mgr-close" onclick="closeTrash()">×</button>
     </div>
     <div class="mgr-body">
-      <div class="adm-hint">
+      <div class="adm-hint" data-label-key="modal.trash.hint">
         Deleted forms land here first. Restore them, or delete forever to remove permanently.
       </div>
       <select id="trashFilterSelect" class="stage-select" style="width:100%;margin-bottom:12px;" onchange="renderTrashItems()">
@@ -2145,7 +2145,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 <div class="mgr-overlay" id="globalSearchOverlay">
   <div class="mgr-panel" style="max-width:640px;">
     <div class="mgr-head">
-      <h2>Search All Forms</h2>
+      <h2 data-label-key="modal.search.title">Search All Forms</h2>
       <button class="mgr-close" onclick="closeGlobalSearch()">×</button>
     </div>
     <div class="mgr-body">
@@ -2160,11 +2160,11 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 <div class="mgr-overlay" id="permOverlay">
   <div class="mgr-panel" style="max-width:700px;">
     <div class="mgr-head">
-      <h2>Manage Role Permissions</h2>
+      <h2 data-label-key="modal.perms.title">Manage Role Permissions</h2>
       <button class="mgr-close" onclick="closePermissionsManager()">×</button>
     </div>
     <div class="mgr-body">
-      <div class="adm-hint">
+      <div class="adm-hint" data-label-key="modal.perms.hint">
         Choose which sections each role can view or edit. Super admin always has full
         access. Editing a section requires viewing it too, so Edit auto-enables View.
       </div>
