@@ -2897,13 +2897,21 @@ function addSysRefRow(){
   row.style.marginTop = '6px';
   row.style.position = 'relative';
   row.innerHTML = `
-    <div class="field"><label>X</label><input type="radio"></div>
-    <div class="field" style="display:flex;align-items:center;gap:6px;">
-      <label style="margin:0;">Y</label>
-      <input type="radio" style="flex:1;">
-      <input type="radio" style="flex:1;">
-      <button class="btn-small remove" type="button" onclick="removeSysRefRow(this)" title="Remove row">×</button>
-    </div>
+   <div class="field">
+  <label>X</label>
+  <div class="qa-opts">
+    <label class="opt"><input type="radio" name="xField" class="checkbox">Yes</label>
+    <label class="opt"><input type="radio" name="xField" class="checkbox no">No</label>
+  </div>
+</div>
+<div class="field" style="display:flex;align-items:center;gap:6px;">
+  <label style="margin:0;">Y</label>
+  <div class="qa-opts" style="flex:1;">
+    <label class="opt"><input type="radio" name="yField" class="checkbox">Option 1</label>
+    <label class="opt"><input type="radio" name="yField" class="checkbox no">Option 2</label>
+  </div>
+  <button class="btn-small remove" type="button" onclick="removeSysRefRow(this)" title="Remove row">×</button>
+</div>
   `;
   wrap.appendChild(row);
 }
