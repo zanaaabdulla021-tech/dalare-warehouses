@@ -1747,9 +1747,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <div class="qa-list">
         <div class="qa-row"><span class="qa-text">Entered into System</span><div class="qa-opts"><label class="opt"><input type="radio" name="sy1" class="checkbox">Yes</label><label class="opt"><input type="radio" name="sy1" class="checkbox no">No</label></div></div>
       </div>
-      <div class="grid2" style="margin-top:6px;">
-        <div class="field" style="grid-column:1/-1;"><label>System Reference Number</label><input type="text"></div>
-        <div class="field" style="grid-column:1/-1;"><label>Date Entered into System</label><input type="date"></div>
+      <div id="sysRefRows"></div>
+      <div class="table-actions" style="margin-top:6px;">
+        <button class="btn-small" type="button" onclick="addSysRefRow()">+ Add Row</button>
       </div>
     </div>
   </div>
@@ -2887,6 +2887,31 @@ function closeManager(){
   document.getElementById('mgrOverlay').classList.remove('open');
 }
 
+
+let sysRefRowCount = 0;
+function addSysRefRow(){
+  sysRefRowCount++;
+  const wrap = document.getElementById('sysRefRows');
+  const row = document.createElement('div');
+  row.className = 'grid2';
+  row.style.marginTop = '6px';
+  row.style.position = 'relative';
+  row.innerHTML = `
+    <div class="field"><label>System Reference Number</label><input type="text"></div>
+    <div class="field" style="display:flex;align-items:center;gap:6px;">
+      <label style="margin:0;">Date Entered into System</label>
+      <input type="date" style="flex:1;">
+      <button class="btn-small remove" type="button" onclick="removeSysRefRow(this)" title="Remove row">×</button>
+    </div>
+  `;
+  wrap.appendChild(row);
+}
+function removeSysRefRow(btn){
+  const wrap = document.getElementById('sysRefRows');
+  const row = btn.closest('.grid2');
+  row.remove();
+  if(!wrap.children.length) addSysRefRow();
+}
 
 function addRow(){
   rowCount++;
@@ -5390,6 +5415,7 @@ async function openCF(id){
 }
 
 // initial rows to match original form
+addSysRefRow();
 for(let i=0;i<10;i++) addRow();
 
 // Initialise a fresh form ID + stage, and clean up expired forms
