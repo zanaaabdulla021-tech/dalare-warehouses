@@ -1745,30 +1745,12 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mono-section" style="flex:1;min-width:280px;">
       <div class="section-header" style="margin:0;"><div class="num">3</div><div class="title" data-label-key="inv.sec.systemverif">System Verification</div></div>
       <div class="qa-list">
-<div class="qa-list sys-extra-row" style="position:relative;">
-  <div class="qa-row">
-    <span class="qa-text">X</span>
-    <div class="qa-opts">
-      <label class="opt"><input type="radio" name="xField_ROWID" class="checkbox">Yes</label>
-      <label class="opt"><input type="radio" name="xField_ROWID" class="checkbox no">No</label>
-    </div>
-  </div>
-  <div class="qa-row">
-    <span class="qa-text">Y</span>
-    <div class="qa-opts">
-      <label class="opt"><input type="radio" name="yField_ROWID" class="checkbox">Yes</label>
-      <label class="opt"><input type="radio" name="yField_ROWID" class="checkbox no">No</label>
-    </div>
-  </div>
-  <div class="qa-row">
-    <span class="qa-text">Z</span>
-    <div class="qa-opts">
-      <label class="opt"><input type="radio" name="zField_ROWID" class="checkbox">Yes</label>
-      <label class="opt"><input type="radio" name="zField_ROWID" class="checkbox no">No</label>
-    </div>
-    <button class="btn-small remove" type="button" onclick="removeSysRefRow(this)" title="Remove row" style="margin-inline-start:8px;">×</button>
-  </div>
-</div>      </div>
+        <div class="qa-row"><span class="qa-text">Entered into System</span><div class="qa-opts"><label class="opt"><input type="radio" name="sy1" class="checkbox">Yes</label><label class="opt"><input type="radio" name="sy1" class="checkbox no">No</label></div></div>
+      </div>
+      <div class="grid2" style="margin-top:6px;">
+        <div class="field" style="grid-column:1/-1;"><label>System Reference Number</label><input type="text"></div>
+        <div class="field" style="grid-column:1/-1;"><label>Date Entered into System</label><input type="date"></div>
+      </div>
       <div id="sysRefRows"></div>
       <div class="table-actions" style="margin-top:6px;">
         <button class="btn-small" type="button" onclick="addSysRefRow()">+ Add Row</button>
@@ -1867,7 +1849,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="btn-small" onclick="addRowCF()">+ Add Row</button>
   </div>
   <div class="totals-row">
-    <span data-label-key="cf.grandtotal">Total Cash Flow </span>
+    <span data-label-key="cf.grandtotal">Total Cash Flow (IQD)</span>
     <span id="cfGrandTotal">0</span>
   </div>
 
@@ -2919,29 +2901,18 @@ function addSysRefRow(){
   row.style.marginTop = '6px';
   row.style.position = 'relative';
   row.innerHTML = `
-   <div class="field">
-  <label>X</label>
-  <div class="qa-opts">
-    <label class="opt"><input type="radio" name="xField" class="checkbox">Yes</label>
-    <label class="opt"><input type="radio" name="xField" class="checkbox no">No</label>
-  </div>
-</div>
-<div class="field" style="display:flex;align-items:center;gap:6px;">
-  <label style="margin:0;">Y</label>
-  <div class="qa-opts" style="flex:1;">
-    <label class="opt"><input type="radio" name="yField" class="checkbox">Option 1</label>
-    <label class="opt"><input type="radio" name="yField" class="checkbox no">Option 2</label>
-  </div>
-  <button class="btn-small remove" type="button" onclick="removeSysRefRow(this)" title="Remove row">×</button>
-</div>
+    <div class="field"><label>System Reference Number</label><input type="text"></div>
+    <div class="field" style="display:flex;align-items:center;gap:6px;">
+      <label style="margin:0;">Date Entered into System</label>
+      <input type="date" style="flex:1;">
+      <button class="btn-small remove" type="button" onclick="removeSysRefRow(this)" title="Remove row">×</button>
+    </div>
   `;
   wrap.appendChild(row);
 }
 function removeSysRefRow(btn){
-  const wrap = document.getElementById('sysRefRows');
   const row = btn.closest('.grid2');
   row.remove();
-  if(!wrap.children.length) addSysRefRow();
 }
 
 function addRow(){
@@ -2951,7 +2922,7 @@ function addRow(){
   tr.innerHTML = `
     <td class="row-num">${rowCount}</td>
     <td><input type="text" placeholder="dd/mm/yyyy"></td>
-    <td><input type="number"></td>
+    <td><input type="text"></td>
     <td><input type="text" inputmode="decimal" class="price-input" oninput="calcRow(this)" onblur="formatMoneyField(this)"></td>
     <td><input type="text" inputmode="decimal" class="bonus-input" oninput="calcRow(this)" onblur="formatMoneyField(this)"></td>
     <td><input type="number" class="cashback-input" min="0" max="100" step="0.1" oninput="clampPercent(this);calcRow(this)"></td>
@@ -5088,7 +5059,7 @@ function removeRowCF(btn){
 function calcCFTotal(){
   let sum = 0;
   document.querySelectorAll('#cashBody .cash-input').forEach(el=>{ sum += parseMoney(el.value); });
-  document.getElementById('cfGrandTotal').textContent = formatMoney(sum) + '';
+  document.getElementById('cfGrandTotal').textContent = formatMoney(sum) + ' IQD';
 }
 
 function setCFFormId(id){
@@ -5446,7 +5417,6 @@ async function openCF(id){
 }
 
 // initial rows to match original form
-addSysRefRow();
 for(let i=0;i<10;i++) addRow();
 
 // Initialise a fresh form ID + stage, and clean up expired forms
