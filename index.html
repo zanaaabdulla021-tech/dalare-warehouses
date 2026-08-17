@@ -1750,6 +1750,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <div class="grid2" style="margin-top:6px;">
         <div class="field" style="grid-column:1/-1;"><label>System Reference Number</label><input type="text"></div>
         <div class="field" style="grid-column:1/-1;"><label>Date Entered into System</label><input type="date"></div>
+        <div class="field" style="grid-column:1/-1;"><label>X</label><input type="text"></div>
+        <div class="field" style="grid-column:1/-1;"><label>Y</label><input type="text"></div>
+        <div class="field" style="grid-column:1/-1;"><label>Z</label><input type="text"></div>
       </div>
       <div id="sysRefRows"></div>
       <div class="table-actions" style="margin-top:6px;">
@@ -2901,10 +2904,13 @@ function addSysRefRow(){
   row.style.marginTop = '6px';
   row.style.position = 'relative';
   row.innerHTML = `
-    <div class="field"><label>System Reference Number</label><input type="text"></div>
-    <div class="field" style="display:flex;align-items:center;gap:6px;">
-      <label style="margin:0;">Date Entered into System</label>
-      <input type="date" style="flex:1;">
+    <div class="field" style="grid-column:1/-1;"><label>System Reference Number</label><input type="text"></div>
+    <div class="field" style="grid-column:1/-1;"><label>Date Entered into System</label><input type="date"></div>
+    <div class="field" style="grid-column:1/-1;"><label>X</label><input type="text"></div>
+    <div class="field" style="grid-column:1/-1;"><label>Y</label><input type="text"></div>
+    <div class="field" style="grid-column:1/-1;display:flex;align-items:center;gap:6px;">
+      <label style="margin:0;">Z</label>
+      <input type="text" style="flex:1;">
       <button class="btn-small remove" type="button" onclick="removeSysRefRow(this)" title="Remove row">×</button>
     </div>
   `;
