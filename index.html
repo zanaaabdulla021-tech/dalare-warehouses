@@ -2897,10 +2897,11 @@ function addSysRefRow(){
   row.style.marginTop = '6px';
   row.style.position = 'relative';
   row.innerHTML = `
-    <div class="field"><label>System Reference Number</label><input type="text"></div>
+    <div class="field"><label>X</label><input type="radio"></div>
     <div class="field" style="display:flex;align-items:center;gap:6px;">
-      <label style="margin:0;">Date Entered into System</label>
-      <input type="date" style="flex:1;">
+      <label style="margin:0;">Y</label>
+      <input type="radio" style="flex:1;">
+      <input type="radio" style="flex:1;">
       <button class="btn-small remove" type="button" onclick="removeSysRefRow(this)" title="Remove row">×</button>
     </div>
   `;
