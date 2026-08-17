@@ -1852,7 +1852,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="btn-small" onclick="addRowCF()">+ Add Row</button>
   </div>
   <div class="totals-row">
-    <span data-label-key="cf.grandtotal">Total Cash Flow (IQD)</span>
+    <span data-label-key="cf.grandtotal">Total Cash Flow </span>
     <span id="cfGrandTotal">0</span>
   </div>
 
@@ -4620,7 +4620,7 @@ async function renderHomeStats(){
         const rrows = (r.data && r.data.rows) ? r.data.rows : [];
         rrows.forEach(row=>{ total += parseFloat(String(row.cashflow||'0').replace(/,/g,'')) || 0; });
       });
-      stats.push({ic:'💵', label:'Total Cash Flow', val: total.toLocaleString() + ' IQD'});
+      stats.push({ic:'💵', label:'Total Cash Flow', val: total.toLocaleString() + ' '});
     }
     if(sopRes && sopRes.ok) stats.push({ic:'📋', label:'SOP Documents', val: (await sopRes.json()).length});
     if(empRes && empRes.ok) stats.push({ic:'🪪', label:'Staff Members', val: (await empRes.json()).length});
