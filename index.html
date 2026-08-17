@@ -5057,7 +5057,7 @@ function removeRowCF(btn){
 function calcCFTotal(){
   let sum = 0;
   document.querySelectorAll('#cashBody .cash-input').forEach(el=>{ sum += parseMoney(el.value); });
-  document.getElementById('cfGrandTotal').textContent = formatMoney(sum) + ' IQD';
+  document.getElementById('cfGrandTotal').textContent = formatMoney(sum) + ' ';
 }
 
 function setCFFormId(id){
