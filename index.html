@@ -1849,7 +1849,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="btn-small" onclick="addRowCF()">+ Add Row</button>
   </div>
   <div class="totals-row">
-    <span data-label-key="cf.grandtotal">Total Cash Flow (IQD)</span>
+    <span data-label-key="cf.grandtotal">Total Cash Flow ()</span>
     <span id="cfGrandTotal">0</span>
   </div>
 
@@ -5059,7 +5059,7 @@ function removeRowCF(btn){
 function calcCFTotal(){
   let sum = 0;
   document.querySelectorAll('#cashBody .cash-input').forEach(el=>{ sum += parseMoney(el.value); });
-  document.getElementById('cfGrandTotal').textContent = formatMoney(sum) + ' IQD';
+  document.getElementById('cfGrandTotal').textContent = formatMoney(sum) + '';
 }
 
 function setCFFormId(id){
