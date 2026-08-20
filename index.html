@@ -1486,6 +1486,13 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="updateBanner" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;
+     background:var(--forest-deep);color:#fff;padding:10px 16px;align-items:center;
+     justify-content:center;gap:12px;font-size:.82rem;font-weight:700;box-shadow:0 -2px 10px rgba(0,0,0,.2);">
+  <span>🔄 گۆڕانکارییەکی نوێ هەیە</span>
+  <button onclick="location.reload()" style="background:#fff;color:var(--forest-deep);border:0;border-radius:8px;padding:6px 14px;font-weight:800;cursor:pointer;">نوێی بکەرەوە</button>
+  <button onclick="document.getElementById('updateBanner').style.display='none'" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:6px 10px;cursor:pointer;">×</button>
+</div>
 
 <div class="employee-screen" id="employeeScreen">
   <div class="employee-card">
@@ -1902,7 +1909,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
   <div class="company-banner">
     <span class="company-label" data-label-key="kpi.lbl.employee">Employee</span>
-    <input type="text" class="company-name-input kpi-employee" placeholder="Employee Name">
+    <input type="text" class="company-name-input kpi-employee" placeholder="Employee Name" list="companyNamesList">
   </div>
   <div class="form-meta-bar">
     <div class="form-id-box">
@@ -2591,7 +2598,7 @@ function isEmployee(){ return session.role === 'employee'; }
 const MANAGEABLE_TABS = ['inv','cf','sop','staff','kpi'];
 let rolePermissions = {
   admin:  { view:['inv','cf','sop','kpi'], edit:['inv','cf','sop','kpi'] },
-  staff:  { view:['inv','cf','kpi'], edit:['inv','cf','kpi'] },
+  staff:  { view:['kpi'], edit:['kpi'] },
   viewer: { view:['inv','cf','sop','kpi'], edit:[] },
 };
 
@@ -3258,6 +3265,9 @@ async function loadEmployees(){
       { headers: sbHeaders() });
     if(!res.ok) throw new Error(await res.text());
     employees = await res.json();
+    const depts = [...new Set(employees.map(e => e.department).filter(Boolean))];
+    const deptList = document.getElementById('staffDeptList');
+    if(deptList) deptList.innerHTML = depts.map(d => `<option value="${d.replace(/"/g,'&quot;')}">`).join('');
     renderEmployees();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
@@ -3293,7 +3303,7 @@ function renderEmployees(){
     </select></td>
     <td><input value="${e.age||''}" data-f="age" style="width:46px;"></td>
     <td><input value="${(e.job_title||'').replace(/"/g,'&quot;')}" data-f="job_title"></td>
-    <td><input value="${(e.department||'').replace(/"/g,'&quot;')}" data-f="department"></td>
+    <td><input value="${(e.department||'').replace(/"/g,'&quot;')}" data-f="department" list="staffDeptList"></td>
     <td><input value="${(e.phone||'').replace(/"/g,'&quot;')}" data-f="phone"></td>
     <td><input type="email" value="${(e.email||'').replace(/"/g,'&quot;')}" data-f="email" placeholder="login@email.com"></td>
     <td><input value="${(e.start_date||'').replace(/"/g,'&quot;')}" data-f="start_date" placeholder="dd/mm/yyyy"></td>
@@ -4161,13 +4171,15 @@ async function permanentlyDeleteTrashItem(table, id){
 async function loadCompanyNamesList(){
   if(!backendReady()) return;
   try{
-    const [invRes, cfRes] = await Promise.all([
+    const [invRes, cfRes, kpiRes] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
       fetch(`${SUPABASE_URL}/rest/v1/cashflow_forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
     ]);
     const invRows = invRes.ok ? await invRes.json() : [];
     const cfRows = cfRes.ok ? await cfRes.json() : [];
-    const names = [...new Set([...invRows, ...cfRows].map(r => (r.company_name||'').trim()).filter(Boolean))];
+    const kpiRows = kpiRes.ok ? await kpiRes.json() : [];
+    const names = [...new Set([...invRows, ...cfRows, ...kpiRows].map(r => (r.company_name||'').trim()).filter(Boolean))];
     const list = document.getElementById('companyNamesList');
     if(list) list.innerHTML = names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">`).join('');
   }catch(e){ /* autocomplete is a nice-to-have; fail silently */ }
@@ -5737,6 +5749,7 @@ async function openEmployeeProfile(id){
       <div class="ep-info-item"><small>Start Date</small><span>${e.start_date || '—'}</span></div>
     </div>
     <div id="epKpiSummary"></div>
+    <div id="epKpiTrend"></div>
     <div class="activities-head">KPI Evaluation History</div>
     <div id="epKpiList"><div class="mgr-empty">Loading…</div></div>
   `;
@@ -5744,6 +5757,7 @@ async function openEmployeeProfile(id){
 
   if(!backendReady() || !e.full_name){
     document.getElementById('epKpiList').innerHTML = '<div class="mgr-empty">No KPI records.</div>';
+    document.getElementById('epKpiTrend').innerHTML = '';
     return;
   }
   try{
@@ -5755,6 +5769,7 @@ async function openEmployeeProfile(id){
     if(!rows.length){
       list.innerHTML = '<div class="mgr-empty">No KPI evaluations yet.</div>';
       summaryBox.innerHTML = '';
+      document.getElementById('epKpiTrend').innerHTML = '';
       return;
     }
     const scores = rows.map(r => computeKpiScoreFromData(r.data || {}));
@@ -5769,6 +5784,32 @@ async function openEmployeeProfile(id){
         <div class="kpi-stat"><small>Performance Level</small><strong style="color:${colorFor(avg)};font-size:1.1rem;">${levelFor(avg)}</strong></div>
       </div>
       <div style="font-size:.72rem;color:#777;margin:-8px 0 12px;">${rows.length} evaluation${rows.length>1?'s':''} on record</div>
+    `;
+    const trendBox = document.getElementById('epKpiTrend');
+    const chronological = [...rows].reverse(); // oldest -> newest, left to right
+    const levelCounts = { Excellent:0, Good:0, Average:0, 'Needs Improvement':0 };
+    chronological.forEach(r => {
+      const s = computeKpiScoreFromData(r.data || {});
+      const lvl = s>=90?'Excellent':s>=75?'Good':s>=60?'Average':'Needs Improvement';
+      levelCounts[lvl]++;
+    });
+    trendBox.innerHTML = `
+      <div class="activities-head" style="margin-bottom:6px;">Performance Trend</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        ${chronological.map((r,i) => {
+          const s = computeKpiScoreFromData(r.data || {});
+          const dot = s>=90?'💚':s>=75?'🟢':s>=60?'🟡':'🔴';
+          const levelName = s>=90?'Excellent':s>=75?'Good':s>=60?'Average':'Needs Improvement';
+          const month = (r.data && r.data.month) || r.id;
+          return `<span title="${month.replace(/</g,'&lt;')}: ${s.toFixed(1)}% (${levelName})" style="font-size:1.1rem;cursor:default;">${dot}</span>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:#666;margin:6px 0 14px;">
+        <span>💚 Excellent × ${levelCounts.Excellent}</span>
+        <span>🟢 Good × ${levelCounts.Good}</span>
+        <span>🟡 Average × ${levelCounts.Average}</span>
+        <span>🔴 Needs Improvement × ${levelCounts['Needs Improvement']}</span>
+      </div>
     `;
     list.innerHTML = rows.map((r,i) => {
       const score = scores[i];
@@ -5862,6 +5903,30 @@ document.querySelector('.kpi-month').addEventListener('input', refreshKpiFormIdF
 switchTab('home');
 makeColumnsResizable('#form table.pricelist', 'dalare-col-widths-inv');
 makeColumnsResizable('#cfForm table.pricelist', 'dalare-col-widths-cf');
+
+/* =======================  UPDATE-AVAILABLE CHECKER  ======================= */
+let __pageFingerprint = null;
+async function __captureFingerprint(){
+  if(location.protocol === 'file:') return; // no server to check against locally
+  try{
+    const res = await fetch(location.pathname + '?_=' + Date.now(), { method:'HEAD', cache:'no-store' });
+    __pageFingerprint = res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('content-length');
+  }catch(e){ /* offline or blocked; skip */ }
+}
+async function __checkForUpdate(){
+  if(location.protocol === 'file:' || !__pageFingerprint) return;
+  try{
+    const res = await fetch(location.pathname + '?_=' + Date.now(), { method:'HEAD', cache:'no-store' });
+    const current = res.headers.get('etag') || res.headers.get('last-modified') || res.headers.get('content-length');
+    if(current && current !== __pageFingerprint){
+      document.getElementById('updateBanner').style.display = 'flex';
+    }
+  }catch(e){ /* offline; try again next interval */ }
+}
+__captureFingerprint().then(() => {
+  setInterval(__checkForUpdate, 3 * 60 * 1000); // every 3 minutes
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) __checkForUpdate(); });
+});
 
 // If a QR code was scanned, show the public badge instead of the app
 checkPublicView().then(isPublic => { if(!isPublic) restoreSession(); });
