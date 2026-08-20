@@ -1919,6 +1919,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div class="table-actions no-print">
     <button class="btn-small" onclick="openDailyEntry()">📝 Daily Entry</button>
     <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Daily Log</button>
+    <button class="btn-small" onclick="openDailyLogViewer()">📋 View Daily Log</button>
   </div>
   <div class="price-table-wrap">
     <table class="pricelist kpi-table">
@@ -2010,6 +2011,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
           <th data-label-key="staff.col.jobtitle">Job Title</th>
           <th data-label-key="staff.col.dept">Department</th>
           <th data-label-key="staff.col.phone">Phone</th>
+          <th data-label-key="staff.col.email">Login Email</th>
           <th data-label-key="staff.col.startdate">Start Date</th>
           <th style="width:150px;"></th>
         </tr>
@@ -2140,6 +2142,19 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveTabOrder()">Save Order</button>
         <button class="mgr-btn del-b" onclick="closeTabOrderManager()">Cancel</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="dailyLogViewerOverlay">
+  <div class="mgr-panel" style="max-width:640px;">
+    <div class="mgr-head">
+      <h2>Daily Entries Log</h2>
+      <button class="mgr-close" onclick="closeDailyLogViewer()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="adm-hint" id="dailyLogScopeHint"></div>
+      <div id="dailyLogResults"><div class="mgr-empty">Loading…</div></div>
     </div>
   </div>
 </div>
@@ -3263,6 +3278,7 @@ function renderEmployees(){
     <td><input value="${(e.job_title||'').replace(/"/g,'&quot;')}" data-f="job_title"></td>
     <td><input value="${(e.department||'').replace(/"/g,'&quot;')}" data-f="department"></td>
     <td><input value="${(e.phone||'').replace(/"/g,'&quot;')}" data-f="phone"></td>
+    <td><input type="email" value="${(e.email||'').replace(/"/g,'&quot;')}" data-f="email" placeholder="login@email.com"></td>
     <td><input value="${(e.start_date||'').replace(/"/g,'&quot;')}" data-f="start_date" placeholder="dd/mm/yyyy"></td>
     <td><div class="emp-actions no-print">
       <button class="btn-save-emp" onclick="saveEmployee('${e.id}')">Save</button>
@@ -5500,6 +5516,55 @@ async function pullFromDailyLog(){
     flash(`Pulled ${rows.length} daily entries into Actual totals`);
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
+
+async function openDailyLogViewer(){
+  document.getElementById('dailyLogViewerOverlay').classList.add('open');
+  const hint = document.getElementById('dailyLogScopeHint');
+  const box = document.getElementById('dailyLogResults');
+  box.innerHTML = '<div class="mgr-empty">Loading…</div>';
+  if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
+
+  try{
+    let allowedNames = null; // null = no restriction (admin/super_admin)
+    if(!isSuperAdmin() && session.role !== 'admin'){
+      const meRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?email=eq.${encodeURIComponent(session.email)}&select=department`, { headers: sbHeaders() });
+      const meRows = meRes.ok ? await meRes.json() : [];
+      if(!meRows.length || !meRows[0].department){
+        hint.textContent = "Your account isn't linked to a department yet. Ask a super admin to add your login email to your Staff profile.";
+        box.innerHTML = '';
+        return;
+      }
+      const dept = meRows[0].department;
+      hint.textContent = `Showing entries for the ${dept} department only.`;
+      const teamRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?department=eq.${encodeURIComponent(dept)}&select=full_name`, { headers: sbHeaders() });
+      const teamRows = teamRes.ok ? await teamRes.json() : [];
+      allowedNames = new Set(teamRows.map(r => r.full_name));
+    }else{
+      hint.textContent = 'Showing entries for every department.';
+    }
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_daily_entries?select=*&order=entry_date.desc&limit=200`, { headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    let rows = await res.json();
+    if(allowedNames) rows = rows.filter(r => allowedNames.has(r.employee_name));
+
+    if(!rows.length){ box.innerHTML = '<div class="mgr-empty">No daily entries found.</div>'; return; }
+
+    box.innerHTML = rows.map(r => {
+      const taskLines = Object.entries(r.data || {}).map(([taskId, val]) => {
+        const def = KPI_DEFS.find(k => k.id === taskId);
+        return `${(def ? def.label : taskId).replace(/</g,'&lt;')}: ${val}`;
+      }).join(' · ');
+      return `
+        <div class="ep-kpi-row" style="cursor:default;flex-direction:column;align-items:flex-start;">
+          <div style="font-weight:700;font-size:.82rem;">${r.employee_name.replace(/</g,'&lt;')} — ${r.entry_date}</div>
+          <div style="font-size:.72rem;color:#777;margin-top:2px;">${taskLines || 'No tasks logged'}</div>
+        </div>
+      `;
+    }).join('');
+  }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">Could not load the log.</div>'; }
+}
+function closeDailyLogViewer(){ document.getElementById('dailyLogViewerOverlay').classList.remove('open'); }
 
 function newFormKPI(){
   kpiIsNewForm = true;
