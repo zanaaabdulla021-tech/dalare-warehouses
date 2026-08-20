@@ -2153,10 +2153,11 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div class="adm-hint">Log today's completed work per task. These entries add up automatically for the month's KPI evaluation.</div>
       <div class="kpi-info-grid" style="padding:0 0 14px;">
-        <div><label>Employee</label><input type="text" id="dailyEntryEmployee" list="companyNamesList" placeholder="Employee name"></div>
-        <div><label>Date</label><input type="date" id="dailyEntryDate"></div>
+        <div><label>Employee</label><input type="text" id="dailyEntryEmployee" list="companyNamesList" placeholder="Employee name" onchange="loadDailyEntryForSelectedDay()"></div>
+        <div><label>Date</label><input type="date" id="dailyEntryDate" onchange="loadDailyEntryForSelectedDay()"></div>
       </div>
       <div id="dailyEntryFields"></div>
+      <button type="button" class="add-section-btn" style="margin-top:8px;margin-bottom:8px;" onclick="addTaskFromDailyEntry()">+ Add Task</button>
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveDailyEntry()">Save Entry</button>
         <button class="mgr-btn del-b" onclick="closeDailyEntry()">Cancel</button>
@@ -2174,6 +2175,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div class="adm-hint" data-label-key="modal.kpiorder.hint">Drag ⋮⋮ to reorder tasks, or edit names and weights. Weights should add up to 100.</div>
       <div id="kpiOrderList" class="sb-fields"></div>
+      <button type="button" class="add-section-btn" style="margin-top:8px;" onclick="addKpiOrderRow()">+ Add Task</button>
       <div id="kpiOrderTotal" style="font-size:.8rem;font-weight:700;margin-top:8px;color:#666;"></div>
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveKpiOrder()">Save</button>
@@ -3842,6 +3844,27 @@ async function saveTabOrder(){
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
+function addKpiOrderRow(){
+  const list = document.getElementById('kpiOrderList');
+  const row = document.createElement('div');
+  row.className = 'sb-field-row';
+  row.draggable = true;
+  row.dataset.taskId = 'task-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  row.innerHTML = `
+    <span class="sb-drag">⋮⋮</span>
+    <input type="text" value="" placeholder="New task name" style="flex:1;">
+    <input type="number" min="0" max="100" value="0" class="kpi-order-weight" style="width:60px;">
+    <span style="font-size:.7rem;color:#888;">%</span>
+    <button type="button" class="btn-small remove" onclick="this.closest('.sb-field-row').remove(); updateKpiOrderTotal();" title="Remove task">×</button>
+  `;
+  row.addEventListener('dragstart', ()=>{ row.classList.add('dragging'); });
+  row.addEventListener('dragend', ()=>{ row.classList.remove('dragging'); updateKpiOrderTotal(); });
+  row.querySelector('.kpi-order-weight').addEventListener('input', updateKpiOrderTotal);
+  list.appendChild(row);
+  row.querySelector('input[type=text]').focus();
+  updateKpiOrderTotal();
+}
+
 function openKpiOrderManager(){
   if(!isSuperAdmin()){ flash('Only a super admin can reorder KPI tasks.', true); return; }
   const list = document.getElementById('kpiOrderList');
@@ -3856,6 +3879,7 @@ function openKpiOrderManager(){
       <input type="text" value="${k.label.replace(/"/g,'&quot;')}" style="flex:1;">
       <input type="number" min="0" max="100" value="${k.weight}" class="kpi-order-weight" style="width:60px;">
       <span style="font-size:.7rem;color:#888;">%</span>
+      <button type="button" class="btn-small remove" onclick="this.closest('.sb-field-row').remove(); updateKpiOrderTotal();" title="Remove task">×</button>
     `;
     row.addEventListener('dragstart', ()=>{ row.classList.add('dragging'); });
     row.addEventListener('dragend', ()=>{ row.classList.remove('dragging'); updateKpiOrderTotal(); });
@@ -5365,14 +5389,71 @@ function openDailyEntry(){
     </div>
   `).join('');
   document.getElementById('dailyEntryOverlay').classList.add('open');
+  loadDailyEntryForSelectedDay();
 }
 function closeDailyEntry(){ document.getElementById('dailyEntryOverlay').classList.remove('open'); }
+
+async function loadDailyEntryForSelectedDay(){
+  document.querySelectorAll('.daily-entry-value').forEach(inp => inp.value = '');
+  const employee = document.getElementById('dailyEntryEmployee').value.trim();
+  const date = document.getElementById('dailyEntryDate').value;
+  if(!employee || !date || !backendReady()) return;
+  const id = `${slugifyEmployeeName(employee)}-${date}`;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_daily_entries?id=eq.${encodeURIComponent(id)}&select=data`, { headers: sbHeaders() });
+    if(!res.ok) return;
+    const rows = await res.json();
+    if(!rows.length) return;
+    Object.entries(rows[0].data || {}).forEach(([taskId, val]) => {
+      const inp = document.querySelector(`.daily-entry-value[data-task-id="${taskId}"]`);
+      if(inp) inp.value = val;
+    });
+    flash('Loaded existing entry for ' + date);
+  }catch(e){ /* fine to start blank */ }
+}
+
+function addTaskFromDailyEntry(){
+  const box = document.getElementById('dailyEntryFields');
+  const id = 'task-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  const row = document.createElement('div');
+  row.className = 'site-text-row';
+  row.dataset.newTask = 'true';
+  row.innerHTML = `
+    <input type="text" class="daily-entry-new-label" placeholder="New task name" style="flex:0 0 160px;">
+    <input type="number" min="0" class="daily-entry-value" data-task-id="${id}" placeholder="0">
+  `;
+  box.appendChild(row);
+  row.querySelector('.daily-entry-new-label').focus();
+}
 
 async function saveDailyEntry(){
   const employee = document.getElementById('dailyEntryEmployee').value.trim();
   const date = document.getElementById('dailyEntryDate').value;
   if(!employee){ flash('Enter an employee name.', true); return; }
   if(!date){ flash('Pick a date.', true); return; }
+
+  // Persist any newly-added tasks to the shared KPI task list first.
+  const newRows = Array.from(document.querySelectorAll('#dailyEntryFields [data-new-task="true"]'));
+  const newTasks = newRows.map(row => ({
+    id: row.querySelector('.daily-entry-value').dataset.taskId,
+    label: row.querySelector('.daily-entry-new-label').value.trim(),
+  })).filter(t => t.label);
+  if(newTasks.length){
+    try{
+      const updatedDefs = [...KPI_DEFS, ...newTasks.map(t => ({ id:t.id, label:t.label, weight:0 }))];
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+        method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+        body: JSON.stringify({ id:'default', kpi_defs: updatedDefs, updated_by: session.email, updated_at: new Date().toISOString() })
+      });
+      if(!res.ok) throw new Error(await res.text());
+      KPI_DEFS = updatedDefs;
+      if(document.getElementById('kpiBody')) renderKpiRows();
+    }catch(e){
+      console.error(e);
+      flash('Could not add new task (' + sbError(e) + '). Ask a super admin to set its weight in Reorder KPI Tasks.', true);
+    }
+  }
+
   const values = {};
   document.querySelectorAll('.daily-entry-value').forEach(inp => {
     const v = parseFloat(inp.value);
