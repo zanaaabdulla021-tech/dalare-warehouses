@@ -572,7 +572,8 @@
   #form table.pricelist th:nth-child(10){width:6%;}
   #form table.pricelist th:nth-child(11){width:6%;}
   #form table.pricelist th:nth-child(12){width:6%;}
-  #form table.pricelist th:nth-child(13){width:11%;}
+  #form table.pricelist th:nth-child(13){width:9%;}
+  #form table.pricelist th:nth-child(14){width:6%;}
   #cfForm table.pricelist th:nth-child(2){width:26%;}
   #cfForm table.pricelist th:nth-child(3){width:18%;}
   #cfForm table.pricelist th:nth-child(4){width:20%;}
@@ -1388,8 +1389,9 @@
     table.pricelist th:nth-child(10), table.pricelist td:nth-child(10){width:4%;}
     table.pricelist th:nth-child(11), table.pricelist td:nth-child(11){width:4%;}
     table.pricelist th:nth-child(12), table.pricelist td:nth-child(12){width:4%;}
-    table.pricelist th:nth-child(13), table.pricelist td:nth-child(13){width:11%;}
-    table.pricelist th:nth-child(14), table.pricelist td:nth-child(14){width:1%;}
+    table.pricelist th:nth-child(13), table.pricelist td:nth-child(13){width:9%;}
+    table.pricelist th:nth-child(14), table.pricelist td:nth-child(14){width:6%;}
+    table.pricelist th:nth-child(15), table.pricelist td:nth-child(15){width:1%;}
     table.customlist{font-size:.62rem;}
     table.customlist th{padding:3px 2px;font-size:.58rem;}
     table.customlist td{padding:2px;}
@@ -1744,6 +1746,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
           <th data-label-key="inv.col.bonusverified">Bonus Verified</th>
           <th data-label-key="inv.col.qtyverified">Qty Verified</th>
           <th data-label-key="inv.col.notes">Notes</th>
+          <th data-label-key="inv.col.paid">Paid</th>
           <th id="invExtraHead"></th>
           <th></th>
         </tr>
@@ -1757,6 +1760,10 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div class="totals-row">
     <span data-label-key="inv.grandtotal">Grand Total (IQD)</span>
     <span id="grandTotal">0</span>
+  </div>
+  <div class="totals-row" style="background:#a8462e;border-color:#a8462e;margin-top:8px;">
+    <span data-label-key="inv.remainingdebt">Remaining Debt (IQD)</span>
+    <span id="remainingDebt">0</span>
   </div>
 
   <!-- Section 4 & 5 -->
@@ -2679,6 +2686,7 @@ function serializeForm(){
       cashback: c[4].value, discount: c[5].value,
       priceOk: c[8].checked, bonusOk: c[9].checked, qtyOk: c[10].checked,
       notes: c[11].value,
+      paid: c[12] ? c[12].checked : false,
       extra
     };
   });
@@ -2743,6 +2751,7 @@ function restoreForm(d){
     c[4].value = r.cashback || ''; c[5].value = r.discount || '';
     c[8].checked = !!r.priceOk; c[9].checked = !!r.bonusOk; c[10].checked = !!r.qtyOk;
     c[11].value = r.notes || '';
+    if(c[12]) c[12].checked = !!r.paid;
     if(r.extra){
       tr.querySelectorAll('td[data-extra-cell] input').forEach(inp => {
         inp.value = r.extra[inp.dataset.extra] || '';
@@ -2918,7 +2927,7 @@ function addRow(){
   tr.innerHTML = `
     <td class="row-num">${rowCount}</td>
     <td><input type="text" placeholder="dd/mm/yyyy"></td>
-    <td><input type="number"></td>
+    <td><input type="text"></td>
     <td><input type="text" inputmode="decimal" class="price-input" oninput="calcRow(this)" onblur="formatMoneyField(this)"></td>
     <td><input type="text" inputmode="decimal" class="bonus-input" oninput="calcRow(this)" onblur="formatMoneyField(this)"></td>
     <td><input type="number" class="cashback-input" min="0" max="100" step="0.1" oninput="clampPercent(this);calcRow(this)"></td>
@@ -2929,6 +2938,7 @@ function addRow(){
     <td><input type="checkbox" class="checkbox"></td>
     <td><input type="checkbox" class="checkbox"></td>
     <td><input type="text"></td>
+    <td><input type="checkbox" class="checkbox paid-checkbox" onchange="calcGrandTotal()"></td>
     ${extraColCells('inv')}
     <td><button class="btn-small remove" onclick="removeRow(this)">×</button></td>
   `;
@@ -2986,11 +2996,17 @@ function calcRow(input){
 }
 
 function calcGrandTotal(){
-  let sum = 0;
-  document.querySelectorAll('.total-input').forEach(el=>{
-    sum += parseMoney(el.value);
+  let sum = 0, remaining = 0;
+  document.querySelectorAll('#priceBody tr').forEach(tr => {
+    const totalInput = tr.querySelector('.total-input');
+    const val = parseMoney(totalInput ? totalInput.value : '0');
+    sum += val;
+    const paidBox = tr.querySelector('.paid-checkbox');
+    if(paidBox && !paidBox.checked) remaining += val;
   });
   document.getElementById('grandTotal').textContent = formatMoney(sum) + ' IQD';
+  const debtEl = document.getElementById('remainingDebt');
+  if(debtEl) debtEl.textContent = formatMoney(remaining) + ' IQD';
 }
 
 function resetInv(){
