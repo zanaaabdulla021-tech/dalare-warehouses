@@ -1352,17 +1352,17 @@
     table.pricelist td{padding:1px;overflow:hidden;}
     table.pricelist input{font-size:.48rem;padding:1px;}
     table.pricelist th:nth-child(1), table.pricelist td:nth-child(1){width:3%;}
-    table.pricelist th:nth-child(2), table.pricelist td:nth-child(2){width:10%;}
-    table.pricelist th:nth-child(3), table.pricelist td:nth-child(3){width:7%;}
+    table.pricelist th:nth-child(2), table.pricelist td:nth-child(2){width:13%;}
+    table.pricelist th:nth-child(3), table.pricelist td:nth-child(3){width:11%;}
     table.pricelist th:nth-child(4), table.pricelist td:nth-child(4){width:10%;}
     table.pricelist th:nth-child(5), table.pricelist td:nth-child(5){width:9%;}
-    table.pricelist th:nth-child(6), table.pricelist td:nth-child(6){width:6%;}
-    table.pricelist th:nth-child(7), table.pricelist td:nth-child(7){width:6%;}
-    table.pricelist th:nth-child(8), table.pricelist td:nth-child(8){width:11%;}
-    table.pricelist th:nth-child(9), table.pricelist td:nth-child(9){width:11%;}
-    table.pricelist th:nth-child(10), table.pricelist td:nth-child(10){width:5%;}
-    table.pricelist th:nth-child(11), table.pricelist td:nth-child(11){width:5%;}
-    table.pricelist th:nth-child(12), table.pricelist td:nth-child(12){width:5%;}
+    table.pricelist th:nth-child(6), table.pricelist td:nth-child(6){width:5%;}
+    table.pricelist th:nth-child(7), table.pricelist td:nth-child(7){width:5%;}
+    table.pricelist th:nth-child(8), table.pricelist td:nth-child(8){width:10%;}
+    table.pricelist th:nth-child(9), table.pricelist td:nth-child(9){width:10%;}
+    table.pricelist th:nth-child(10), table.pricelist td:nth-child(10){width:4%;}
+    table.pricelist th:nth-child(11), table.pricelist td:nth-child(11){width:4%;}
+    table.pricelist th:nth-child(12), table.pricelist td:nth-child(12){width:4%;}
     table.pricelist th:nth-child(13), table.pricelist td:nth-child(13){width:11%;}
     table.pricelist th:nth-child(14), table.pricelist td:nth-child(14){width:1%;}
     table.customlist{font-size:.62rem;}
@@ -1742,27 +1742,19 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <div class="qa-row"><span class="qa-text">Google Chat Verified</span><div class="qa-opts"><label class="opt"><input type="radio" name="gc1" class="checkbox">Yes</label><label class="opt"><input type="radio" name="gc1" class="checkbox no">No</label></div></div>
       </div>
     </div>
-    <div class="mono-sectio" style="flex:1;min-width:280px;">
+    <div class="mono-section" style="flex:1;min-width:280px;">
       <div class="section-header" style="margin:0;"><div class="num">3</div><div class="title" data-label-key="inv.sec.systemverif">System Verification</div></div>
       <div class="qa-list">
         <div class="qa-row"><span class="qa-text">Entered into System</span><div class="qa-opts"><label class="opt"><input type="radio" name="sy1" class="checkbox">Yes</label><label class="opt"><input type="radio" name="sy1" class="checkbox no">No</label></div></div>
-      </div>
-    
-       <div class="qa-list"> 
         <div class="qa-row"><span class="qa-text">X</span><div class="qa-opts"><label class="opt"><input type="radio" name="sy2" class="checkbox">Yes</label><label class="opt"><input type="radio" name="sy2" class="checkbox no">No</label></div></div>
-      </div>
- <div class="qa-list">
         <div class="qa-row"><span class="qa-text">Y</span><div class="qa-opts"><label class="opt"><input type="radio" name="sy3" class="checkbox">Yes</label><label class="opt"><input type="radio" name="sy3" class="checkbox no">No</label></div></div>
-      </div>
- <div class="qa-list">
         <div class="qa-row"><span class="qa-text">Z</span><div class="qa-opts"><label class="opt"><input type="radio" name="sy4" class="checkbox">Yes</label><label class="opt"><input type="radio" name="sy4" class="checkbox no">No</label></div></div>
       </div>
+      <div class="grid2" style="margin-top:6px;">
+        <div class="field" style="grid-column:1/-1;"><label>System Reference Number</label><input type="text"></div>
+        <div class="field" style="grid-column:1/-1;"><label>Date Entered into System</label><input type="date"></div>
       </div>
-      <div id="sysRefRows"></div>
-      <!-- <div class="table-actions" style="margin-top:6px;">
-        <button class="btn-small" type="button" onclick="addSysRefRow()">+ Add Row</button>
-      </div> -->
-    
+    </div>
   </div>
 
   <!-- Section 6 -->
@@ -1856,7 +1848,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="btn-small" onclick="addRowCF()">+ Add Row</button>
   </div>
   <div class="totals-row">
-    <span data-label-key="cf.grandtotal">Total Cash Flow ()</span>
+    <span data-label-key="cf.grandtotal">Total Cash Flow</span>
     <span id="cfGrandTotal">0</span>
   </div>
 
@@ -2681,6 +2673,9 @@ function serializeForm(){
     blacklist: getRadio('blacklist'),
     gc1: getRadio('gc1'),
     sy1: getRadio('sy1'),
+    sy2: getRadio('sy2'),
+    sy3: getRadio('sy3'),
+    sy4: getRadio('sy4'),
     sysRef: sysFields[0] ? sysFields[0].value : '',
     sysDate: sysFields[1] ? sysFields[1].value : '',
     notes: document.querySelector('.notes-box textarea').value,
@@ -2695,6 +2690,9 @@ function restoreForm(d){
   setRadio('blacklist', d.blacklist);
   setRadio('gc1', d.gc1);
   setRadio('sy1', d.sy1);
+  setRadio('sy2', d.sy2);
+  setRadio('sy3', d.sy3);
+  setRadio('sy4', d.sy4);
 
   const sysFields = document.querySelectorAll('.mono-section .grid2 .field input');
   if(sysFields[0]) sysFields[0].value = d.sysRef || '';
@@ -2899,26 +2897,6 @@ function closeManager(){
 }
 
 
-let sysRefRowCount = 0;
-function addSysRefRow(){
-  sysRefRowCount++;
-  const wrap = document.getElementById('sysRefRows');
-  const row = document.createElement('div');
-  row.className = 'grid2';
-  row.style.marginTop = '6px';
-  row.style.position = 'relative';
-  row.innerHTML = `
-  <label class="opt"><input type="radio" name="sy1" class="checkbox">X</label>
-<label class="opt"><input type="radio" name="sy1" class="checkbox no">Y</label>
-<label class="opt"><input type="radio" name="sy1" class="checkbox">Z/label>
-  `;
-  wrap.appendChild(row);
-}
-function removeSysRefRow(btn){
-  const row = btn.closest('.grid2');
-  row.remove();
-}
-
 function addRow(){
   rowCount++;
   const tbody = document.getElementById('priceBody');
@@ -2926,7 +2904,7 @@ function addRow(){
   tr.innerHTML = `
     <td class="row-num">${rowCount}</td>
     <td><input type="text" placeholder="dd/mm/yyyy"></td>
-    <td><input type="text"></td>
+    <td><input type="number"></td>
     <td><input type="text" inputmode="decimal" class="price-input" oninput="calcRow(this)" onblur="formatMoneyField(this)"></td>
     <td><input type="text" inputmode="decimal" class="bonus-input" oninput="calcRow(this)" onblur="formatMoneyField(this)"></td>
     <td><input type="number" class="cashback-input" min="0" max="100" step="0.1" oninput="clampPercent(this);calcRow(this)"></td>
@@ -3396,17 +3374,17 @@ async function checkPublicView(){
 /* =======================  PDF COLUMN CHOOSER (Invoice / Cash Flow)  ======================= */
 const PRINT_COL_DEFS = {
   inv: [
-    {idx:2,  label:'Date',             width:0},
-    {idx:3,  label:'Invoice Number',   width:7},
+    {idx:2,  label:'Date',             width:13},
+    {idx:3,  label:'Invoice Number',   width:11},
     {idx:4,  label:'Price (IQD)',      width:10},
     {idx:5,  label:'Bonus (IQD)',      width:9},
-    {idx:6,  label:'Cash Back (%)',    width:6},
-    {idx:7,  label:'Discount (%)',     width:6},
-    {idx:8,  label:'Before Discount',  width:11},
-    {idx:9,  label:'After Discount',   width:11},
-    {idx:10, label:'Price Verified',   width:5},
-    {idx:11, label:'Bonus Verified',   width:5},
-    {idx:12, label:'Qty Verified',     width:5},
+    {idx:6,  label:'Cash Back (%)',    width:5},
+    {idx:7,  label:'Discount (%)',     width:5},
+    {idx:8,  label:'Before Discount',  width:10},
+    {idx:9,  label:'After Discount',   width:10},
+    {idx:10, label:'Price Verified',   width:4},
+    {idx:11, label:'Bonus Verified',   width:4},
+    {idx:12, label:'Qty Verified',     width:4},
     {idx:13, label:'Notes',            width:11}
   ],
   cf: [
@@ -5063,7 +5041,7 @@ function removeRowCF(btn){
 function calcCFTotal(){
   let sum = 0;
   document.querySelectorAll('#cashBody .cash-input').forEach(el=>{ sum += parseMoney(el.value); });
-  document.getElementById('cfGrandTotal').textContent = formatMoney(sum) + '';
+  document.getElementById('cfGrandTotal').textContent = formatMoney(sum);
 }
 
 function setCFFormId(id){
