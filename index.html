@@ -1459,7 +1459,10 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 </head>
 <body>
 
+<datalist id="companyNamesList"></datalist>
+
 <div class="auth-overlay" id="authOverlay">
+
   <div class="auth-card">
     <h2 data-label-key="login.title">Dalare Warehouse</h2>
     <p class="sub" data-label-key="login.subtitle">Sign in to access the forms</p>
@@ -1701,7 +1704,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
   <div class="company-banner">
     <span class="company-label">Company</span>
-    <input type="text" class="company-name-input" placeholder="Company Name">
+    <input type="text" class="company-name-input" placeholder="Company Name" list="companyNamesList">
   </div>
 
   <div class="form-meta-bar">
@@ -1844,7 +1847,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
   <div class="company-banner">
     <span class="company-label">Company</span>
-    <input type="text" class="company-name-input cf-company" placeholder="Company Name">
+    <input type="text" class="company-name-input cf-company" placeholder="Company Name" list="companyNamesList">
   </div>
 
   <div class="form-meta-bar">
@@ -1913,6 +1916,10 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 
   <div class="section-header"><div class="num">★</div><div class="title" data-label-key="kpi.sec.table">KPI Scorecard</div></div>
+  <div class="table-actions no-print">
+    <button class="btn-small" onclick="openDailyEntry()">📝 Daily Entry</button>
+    <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Daily Log</button>
+  </div>
   <div class="price-table-wrap">
     <table class="pricelist kpi-table">
       <thead>
@@ -2132,6 +2139,27 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <div style="display:flex;gap:8px;margin-top:16px;">
         <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveTabOrder()">Save Order</button>
         <button class="mgr-btn del-b" onclick="closeTabOrderManager()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="dailyEntryOverlay">
+  <div class="mgr-panel" style="max-width:600px;">
+    <div class="mgr-head">
+      <h2>Daily Work Entry</h2>
+      <button class="mgr-close" onclick="closeDailyEntry()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="adm-hint">Log today's completed work per task. These entries add up automatically for the month's KPI evaluation.</div>
+      <div class="kpi-info-grid" style="padding:0 0 14px;">
+        <div><label>Employee</label><input type="text" id="dailyEntryEmployee" list="companyNamesList" placeholder="Employee name"></div>
+        <div><label>Date</label><input type="date" id="dailyEntryDate"></div>
+      </div>
+      <div id="dailyEntryFields"></div>
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveDailyEntry()">Save Entry</button>
+        <button class="mgr-btn del-b" onclick="closeDailyEntry()">Cancel</button>
       </div>
     </div>
   </div>
@@ -2516,6 +2544,7 @@ function applySession(){
   updateReorderTabsButton();
   loadSiteSettings();
   loadRolePermissions();
+  loadCompanyNamesList();
   document.body.classList.toggle('super-admin-mode', isSuperAdmin());
   document.querySelector('.toolbar').style.display = (activeTab === 'home' || isEmployee()) ? 'none' : 'flex';
 }
@@ -2789,6 +2818,7 @@ async function saveInv(){
     if(!res.ok) throw new Error(await res.text());
     logActivity('save', currentFormId);
     flash('Saved ✓ ' + currentFormId);
+    loadCompanyNamesList();
   }catch(e){
     console.error(e);
     flash(sbError(e), true);
@@ -4056,6 +4086,21 @@ async function permanentlyDeleteTrashItem(table, id){
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
+async function loadCompanyNamesList(){
+  if(!backendReady()) return;
+  try{
+    const [invRes, cfRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/cashflow_forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
+    ]);
+    const invRows = invRes.ok ? await invRes.json() : [];
+    const cfRows = cfRes.ok ? await cfRes.json() : [];
+    const names = [...new Set([...invRows, ...cfRows].map(r => (r.company_name||'').trim()).filter(Boolean))];
+    const list = document.getElementById('companyNamesList');
+    if(list) list.innerHTML = names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+  }catch(e){ /* autocomplete is a nice-to-have; fail silently */ }
+}
+
 async function loadRolePermissions(){
   if(!backendReady()) return;
   try{
@@ -4468,7 +4513,7 @@ function mountCustomSection(section){
     <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span><span class="subtitle-edit" onclick="openFooterEditor()" title="Edit this text">✎</span></div>
     <div class="company-banner">
       <span class="company-label">Company</span>
-      <input type="text" class="company-name-input" placeholder="Company Name">
+      <input type="text" class="company-name-input" placeholder="Company Name" list="companyNamesList">
     </div>
     <div class="form-meta-bar">
       <div class="form-id-box">
@@ -5308,6 +5353,73 @@ function refreshKpiFormIdFromEmployee(){
   setKpiFormId(makeKpiFormId(name));
 }
 
+/* =======================  DAILY WORK ENTRY (feeds KPI Actual totals)  ======================= */
+function openDailyEntry(){
+  document.getElementById('dailyEntryEmployee').value = document.querySelector('.kpi-employee').value || '';
+  document.getElementById('dailyEntryDate').value = new Date().toISOString().slice(0,10);
+  const box = document.getElementById('dailyEntryFields');
+  box.innerHTML = KPI_DEFS.map(k => `
+    <div class="site-text-row">
+      <label style="flex:0 0 160px;" title="${k.id}">${k.label.replace(/</g,'&lt;')}</label>
+      <input type="number" min="0" class="daily-entry-value" data-task-id="${k.id}" placeholder="0">
+    </div>
+  `).join('');
+  document.getElementById('dailyEntryOverlay').classList.add('open');
+}
+function closeDailyEntry(){ document.getElementById('dailyEntryOverlay').classList.remove('open'); }
+
+async function saveDailyEntry(){
+  const employee = document.getElementById('dailyEntryEmployee').value.trim();
+  const date = document.getElementById('dailyEntryDate').value;
+  if(!employee){ flash('Enter an employee name.', true); return; }
+  if(!date){ flash('Pick a date.', true); return; }
+  const values = {};
+  document.querySelectorAll('.daily-entry-value').forEach(inp => {
+    const v = parseFloat(inp.value);
+    if(v) values[inp.dataset.taskId] = v;
+  });
+  const id = `${slugifyEmployeeName(employee)}-${date}`;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_daily_entries`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({ id, employee_name: employee, entry_date: date, data: values, updated_by: session.email, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    closeDailyEntry();
+    flash('Daily entry saved for ' + date);
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function pullFromDailyLog(){
+  const employee = document.querySelector('.kpi-employee').value.trim();
+  const month = document.querySelector('.kpi-month').value; // YYYY-MM
+  if(!employee){ flash('Enter the employee name first.', true); return; }
+  if(!month){ flash('Pick the evaluation month first.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  const from = `${month}-01`;
+  const [y, m] = month.split('-').map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  const to = `${month}-${String(lastDay).padStart(2,'0')}`;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_daily_entries?employee_name=eq.${encodeURIComponent(employee)}&entry_date=gte.${from}&entry_date=lte.${to}&select=data`, { headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    if(!rows.length){ flash('No daily entries found for ' + employee + ' in ' + month, true); return; }
+    const totals = {};
+    rows.forEach(r => {
+      Object.entries(r.data || {}).forEach(([taskId, val]) => {
+        totals[taskId] = (totals[taskId] || 0) + (parseFloat(val) || 0);
+      });
+    });
+    document.querySelectorAll('#kpiBody tr').forEach(tr => {
+      const total = totals[tr.dataset.taskId];
+      if(total !== undefined) tr.querySelector('.kpi-actual').value = total;
+    });
+    calcKpi();
+    flash(`Pulled ${rows.length} daily entries into Actual totals`);
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
 function newFormKPI(){
   kpiIsNewForm = true;
   setKpiFormId(makeKpiFormId());
@@ -5470,6 +5582,7 @@ async function saveCF(){
     if(!res.ok) throw new Error(await res.text());
     logActivity('save', cfFormId);
     flash('Saved ✓ ' + cfFormId);
+    loadCompanyNamesList();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
