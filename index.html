@@ -1460,6 +1460,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 <body>
 
 <datalist id="companyNamesList"></datalist>
+<datalist id="staffDeptList"></datalist>
 
 <div class="auth-overlay" id="authOverlay">
 
@@ -1561,6 +1562,8 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
           <input type="text" id="newUserPass" placeholder="password"
                  style="width:150px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:.84rem;">
           <select id="newUserRole" class="stage-select"></select>
+          <input type="text" id="newUserDept" list="staffDeptList" placeholder="Department (optional)"
+                 style="width:150px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:.84rem;">
           <button class="mgr-btn open-b" onclick="createUser()">Add</button>
         </div>
         <div id="admUsers">Loading…</div>
@@ -2561,6 +2564,7 @@ function applySession(){
   updateReorderTabsButton();
   loadSiteSettings();
   loadRolePermissions();
+  loadCurrentUserDepartment();
   loadCompanyNamesList();
   document.body.classList.toggle('super-admin-mode', isSuperAdmin());
   document.querySelector('.toolbar').style.display = (activeTab === 'home' || isEmployee()) ? 'none' : 'flex';
@@ -2590,6 +2594,19 @@ let rolePermissions = {
   staff:  { view:['inv','cf','kpi'], edit:['inv','cf','kpi'] },
   viewer: { view:['inv','cf','sop','kpi'], edit:[] },
 };
+
+let currentUserDepartment = null;
+async function loadCurrentUserDepartment(){
+  currentUserDepartment = null;
+  if(!backendReady() || isSuperAdmin() || session.role === 'admin') return; // admins see every department
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?email=eq.${encodeURIComponent(session.email)}&select=department`, { headers: sbHeaders() });
+    if(!res.ok) return;
+    const rows = await res.json();
+    if(rows.length && rows[0].department) currentUserDepartment = rows[0].department;
+  }catch(e){ /* leave unrestricted-null; renderKpiRows treats null as "show nothing" for non-admins */ }
+  if(document.getElementById('kpiBody')) renderKpiRows();
+}
 
 function canViewTab(tab){
   if(tab === 'home') return true;
@@ -3868,7 +3885,8 @@ function addKpiOrderRow(){
   row.dataset.taskId = 'task-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
   row.innerHTML = `
     <span class="sb-drag">⋮⋮</span>
-    <input type="text" value="" placeholder="New task name" style="flex:1;">
+    <input type="text" class="kpi-order-label" value="" placeholder="New task name" style="flex:1;">
+    <input type="text" value="" class="kpi-order-dept" placeholder="Department" list="staffDeptList" style="width:110px;">
     <input type="number" min="0" max="100" value="0" class="kpi-order-weight" style="width:60px;">
     <span style="font-size:.7rem;color:#888;">%</span>
     <button type="button" class="btn-small remove" onclick="this.closest('.sb-field-row').remove(); updateKpiOrderTotal();" title="Remove task">×</button>
@@ -3877,8 +3895,19 @@ function addKpiOrderRow(){
   row.addEventListener('dragend', ()=>{ row.classList.remove('dragging'); updateKpiOrderTotal(); });
   row.querySelector('.kpi-order-weight').addEventListener('input', updateKpiOrderTotal);
   list.appendChild(row);
-  row.querySelector('input[type=text]').focus();
+  row.querySelector('.kpi-order-label').focus();
   updateKpiOrderTotal();
+}
+
+async function loadStaffDeptList(){
+  if(!backendReady()) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?select=department`, { headers: sbHeaders() });
+    if(!res.ok) return;
+    const rows = await res.json();
+    const depts = [...new Set(rows.map(r => r.department).filter(Boolean))];
+    document.getElementById('staffDeptList').innerHTML = depts.map(d => `<option value="${d.replace(/"/g,'&quot;')}">`).join('');
+  }catch(e){ /* fine, list just stays empty */ }
 }
 
 function openKpiOrderManager(){
@@ -3892,7 +3921,8 @@ function openKpiOrderManager(){
     row.dataset.taskId = k.id;
     row.innerHTML = `
       <span class="sb-drag">⋮⋮</span>
-      <input type="text" value="${k.label.replace(/"/g,'&quot;')}" style="flex:1;">
+      <input type="text" class="kpi-order-label" value="${k.label.replace(/"/g,'&quot;')}" style="flex:1;">
+      <input type="text" value="${(k.department||'').replace(/"/g,'&quot;')}" class="kpi-order-dept" placeholder="Department" list="staffDeptList" style="width:110px;">
       <input type="number" min="0" max="100" value="${k.weight}" class="kpi-order-weight" style="width:60px;">
       <span style="font-size:.7rem;color:#888;">%</span>
       <button type="button" class="btn-small remove" onclick="this.closest('.sb-field-row').remove(); updateKpiOrderTotal();" title="Remove task">×</button>
@@ -3904,6 +3934,7 @@ function openKpiOrderManager(){
   list.querySelectorAll('.kpi-order-weight').forEach(inp => inp.addEventListener('input', updateKpiOrderTotal));
   updateKpiOrderTotal();
   document.getElementById('kpiOrderOverlay').classList.add('open');
+  loadStaffDeptList();
 }
 function closeKpiOrderManager(){ document.getElementById('kpiOrderOverlay').classList.remove('open'); }
 
@@ -3919,7 +3950,8 @@ async function saveKpiOrder(){
   const rows = Array.from(document.querySelectorAll('#kpiOrderList .sb-field-row'));
   const newDefs = rows.map(row => ({
     id: row.dataset.taskId,
-    label: row.querySelector('input[type=text]').value.trim() || 'Untitled',
+    label: row.querySelector('.kpi-order-label').value.trim() || 'Untitled',
+    department: row.querySelector('.kpi-order-dept').value.trim(),
     weight: parseFloat(row.querySelector('.kpi-order-weight').value) || 0
   }));
   try{
@@ -4863,6 +4895,12 @@ async function loadUsers(){
     if(!res.ok) throw new Error(await res.text());
     const users = await res.json();
     if(!users.length){ box.innerHTML = '<div class="mgr-empty">No users yet.</div>'; return; }
+
+    const deptRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?select=email,department`, { headers: sbHeaders() });
+    const deptRows = deptRes.ok ? await deptRes.json() : [];
+    const deptByEmail = {};
+    deptRows.forEach(r => { if(r.email) deptByEmail[r.email] = r.department || ''; });
+
     const roleOptions = (current) => {
       const all = isSuperAdmin()
         ? ['employee','viewer','staff','admin','super_admin']
@@ -4872,7 +4910,7 @@ async function loadUsers(){
     document.getElementById('newUserRole').innerHTML = roleOptions('staff');
 
     box.innerHTML = `<table class="adm-table">
-      <tr><th>Email</th><th style="width:130px;">Role</th><th style="width:70px;"></th></tr>
+      <tr><th>Email</th><th style="width:130px;">Role</th><th style="width:130px;">Department</th><th style="width:70px;"></th></tr>
       ${users.map(u=>`<tr>
         <td>${(u.email||'').replace(/</g,'&lt;')}</td>
         <td>
@@ -4881,6 +4919,13 @@ async function loadUsers(){
             ${roleOptions(u.role)}
           </select>
         </td>
+        <td>
+          <input type="text" class="user-dept-input" list="staffDeptList" value="${(deptByEmail[u.email]||'').replace(/"/g,'&quot;')}"
+            data-email="${(u.email||'').replace(/"/g,'&quot;')}"
+            onchange="setUserDepartment('${(u.email||'').replace(/'/g,"\\'")}', this.value)"
+            style="width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:.78rem;"
+            ${!isSuperAdmin() ? 'disabled' : ''}>
+        </td>
         <td>${(u.id === session.userId || !isSuperAdmin()) ? ''
           : `<button class="mgr-btn del-b" onclick="deleteUser('${(u.email||'').replace(/'/g,"\\'")}')">Delete</button>`}</td>
       </tr>`).join('')}
@@ -4888,10 +4933,30 @@ async function loadUsers(){
   }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">'+sbError(e)+'</div>'; }
 }
 
+async function setUserDepartment(email, department){
+  try{
+    const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?email=eq.${encodeURIComponent(email)}&select=id`, { headers: sbHeaders() });
+    const existingRows = existingRes.ok ? await existingRes.json() : [];
+    const empId = existingRows.length ? existingRows[0].id : 'ACCT-' + slugifyEmployeeName(email.split('@')[0]);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({
+        id: empId, email, department,
+        full_name: existingRows.length ? undefined : email.split('@')[0],
+        updated_at: new Date().toISOString()
+      })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('set_user_department', null, email + ' -> ' + department);
+    flash('Department updated for ' + email);
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
 async function createUser(){
   const email = document.getElementById('newUserEmail').value.trim();
   const pass  = document.getElementById('newUserPass').value;
   const role  = document.getElementById('newUserRole').value;
+  const dept  = document.getElementById('newUserDept').value.trim();
   if(!email || !pass){ flash('Enter an email and password.', true); return; }
   if(pass.length < 6){ flash('Password must be at least 6 characters.', true); return; }
   try{
@@ -4901,9 +4966,27 @@ async function createUser(){
     });
     const body = await res.json();
     if(!res.ok) throw new Error(body.message || body.hint || JSON.stringify(body));
+
+    if(dept){
+      try{
+        const existingRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?email=eq.${encodeURIComponent(email)}&select=id`, { headers: sbHeaders() });
+        const existingRows = existingRes.ok ? await existingRes.json() : [];
+        const empId = existingRows.length ? existingRows[0].id : 'ACCT-' + slugifyEmployeeName(email.split('@')[0]);
+        await fetch(`${SUPABASE_URL}/rest/v1/employees`, {
+          method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+          body: JSON.stringify({
+            id: empId, email, department: dept,
+            full_name: existingRows.length ? undefined : email.split('@')[0],
+            updated_at: new Date().toISOString()
+          })
+        });
+      }catch(e2){ console.error('department link failed', e2); }
+    }
+
     document.getElementById('newUserEmail').value = '';
     document.getElementById('newUserPass').value = '';
-    logActivity('create_user', null, email + ' as ' + role);
+    document.getElementById('newUserDept').value = '';
+    logActivity('create_user', null, email + ' as ' + role + (dept ? ' / ' + dept : ''));
     flash('User created: ' + email);
     loadUsers();
   }catch(e){ console.error(e); flash(String(e.message || e).slice(0,120), true); }
@@ -5267,23 +5350,31 @@ function activeTable(){
 
 /* =======================  KPI PERFORMANCE EVALUATION  ======================= */
 let KPI_DEFS = [
-  {id:'invoice-entry', label:'Invoice Entry', weight:15},
-  {id:'invoice-return', label:'Invoice Return', weight:20},
-  {id:'definition', label:'Definition', weight:10},
-  {id:'barcode', label:'Barcode', weight:5},
-  {id:'audit-edit', label:'Audit & Edit', weight:15},
-  {id:'branch-maintenance', label:'Branch Maintenance', weight:10},
-  {id:'account-statement', label:'Account Statement', weight:5},
-  {id:'transit', label:'Transit', weight:5},
-  {id:'errors', label:'Errors', weight:8},
-  {id:'uniform-compliance', label:'Uniform Compliance', weight:2},
-  {id:'management-evaluation', label:'Management Evaluation', weight:5},
+  {id:'invoice-entry', label:'Invoice Entry', weight:15, department:'Data Entry'},
+  {id:'invoice-return', label:'Invoice Return', weight:20, department:'Data Entry'},
+  {id:'definition', label:'Definition', weight:10, department:'Data Entry'},
+  {id:'barcode', label:'Barcode', weight:5, department:'Data Entry'},
+  {id:'audit-edit', label:'Audit & Edit', weight:15, department:'Data Entry'},
+  {id:'branch-maintenance', label:'Branch Maintenance', weight:10, department:'Data Entry'},
+  {id:'account-statement', label:'Account Statement', weight:5, department:'Data Entry'},
+  {id:'transit', label:'Transit', weight:5, department:'Data Entry'},
+  {id:'errors', label:'Errors', weight:8, department:'Data Entry'},
+  {id:'uniform-compliance', label:'Uniform Compliance', weight:2, department:'Data Entry'},
+  {id:'management-evaluation', label:'Management Evaluation', weight:5, department:'Data Entry'},
 ];
 let kpiFormId = null;
 
 function renderKpiRows(){
   const body = document.getElementById('kpiBody');
-  body.innerHTML = KPI_DEFS.map(k => `
+  const showAll = isSuperAdmin() || session.role === 'admin';
+  const visibleDefs = showAll ? KPI_DEFS : KPI_DEFS.filter(k => k.department && k.department === currentUserDepartment);
+  if(!visibleDefs.length){
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">
+      ${currentUserDepartment ? `No KPI tasks are set up yet for the ${currentUserDepartment} department.` : "Your account isn't linked to a department yet. Ask a super admin to add your login email to your Staff profile."}
+    </td></tr>`;
+    return;
+  }
+  body.innerHTML = visibleDefs.map(k => `
     <tr data-task-id="${k.id}">
       <td>${k.label.replace(/</g,'&lt;')}</td>
       <td><input type="number" min="0" value="100" class="kpi-target"></td>
@@ -5398,7 +5489,9 @@ function openDailyEntry(){
   document.getElementById('dailyEntryEmployee').value = document.querySelector('.kpi-employee').value || '';
   document.getElementById('dailyEntryDate').value = new Date().toISOString().slice(0,10);
   const box = document.getElementById('dailyEntryFields');
-  box.innerHTML = KPI_DEFS.map(k => `
+  const showAll = isSuperAdmin() || session.role === 'admin';
+  const visibleDefs = showAll ? KPI_DEFS : KPI_DEFS.filter(k => k.department && k.department === currentUserDepartment);
+  box.innerHTML = visibleDefs.map(k => `
     <div class="site-text-row">
       <label style="flex:0 0 160px;" title="${k.id}">${k.label.replace(/</g,'&lt;')}</label>
       <input type="number" min="0" class="daily-entry-value" data-task-id="${k.id}" placeholder="0">
@@ -5456,7 +5549,7 @@ async function saveDailyEntry(){
   })).filter(t => t.label);
   if(newTasks.length){
     try{
-      const updatedDefs = [...KPI_DEFS, ...newTasks.map(t => ({ id:t.id, label:t.label, weight:0 }))];
+      const updatedDefs = [...KPI_DEFS, ...newTasks.map(t => ({ id:t.id, label:t.label, weight:0, department: currentUserDepartment || '' }))];
       const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
         method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
         body: JSON.stringify({ id:'default', kpi_defs: updatedDefs, updated_by: session.email, updated_at: new Date().toISOString() })
