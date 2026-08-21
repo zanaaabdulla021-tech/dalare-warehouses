@@ -1323,6 +1323,7 @@
     max-width:960px;
     margin:0 auto 12px;
     display:flex;
+    flex-wrap:wrap;
     justify-content:flex-end;
     gap:10px;
   }
@@ -1335,6 +1336,8 @@
     font-size:.85rem;
     font-weight:600;
     cursor:pointer;
+    white-space:nowrap;
+    flex:0 0 auto;
     box-shadow:0 1px 2px rgba(10,36,23,.12), 0 6px 14px -8px rgba(10,36,23,.35);
     transition:transform .12s ease, box-shadow .12s ease, background .15s ease;
   }
@@ -1495,6 +1498,24 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       -webkit-appearance:auto;
       appearance:auto;
     }
+  @media (max-width:899px){
+    .toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+    .toolbar button{
+      flex:1 1 calc(50% - 6px);
+      min-width:100px;
+      max-width:calc(50% - 6px);
+      min-height:44px;
+      padding:11px 10px;font-size:.8rem;white-space:normal;line-height:1.3;
+      box-sizing:border-box;
+      border-radius:16px;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .toolbar .save-status{flex-basis:100%;text-align:center;}
+  }
   @media (max-width:640px){
     .grid2{grid-template-columns:1fr;}
     .signatures{grid-template-columns:1fr;}
