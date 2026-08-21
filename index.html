@@ -172,8 +172,10 @@
     align-items:baseline;
     justify-content:center;
     gap:14px;
-    background:transparent;
-    border-bottom:3px solid var(--forest);
+    background:var(--sage);
+    border-radius:14px;
+    margin:14px 14px 0;
+    border-bottom:none;
     padding:14px 20px;
   }
   /* ---- Form ID + workflow stage ---- */
@@ -182,8 +184,11 @@
     align-items:center;
     justify-content:space-between;
     gap:12px;
-    padding:8px 20px;
-    border-bottom:1px solid var(--line);
+    padding:10px 20px;
+    margin:8px 14px 0;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:12px;
     flex-wrap:wrap;
   }
   .form-id-box{
@@ -525,6 +530,8 @@
   .price-table-wrap{
     margin:0 14px;
     overflow-x:auto;
+    border-radius:12px;
+    border:1px solid var(--line);
   }
   table.pricelist{
     width:100%;
