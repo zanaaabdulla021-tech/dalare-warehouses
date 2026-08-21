@@ -74,6 +74,10 @@
     border:1px solid var(--line);
     position:relative;
   }
+  input:focus, textarea:focus, select:focus{
+    outline:none;box-shadow:0 0 0 3px rgba(34,153,73,.22);border-color:var(--forest) !important;
+  }
+  input, textarea, select{transition:box-shadow .12s ease, border-color .12s ease;}
   .qr-block{
     position:absolute;
     top:10px;
@@ -371,7 +375,8 @@
     gap:10px;
     margin:22px 14px 0;
     background:var(--sage);
-    border-radius:10px;
+    border-radius:12px;
+    border-left:4px solid var(--forest);
     padding:9px 14px;
   }
   .section-header .num{
@@ -1148,7 +1153,18 @@
     opacity:.6;
   }
   .home-hero > *{position:relative;z-index:1;}
-  .home-logo{width:78px;height:78px;object-fit:contain;background:#fff;border-radius:16px;padding:8px;margin-bottom:14px;}
+  @keyframes logoWelcome{
+    0%{opacity:0;transform:scale(.75) rotate(-6deg);}
+    60%{opacity:1;transform:scale(1.06) rotate(2deg);}
+    100%{opacity:1;transform:scale(1) rotate(0deg);}
+  }
+  .home-logo{
+    width:78px;height:78px;object-fit:contain;background:#fff;border-radius:16px;padding:8px;margin-bottom:14px;
+    animation:logoWelcome .7s cubic-bezier(.2,.8,.3,1) both;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .home-logo{animation:none;}
+  }
   .home-hero h1{margin:0;font-size:1.4rem;font-weight:800;letter-spacing:1.5px;}
   .home-hero p{margin:4px 0 0;font-size:.85rem;opacity:.9;font-weight:600;letter-spacing:.5px;}
   .home-user{margin-top:16px;font-size:.82rem;font-weight:700;opacity:.95;
@@ -2928,7 +2944,7 @@ function renderManagerList(){
   }
   list.innerHTML = forms.map(f => {
     const st = STAGES[f.stage] || STAGES.entry;
-    const when = f.updated_at ? new Date(f.updated_at).toLocaleString() : '';
+    const when = f.updated_at ? new Date(f.updated_at).toLocaleString('en-US') : '';
     return `<div class="mgr-item">
       <div class="who">
         <span class="fid">${f.id}</span>
@@ -4836,7 +4852,7 @@ async function renderHomeStats(){
         const rrows = (r.data && r.data.rows) ? r.data.rows : [];
         rrows.forEach(row=>{ total += parseFloat(String(row.cashflow||'0').replace(/,/g,'')) || 0; });
       });
-      stats.push({ic:'💵', label:'Total Cash Flow', val: total.toLocaleString() + ' IQD'});
+      stats.push({ic:'💵', label:'Total Cash Flow', val: total.toLocaleString('en-US') + ' IQD'});
     }
     if(sopRes && sopRes.ok) stats.push({ic:'📋', label:'SOP Documents', val: (await sopRes.json()).length});
     if(empRes && empRes.ok) stats.push({ic:'🪪', label:'Staff Members', val: (await empRes.json()).length});
@@ -5082,7 +5098,7 @@ async function loadActivity(){
     box.innerHTML = `<table class="adm-table">
       <tr><th>When</th><th>User</th><th>Action</th><th>Form</th></tr>
       ${rows.map(r=>`<tr>
-        <td>${new Date(r.created_at).toLocaleString()}</td>
+        <td>${new Date(r.created_at).toLocaleString('en-US')}</td>
         <td>${(r.user_email||'').replace(/</g,'&lt;')}</td>
         <td>${r.action}${r.detail ? ' — ' + String(r.detail).replace(/</g,'&lt;') : ''}</td>
         <td>${r.form_id || ''}</td>
