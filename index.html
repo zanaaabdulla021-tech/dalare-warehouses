@@ -68,9 +68,9 @@
     max-width:960px;
     margin:0 auto;
     background:var(--paper-card);
-    border-radius:16px;
+    border-radius:22px;
     overflow:hidden;
-    box-shadow:0 1px 2px rgba(10,36,23,0.06), 0 24px 48px -24px rgba(10,36,23,0.25);
+    box-shadow:0 2px 4px rgba(10,36,23,0.08), 0 32px 60px -28px rgba(10,36,23,0.35);
     border:1px solid var(--line);
     position:relative;
   }
@@ -269,7 +269,7 @@
   .mgr-item .meta{font-size:.7rem;color:#666;}
   .mgr-actions{display:flex;gap:6px;flex-wrap:wrap;}
   .mgr-btn{
-    border:none;border-radius:7px;padding:7px 12px;cursor:pointer;
+    border:none;border-radius:999px;padding:9px 16px;cursor:pointer;
     font-size:.78rem;font-weight:700;font-family:"IBM Plex Sans",sans-serif;
   }
   .mgr-btn.open-b{background:var(--forest);color:#fff;}
@@ -373,32 +373,34 @@
     display:flex;
     align-items:center;
     gap:10px;
-    margin:22px 14px 0;
-    background:var(--sage);
-    border-radius:12px;
-    border-left:4px solid var(--forest);
-    padding:9px 14px;
+    margin:24px 14px 0;
+    background:linear-gradient(120deg, var(--forest) 0%, var(--forest-deep) 100%);
+    border-radius:14px;
+    border-left:none;
+    padding:12px 16px;
+    box-shadow:0 4px 14px -6px rgba(12,58,27,.45);
   }
   .section-header .num{
-    background:var(--forest);
+    background:rgba(255,255,255,.22);
     color:var(--white);
     font-family:"IBM Plex Sans",sans-serif;
     font-weight:700;
     display:flex;
     align-items:center;
     justify-content:center;
-    width:26px;
-    height:26px;
+    width:28px;
+    height:28px;
     border-radius:50%;
     font-size:.82rem;
     flex-shrink:0;
+    border:1.5px solid rgba(255,255,255,.4);
   }
   .section-header .title{
-    color:var(--forest-deep);
+    color:var(--white);
     font-weight:800;
     font-family:"IBM Plex Sans",sans-serif;
-    font-size:.92rem;
-    letter-spacing:0;
+    font-size:.95rem;
+    letter-spacing:.2px;
   }
   .section-header .title::after{display:none;}
 
@@ -620,8 +622,8 @@
     background:var(--forest);
     color:#fff;
     border:none;
-    border-radius:6px;
-    padding:6px 12px;
+    border-radius:999px;
+    padding:7px 14px;
     font-size:.78rem;
     cursor:pointer;
     font-weight:600;
@@ -1313,8 +1315,8 @@
     background:var(--forest);
     color:#fff;
     border:none;
-    border-radius:9px;
-    padding:9px 18px;
+    border-radius:999px;
+    padding:10px 20px;
     font-size:.85rem;
     font-weight:600;
     cursor:pointer;
