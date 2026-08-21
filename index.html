@@ -588,10 +588,12 @@
   #form table.pricelist th:nth-child(12){width:6%;}
   #form table.pricelist th:nth-child(13){width:9%;}
   #form table.pricelist th:nth-child(14){width:6%;}
-  #cfForm table.pricelist th:nth-child(2){width:26%;}
-  #cfForm table.pricelist th:nth-child(3){width:18%;}
-  #cfForm table.pricelist th:nth-child(4){width:20%;}
-  #cfForm table.pricelist th:nth-child(5){width:26%;}
+  #cfForm table.pricelist th:nth-child(2){width:17%;}
+  #cfForm table.pricelist th:nth-child(3){width:14%;}
+  #cfForm table.pricelist th:nth-child(4){width:13%;}
+  #cfForm table.pricelist th:nth-child(5){width:14%;}
+  #cfForm table.pricelist th:nth-child(6){width:14%;}
+  #cfForm table.pricelist th:nth-child(7){width:18%;}
 
   /* ---------- Desktop: widen Invoice/Cash Flow and enlarge their tables ---------- */
   @media (min-width:1100px){
@@ -1328,7 +1330,7 @@
     gap:10px;
   }
   .toolbar button{
-    background:var(--forest);
+    background:linear-gradient(160deg, var(--forest) 0%, var(--forest-deep) 100%);
     color:#fff;
     border:none;
     border-radius:999px;
@@ -1339,12 +1341,12 @@
     white-space:nowrap;
     flex:0 0 auto;
     box-shadow:0 1px 2px rgba(10,36,23,.12), 0 6px 14px -8px rgba(10,36,23,.35);
-    transition:transform .12s ease, box-shadow .12s ease, background .15s ease;
+    transition:transform .12s ease, box-shadow .12s ease, filter .15s ease;
   }
-  .toolbar button:hover:not(:disabled){background:var(--forest-deep);transform:translateY(-1px);box-shadow:0 2px 4px rgba(10,36,23,.15), 0 10px 20px -10px rgba(10,36,23,.4);}
+  .toolbar button:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 2px 4px rgba(10,36,23,.15), 0 10px 20px -10px rgba(10,36,23,.4);}
   .toolbar button:active:not(:disabled){transform:translateY(0);box-shadow:0 1px 2px rgba(10,36,23,.15);}
   .toolbar button.secondary{background:var(--paper-card);color:#000000;border:1px solid var(--line);box-shadow:0 1px 2px rgba(10,36,23,.05);}
-  .toolbar button.secondary:hover:not(:disabled){background:var(--sage);border-color:var(--forest);}
+  .toolbar button.secondary:hover:not(:disabled){background:var(--sage);border-color:var(--forest);filter:none;}
   .toolbar .nav-link{
     display:inline-flex;align-items:center;gap:6px;
     background:var(--forest-deep);color:#fff;text-decoration:none;
@@ -1528,6 +1530,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     .logo-badge{top:10px;inset-inline-start:10px;width:56px;height:56px;padding:5px;}
   }
 </style>
+<style id="pageOrientStyle">@page{ size:A4 portrait; margin:6mm; }</style>
 </head>
 <body>
 
@@ -1605,13 +1608,17 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <button class="secondary" onclick="switchTab('home')" title="Back to Home">← Back</button>
   <span class="save-status" id="saveStatus"></span>
   <button class="secondary" onclick="newForm()" data-label-key="toolbar.newform">+ New Form</button>
-  <button class="secondary" onclick="openManager()" data-label-key="toolbar.myforms">My Forms</button>
-  <button class="secondary" id="adminBtn" onclick="openAdmin()">Admin</button>
+  <button class="secondary" onclick="openManager()" data-label-key="toolbar.myforms">📁 My Forms</button>
+  <button class="secondary" id="adminBtn" onclick="openAdmin()">⚙️ Admin</button>
   <button class="secondary" id="pdfColsBtn" onclick="openPrintColumnsDesigner()" style="display:none;">🖶 PDF Columns</button>
   <button class="secondary" id="colMgrBtn" onclick="openColumnManager()" style="display:none;">➕ Manage Columns</button>
-  <button class="secondary" onclick="resetForm()" data-label-key="toolbar.cleardata">Clear Data</button>
-  <button onclick="saveForm()" data-label-key="toolbar.save">Save</button>
-  <button onclick="printForm()" data-label-key="toolbar.print">Print / Save as PDF</button>
+  <button class="secondary" onclick="resetForm()" data-label-key="toolbar.cleardata">🗑️ Clear Data</button>
+  <select id="printOrientSelect" class="stage-select" style="flex:0 0 auto;" onchange="setPrintOrientation(this.value)" title="Page orientation for print/PDF">
+    <option value="portrait">⬜ Portrait</option>
+    <option value="landscape">▭ Landscape</option>
+  </select>
+  <button onclick="saveForm()" data-label-key="toolbar.save">💾 Save</button>
+  <button onclick="printForm()" data-label-key="toolbar.print">🖨️ Print / Save as PDF</button>
 </div>
 
 <div class="mgr-overlay" id="admOverlay">
@@ -1948,6 +1955,8 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <tr>
           <th>No.</th>
           <th data-label-key="cf.col.product">Product</th>
+          <th data-label-key="cf.col.sectionno">Section Number</th>
+          <th data-label-key="cf.col.itemsperpkg">Items per Package</th>
           <th data-label-key="cf.col.cashflow">Cash Flow</th>
           <th data-label-key="cf.col.stock">Stock Dalare</th>
           <th data-label-key="cf.col.note">Note</th>
@@ -3213,6 +3222,14 @@ function resetForm(){
   return resetInv();
 }
 
+function setPrintOrientation(orientation){
+  const style = document.getElementById('pageOrientStyle');
+  if(style) style.textContent = `@page{ size:A4 ${orientation}; margin:6mm; }`;
+  try{ localStorage.setItem('dalare-print-orientation', orientation); }catch(e){ /* fine, just won't persist */ }
+  const select = document.getElementById('printOrientSelect');
+  if(select) select.value = orientation;
+}
+
 function printForm(){
   applyPrintColumnOverrides();
   // only the active tab's sheet is visible, so print output is already correct
@@ -3571,9 +3588,11 @@ const PRINT_COL_DEFS = {
   ],
   cf: [
     {idx:2, label:'Product'},
-    {idx:3, label:'Cash Flow'},
-    {idx:4, label:'Stock Dalare'},
-    {idx:5, label:'Note'}
+    {idx:3, label:'Section Number'},
+    {idx:4, label:'Items per Package'},
+    {idx:5, label:'Cash Flow'},
+    {idx:6, label:'Stock Dalare'},
+    {idx:7, label:'Note'}
   ]
 };
 
@@ -5366,6 +5385,8 @@ function addRowCF(){
   tr.innerHTML = `
     <td class="row-num">${cfRowCount}</td>
     <td><input type="text"></td>
+    <td><input type="text"></td>
+    <td><input type="number" min="0"></td>
     <td><input type="text" inputmode="decimal" class="cash-input" oninput="calcCFTotal()" onblur="formatMoneyField(this)"></td>
     <td><input type="text" inputmode="decimal" class="stock-input" onblur="formatMoneyField(this)"></td>
     <td><input type="text"></td>
@@ -5402,7 +5423,7 @@ function serializeCF(){
     const c = tr.querySelectorAll('input');
     const extra = {};
     tr.querySelectorAll('td[data-extra-cell] input').forEach(inp => { extra[inp.dataset.extra] = inp.value; });
-    return { product:c[0].value, cashflow:c[1].value, stock:c[2].value, note:c[3].value, extra };
+    return { product:c[0].value, sectionNo:c[1].value, itemsPerPkg:c[2].value, cashflow:c[3].value, stock:c[4].value, note:c[5].value, extra };
   });
   return { companyName: document.querySelector('.cf-company').value, rows: rows };
 }
@@ -5417,8 +5438,9 @@ function restoreCF(d){
   Array.from(document.querySelectorAll('#cashBody tr')).forEach((tr,i)=>{
     const r = rows[i]; if(!r) return;
     const c = tr.querySelectorAll('input');
-    c[0].value = r.product || ''; c[1].value = r.cashflow || '';
-    c[2].value = r.stock || '';   c[3].value = r.note || '';
+    c[0].value = r.product || '';      c[1].value = r.sectionNo || '';
+    c[2].value = r.itemsPerPkg || '';  c[3].value = r.cashflow || '';
+    c[4].value = r.stock || '';        c[5].value = r.note || '';
     if(r.extra){
       tr.querySelectorAll('td[data-extra-cell] input').forEach(inp => {
         inp.value = r.extra[inp.dataset.extra] || '';
@@ -5984,6 +6006,11 @@ document.querySelector('.kpi-month').addEventListener('input', refreshKpiFormIdF
 switchTab('home');
 makeColumnsResizable('#form table.pricelist', 'dalare-col-widths-inv');
 makeColumnsResizable('#cfForm table.pricelist', 'dalare-col-widths-cf');
+
+try{
+  const savedOrientation = localStorage.getItem('dalare-print-orientation');
+  if(savedOrientation === 'landscape' || savedOrientation === 'portrait') setPrintOrientation(savedOrientation);
+}catch(e){ /* fine, defaults to portrait */ }
 
 /* =======================  UPDATE-AVAILABLE CHECKER  ======================= */
 let __pageFingerprint = null;
