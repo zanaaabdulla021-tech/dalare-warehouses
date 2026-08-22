@@ -5758,14 +5758,8 @@ function renderKpiRows(){
     return;
   }
 
-  const groupById = {};
-  KPI_GROUPS.forEach(g => { groupById[g.id] = g; });
-
-  const rowHtml = k => {
-    const g = groupById[k.group || 'data-entry'] || KPI_GROUPS[0];
-    return `
+  const rowHtml = k => `
     <tr data-task-id="${k.id}">
-      <td style="white-space:nowrap;">${g.icon} ${g.label.replace(/</g,'&lt;')}</td>
       <td>${k.label.replace(/</g,'&lt;')}</td>
       <td><input type="number" min="0" class="kpi-target" placeholder="0"></td>
       <td><input type="number" min="0" class="kpi-actual" placeholder="0"></td>
@@ -5774,55 +5768,36 @@ function renderKpiRows(){
       <td><input type="number" value="${k.weight}" class="kpi-weight" readonly></td>
       <td class="readonly-cell kpi-score">0%</td>
     </tr>`;
-  };
 
-  // Order rows by group (Data Entry, Errors, Satisfaction), matching KPI_GROUPS order.
-  const orderedDefs = [...visibleDefs].sort((a,b) => {
-    const ai = KPI_GROUPS.findIndex(g => g.id === (a.group||'data-entry'));
-    const bi = KPI_GROUPS.findIndex(g => g.id === (b.group||'data-entry'));
-    return ai - bi;
-  });
-
-  let rowsHtml = '';
-  let lastGroupId = null;
-  orderedDefs.forEach(k => {
-    const groupId = k.group || 'data-entry';
-    if(lastGroupId !== null && groupId !== lastGroupId){
-      rowsHtml += `<tr class="kpi-group-divider"><td colspan="8"></td></tr>`;
-    }
-    rowsHtml += rowHtml(k);
-    lastGroupId = groupId;
-  });
-
-  const weightSummary = KPI_GROUPS
-    .filter(g => visibleDefs.some(k => (k.group||'data-entry') === g.id))
-    .map(g => `${g.icon} ${g.label} (${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : '—'}%)`)
-    .join('  ·  ');
-
-  wrap.innerHTML = `
-    <div style="font-size:.78rem;color:#666;margin-bottom:10px;">${weightSummary}</div>
-    <div class="table-actions no-print">
-      <button class="btn-small" onclick="openDailyEntry()">📝 Monthly Entry</button>
-      <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Monthly Log</button>
-      <button class="btn-small" onclick="openDailyLogViewer()">📋 View Monthly Log</button>
-    </div>
-    <div class="price-table-wrap">
-      <table class="pricelist kpi-table">
-        <thead>
-          <tr>
-            <th>Group</th>
-            <th data-label-key="kpi.col.task">Task / KPI</th>
-            <th data-label-key="kpi.col.target">Target</th>
-            <th data-label-key="kpi.col.actual">Actual</th>
-            <th data-label-key="kpi.col.accuracy">Accuracy %</th>
-            <th data-label-key="kpi.col.achievement">Achievement %</th>
-            <th data-label-key="kpi.col.weight">Weight %</th>
-            <th data-label-key="kpi.col.score">Score</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-    </div>`;
+  wrap.innerHTML = KPI_GROUPS.map(g => {
+    const groupDefs = visibleDefs.filter(k => (k.group || 'data-entry') === g.id);
+    if(!groupDefs.length) return '';
+    const toolsHtml = g.id === 'satisfaction' ? `
+      <div class="table-actions no-print">
+        <button class="btn-small" onclick="openDailyEntry()">📝 Monthly Entry</button>
+        <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Monthly Log</button>
+        <button class="btn-small" onclick="openDailyLogViewer()">📋 View Monthly Log</button>
+      </div>` : '';
+    return `
+      <div class="section-header" style="margin-top:18px;"><div class="num">${g.icon}</div><div class="title">${g.label} <span style="opacity:.75;font-weight:600;">(${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : '—'}% of total)</span></div></div>
+      ${toolsHtml}
+      <div class="price-table-wrap">
+        <table class="pricelist kpi-table">
+          <thead>
+            <tr>
+              <th data-label-key="kpi.col.task">Task / KPI</th>
+              <th data-label-key="kpi.col.target">Target</th>
+              <th data-label-key="kpi.col.actual">Actual</th>
+              <th data-label-key="kpi.col.accuracy">Accuracy %</th>
+              <th data-label-key="kpi.col.achievement">Achievement %</th>
+              <th data-label-key="kpi.col.weight">Weight %</th>
+              <th data-label-key="kpi.col.score">Score</th>
+            </tr>
+          </thead>
+          <tbody>${groupDefs.map(rowHtml).join('')}</tbody>
+        </table>
+      </div>`;
+  }).join('');
 
   wrap.querySelectorAll('input').forEach(inp => inp.addEventListener('input', calcKpi));
   applySiteLabels();
