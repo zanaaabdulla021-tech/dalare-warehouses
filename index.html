@@ -703,6 +703,10 @@
     -webkit-appearance:none;margin:0;
   }
   table.kpi-table td.readonly-cell{font-family:"IBM Plex Mono",monospace;font-weight:700;color:var(--forest-deep);}
+  table.kpi-table tr.kpi-group-divider td{padding:0;border:none;}
+  table.kpi-table tr.kpi-group-divider td::before{
+    content:"";display:block;height:3px;background:var(--forest);opacity:.35;
+  }
   .kpi-summary-grid{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;
     padding:0 14px 18px;
@@ -2114,6 +2118,11 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="kpi-stat"><small data-label-key="kpi.stat.total">Total Score</small><strong id="kpiTotalScore">0%</strong></div>
     <div class="kpi-stat"><small data-label-key="kpi.stat.level">Performance Level</small><strong id="kpiLevel" class="kpi-level">—</strong></div>
     <div class="kpi-stat"><small data-label-key="kpi.stat.accuracy">Average Accuracy</small><strong id="kpiAvgAccuracy">0%</strong></div>
+  </div>
+  <div class="table-actions no-print" style="margin-top:10px;">
+    <button type="button" class="btn-small" style="background:#a8462e;" onclick="setKpiManualStatus('rejected')">🔴 Red</button>
+    <button type="button" class="btn-small" style="background:#b8860e;" onclick="setKpiManualStatus('warning')">🟡 Yellow</button>
+    <button type="button" class="btn-small" style="background:var(--forest);" onclick="setKpiManualStatus(null)">🟢 Green</button>
   </div>
 
   <div class="section-header"><div class="num">3</div><div class="title" data-label-key="kpi.sec.notes">Supervisor Notes</div></div>
@@ -5144,7 +5153,7 @@ async function renderHomeStats(){
         const rrows = (r.data && r.data.rows) ? r.data.rows : [];
         rrows.forEach(row=>{ total += parseFloat(String(row.cashflow||'0').replace(/,/g,'')) || 0; });
       });
-      stats.push({ic:'💵', label:'Total Cash Flow', numVal: total, suffix:' IQD', color:'#0c8a4a'});
+      stats.push({ic:'💵', label:'Total Cash Flow', numVal: total, suffix:'', color:'#0c8a4a'});
     }
     if(sopRes && sopRes.ok) stats.push({ic:'📋', label:'SOP Documents', numVal: (await sopRes.json()).length, suffix:'', color:'#b8720e'});
     if(empRes && empRes.ok) stats.push({ic:'🪪', label:'Staff Members', numVal: (await empRes.json()).length, suffix:'', color:'#7c5cd4'});
@@ -5749,49 +5758,80 @@ function renderKpiRows(){
     return;
   }
 
-  const rowHtml = k => `
+  const groupById = {};
+  KPI_GROUPS.forEach(g => { groupById[g.id] = g; });
+
+  const rowHtml = k => {
+    const g = groupById[k.group || 'data-entry'] || KPI_GROUPS[0];
+    return `
     <tr data-task-id="${k.id}">
+      <td style="white-space:nowrap;">${g.icon} ${g.label.replace(/</g,'&lt;')}</td>
       <td>${k.label.replace(/</g,'&lt;')}</td>
-      <td><input type="number" min="0" value="0" class="kpi-target"></td>
-      <td><input type="number" min="0" value="0" class="kpi-actual"></td>
-      <td><input type="number" min="0" max="100" value="100" class="kpi-accuracy"></td>
+      <td><input type="number" min="0" class="kpi-target" placeholder="0"></td>
+      <td><input type="number" min="0" class="kpi-actual" placeholder="0"></td>
+      <td><input type="number" min="0" max="100" class="kpi-accuracy" placeholder="100"></td>
       <td class="readonly-cell kpi-achievement">0%</td>
       <td><input type="number" value="${k.weight}" class="kpi-weight" readonly></td>
       <td class="readonly-cell kpi-score">0%</td>
     </tr>`;
+  };
 
-  wrap.innerHTML = KPI_GROUPS.map(g => {
-    const groupDefs = visibleDefs.filter(k => (k.group || 'data-entry') === g.id);
-    if(!groupDefs.length) return '';
-    const toolsHtml = g.id === 'satisfaction' ? `
-      <div class="table-actions no-print">
-        <button class="btn-small" onclick="openDailyEntry()">📝 Monthly Entry</button>
-        <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Monthly Log</button>
-        <button class="btn-small" onclick="openDailyLogViewer()">📋 View Monthly Log</button>
-      </div>` : '';
-    return `
-      <div class="section-header" style="margin-top:18px;"><div class="num">${g.icon}</div><div class="title">${g.label} <span style="opacity:.75;font-weight:600;">(${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : '—'}% of total)</span></div></div>
-      ${toolsHtml}
-      <div class="price-table-wrap">
-        <table class="pricelist kpi-table">
-          <thead>
-            <tr>
-              <th data-label-key="kpi.col.task">Task / KPI</th>
-              <th data-label-key="kpi.col.target">Target</th>
-              <th data-label-key="kpi.col.actual">Actual</th>
-              <th data-label-key="kpi.col.accuracy">Accuracy %</th>
-              <th data-label-key="kpi.col.achievement">Achievement %</th>
-              <th data-label-key="kpi.col.weight">Weight %</th>
-              <th data-label-key="kpi.col.score">Score</th>
-            </tr>
-          </thead>
-          <tbody>${groupDefs.map(rowHtml).join('')}</tbody>
-        </table>
-      </div>`;
-  }).join('');
+  // Order rows by group (Data Entry, Errors, Satisfaction), matching KPI_GROUPS order.
+  const orderedDefs = [...visibleDefs].sort((a,b) => {
+    const ai = KPI_GROUPS.findIndex(g => g.id === (a.group||'data-entry'));
+    const bi = KPI_GROUPS.findIndex(g => g.id === (b.group||'data-entry'));
+    return ai - bi;
+  });
+
+  let rowsHtml = '';
+  let lastGroupId = null;
+  orderedDefs.forEach(k => {
+    const groupId = k.group || 'data-entry';
+    if(lastGroupId !== null && groupId !== lastGroupId){
+      rowsHtml += `<tr class="kpi-group-divider"><td colspan="8"></td></tr>`;
+    }
+    rowsHtml += rowHtml(k);
+    lastGroupId = groupId;
+  });
+
+  const weightSummary = KPI_GROUPS
+    .filter(g => visibleDefs.some(k => (k.group||'data-entry') === g.id))
+    .map(g => `${g.icon} ${g.label} (${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : '—'}%)`)
+    .join('  ·  ');
+
+  wrap.innerHTML = `
+    <div style="font-size:.78rem;color:#666;margin-bottom:10px;">${weightSummary}</div>
+    <div class="table-actions no-print">
+      <button class="btn-small" onclick="openDailyEntry()">📝 Monthly Entry</button>
+      <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Monthly Log</button>
+      <button class="btn-small" onclick="openDailyLogViewer()">📋 View Monthly Log</button>
+    </div>
+    <div class="price-table-wrap">
+      <table class="pricelist kpi-table">
+        <thead>
+          <tr>
+            <th>Group</th>
+            <th data-label-key="kpi.col.task">Task / KPI</th>
+            <th data-label-key="kpi.col.target">Target</th>
+            <th data-label-key="kpi.col.actual">Actual</th>
+            <th data-label-key="kpi.col.accuracy">Accuracy %</th>
+            <th data-label-key="kpi.col.achievement">Achievement %</th>
+            <th data-label-key="kpi.col.weight">Weight %</th>
+            <th data-label-key="kpi.col.score">Score</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>`;
 
   wrap.querySelectorAll('input').forEach(inp => inp.addEventListener('input', calcKpi));
   applySiteLabels();
+}
+
+let kpiManualStatus = undefined; // undefined = follow auto-calculated color; 'rejected'/'warning'/null = manual override
+function setKpiManualStatus(status){
+  kpiManualStatus = status;
+  calcKpi();
 }
 
 function calcKpi(){
@@ -5803,7 +5843,8 @@ function calcKpi(){
     const t = parseFloat(tr.querySelector('.kpi-target').value) || 0;
     const a = parseFloat(tr.querySelector('.kpi-actual').value) || 0;
     if(a > 0) anyActualEntered = true;
-    const ac = Math.min(100, Math.max(0, parseFloat(tr.querySelector('.kpi-accuracy').value) || 0));
+    const accRaw = tr.querySelector('.kpi-accuracy').value;
+    const ac = Math.min(100, Math.max(0, accRaw === '' ? 100 : (parseFloat(accRaw) || 0)));
     const w = parseFloat(tr.querySelector('.kpi-weight').value) || 0;
 
     const def = KPI_DEFS.find(k => k.id === tr.dataset.taskId);
@@ -5844,7 +5885,13 @@ function calcKpi(){
   const level = document.getElementById('kpiLevel');
   level.className = 'kpi-level';
   const kpiSheet = document.getElementById('kpiForm');
-  if(!anyActualEntered && kpiSheet) kpiSheet.removeAttribute('data-status');
+  if(kpiManualStatus !== undefined){
+    // A person explicitly chose a color; respect it until they pick another or clear it.
+    if(kpiSheet){
+      if(kpiManualStatus) kpiSheet.setAttribute('data-status', kpiManualStatus);
+      else kpiSheet.removeAttribute('data-status');
+    }
+  }else if(!anyActualEntered && kpiSheet){ kpiSheet.removeAttribute('data-status'); }
   else if(finalKpi >= 80){ if(kpiSheet) kpiSheet.removeAttribute('data-status'); }
   else if(finalKpi >= 70){ if(kpiSheet) kpiSheet.setAttribute('data-status','warning'); }
   else{ if(kpiSheet) kpiSheet.setAttribute('data-status','rejected'); }
@@ -5868,6 +5915,8 @@ function serializeKpi(){
     month: document.querySelector('.kpi-month').value,
     supervisor: document.querySelector('.kpi-supervisor').value,
     notes: document.querySelector('.kpi-notes').value,
+    manualStatus: kpiManualStatus !== undefined ? kpiManualStatus : null,
+    manualStatusSet: kpiManualStatus !== undefined,
     rows
   };
 }
@@ -5879,6 +5928,7 @@ function restoreKpi(d){
   document.querySelector('.kpi-month').value = d.month || '';
   document.querySelector('.kpi-supervisor').value = d.supervisor || '';
   document.querySelector('.kpi-notes').value = d.notes || '';
+  kpiManualStatus = d.manualStatusSet ? (d.manualStatus || null) : undefined;
   const savedRows = d.rows || [];
   document.querySelectorAll('#kpiGroupsWrap tr[data-task-id]').forEach((tr, i) => {
     // Prefer matching by stable task id (safe across reordering); fall back to
@@ -6140,7 +6190,7 @@ function computeKpiScoreFromData(d){
     if(!def) return;
     const t = parseFloat(r.target) || 0;
     const a = parseFloat(r.actual) || 0;
-    const ac = Math.min(100, Math.max(0, parseFloat(r.accuracy) || 0));
+    const ac = Math.min(100, Math.max(0, r.accuracy === '' || r.accuracy === undefined ? 100 : (parseFloat(r.accuracy) || 0)));
     const groupId = def.group || 'data-entry';
     const isInverse = groupId === 'errors';
     const rawAchievement = t > 0 ? Math.min(100, (a/t)*100) : 0;
