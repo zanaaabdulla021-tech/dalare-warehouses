@@ -118,6 +118,10 @@
   }
   header.title-block .stars{display:none;}
   .seal{display:none;}
+  @keyframes logoLedGlow{
+    0%, 100%{box-shadow:0 6px 18px rgba(10,36,23,0.4), 0 0 0 0 rgba(34,153,73,.5);}
+    50%{box-shadow:0 6px 18px rgba(10,36,23,0.4), 0 0 16px 4px rgba(34,153,73,.55);}
+  }
   .logo-badge{
     position:absolute;
     top:8px;
@@ -134,6 +138,10 @@
     box-shadow:0 6px 18px rgba(10,36,23,0.4);
     flex-shrink:0;
     z-index:10;
+    animation:logoLedGlow 2.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .logo-badge{animation:none;}
   }
   .logo-badge img{
     width:100%;
@@ -588,12 +596,12 @@
   #form table.pricelist th:nth-child(12){width:6%;}
   #form table.pricelist th:nth-child(13){width:15%;}
   #form table.pricelist th:nth-child(14){width:6%;}
-  #cfForm table.pricelist th:nth-child(2){width:17%;}
-  #cfForm table.pricelist th:nth-child(3){width:14%;}
-  #cfForm table.pricelist th:nth-child(4){width:13%;}
-  #cfForm table.pricelist th:nth-child(5){width:14%;}
-  #cfForm table.pricelist th:nth-child(6){width:14%;}
-  #cfForm table.pricelist th:nth-child(7){width:18%;}
+  #cfForm table.pricelist th:nth-child(2){width:15%;}
+  #cfForm table.pricelist th:nth-child(3){width:12%;}
+  #cfForm table.pricelist th:nth-child(4){width:11%;}
+  #cfForm table.pricelist th:nth-child(5){width:13%;}
+  #cfForm table.pricelist th:nth-child(6){width:13%;}
+  #cfForm table.pricelist th:nth-child(7){width:24%;}
 
   /* ---------- Desktop: widen Invoice/Cash Flow and enlarge their tables ---------- */
   @media (min-width:1100px){
@@ -1362,6 +1370,7 @@
     .print-hide{display:none !important;}
     .toolbar{display:none !important;}
     .tabbar{display:none !important;}
+    .logo-badge{animation:none !important;}
     .auth-overlay, .userbar{display:none !important;}
     .toast{display:none !important;}
     .subtitle-edit{display:none !important;}
@@ -1603,6 +1612,8 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button id="addSectionBtn" class="add-section-btn" onclick="openSectionBuilder()" style="display:none;" title="Add a new section">+ Add Section</button>
     <button id="reorderTabsBtn" class="add-section-btn" onclick="openTabOrderManager()" style="display:none;" title="Reorder tabs">🔀 Reorder Tabs</button>
     <button id="siteTextBtn" class="add-section-btn" onclick="openSiteTextEditor()" style="display:none;" title="Edit site text">🎨 Edit Site Text</button>
+    <button id="changeLogoBtn" class="add-section-btn" onclick="document.getElementById('logoFileInput').click()" style="display:none;" title="Change logo">🖼️ Change Logo</button>
+    <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
   </div>
 </div>
 
@@ -3591,12 +3602,12 @@ const PRINT_COL_DEFS = {
     {idx:13, label:'Notes',            width:17}
   ],
   cf: [
-    {idx:2, label:'Product'},
-    {idx:3, label:'Batch/Lot Number'},
-    {idx:4, label:'Items per Package'},
-    {idx:5, label:'Cash Flow'},
-    {idx:6, label:'Stock Dalare'},
-    {idx:7, label:'Note'}
+    {idx:2, label:'Product', width:15},
+    {idx:3, label:'Batch/Lot Number', width:12},
+    {idx:4, label:'Items per Package', width:11},
+    {idx:5, label:'Cash Flow', width:13},
+    {idx:6, label:'Stock Dalare', width:13},
+    {idx:7, label:'Note', width:24}
   ]
 };
 
@@ -3624,14 +3635,22 @@ function makeColumnsResizable(tableSel, storageKey){
   if(!headerRow) return;
 
   headerRow.querySelectorAll('.col-resize-handle').forEach(h => h.remove());
-  const ths = Array.from(headerRow.children);
-  const resizableThs = ths.slice(1, ths.length - 1); // skip row-num and trailing action column
+  const allThs = Array.from(headerRow.children);
+  const resizableThs = allThs.slice(1, allThs.length - 1); // skip row-num and trailing action column
+
+  function recalcTableWidth(){
+    // Sum every column's actual rendered width so the table can grow past its
+    // container (wrapper scrolls) instead of squeezing sibling columns.
+    const total = allThs.reduce((sum, th) => sum + th.offsetWidth, 0);
+    if(total > 0) table.style.width = total + 'px';
+  }
 
   let saved = {};
   try{ saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); }catch(e){}
   resizableThs.forEach((th, i) => {
     if(saved[i]) th.style.width = saved[i] + 'px';
   });
+  requestAnimationFrame(recalcTableWidth);
 
   resizableThs.forEach(th => {
     const handle = document.createElement('div');
@@ -3641,7 +3660,7 @@ function makeColumnsResizable(tableSel, storageKey){
     let startX = 0, startWidth = 0;
     const onMove = (e) => {
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const newWidth = Math.max(40, startWidth + (clientX - startX));
+      const newWidth = Math.max(40, Math.round(startWidth + (clientX - startX)));
       th.style.width = newWidth + 'px';
     };
     const onUp = () => {
@@ -3650,16 +3669,20 @@ function makeColumnsResizable(tableSel, storageKey){
       document.removeEventListener('mouseup', onUp);
       document.removeEventListener('touchmove', onMove);
       document.removeEventListener('touchend', onUp);
+      recalcTableWidth();
       let widths = {};
       try{ widths = JSON.parse(localStorage.getItem(storageKey) || '{}'); }catch(e){}
-      resizableThs.forEach((t, idx) => { widths[idx] = Math.round(t.getBoundingClientRect().width); });
+      resizableThs.forEach((t, idx) => { widths[idx] = t.offsetWidth; });
       try{ localStorage.setItem(storageKey, JSON.stringify(widths)); }catch(e){}
     };
     const onStart = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      // Freeze every sibling column at its current pixel width first, so this
+      // drag only changes the one column being resized — none of the others move.
+      allThs.forEach(t => { if(t !== th) t.style.width = t.offsetWidth + 'px'; });
       startX = e.touches ? e.touches[0].clientX : e.clientX;
-      startWidth = th.getBoundingClientRect().width;
+      startWidth = th.offsetWidth;
       handle.classList.add('resizing');
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
@@ -3972,6 +3995,8 @@ function updateReorderTabsButton(){
   if(btn) btn.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
   const btn2 = document.getElementById('siteTextBtn');
   if(btn2) btn2.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
+  const btn3 = document.getElementById('changeLogoBtn');
+  if(btn3) btn3.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
 }
 
 function openTabOrderManager(){
@@ -4425,11 +4450,40 @@ async function loadSiteSettings(){
       KPI_DEFS = rows[0].kpi_defs;
       if(document.getElementById('kpiBody')) renderKpiRows();
     }
+    if(rows.length && rows[0].logo_data_url) applyCustomLogo(rows[0].logo_data_url);
     applySubtitleText();
     applyContactText();
     applySiteLabels();
     applyThemeColor();
   }catch(e){ /* keep default text */ }
+}
+
+function applyCustomLogo(dataUrl){
+  document.querySelectorAll('.drawer-logo, .home-logo, .logo-badge img').forEach(img => { img.src = dataUrl; });
+}
+
+function handleLogoUpload(input){
+  if(!isSuperAdmin()){ flash('Only a super admin can change the logo.', true); return; }
+  const file = input.files[0];
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ flash('Please choose an image file.', true); return; }
+  if(file.size > 2 * 1024 * 1024){ flash('Please choose an image under 2MB.', true); return; }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const dataUrl = reader.result;
+    applyCustomLogo(dataUrl);
+    try{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+        method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+        body: JSON.stringify({ id:'default', logo_data_url: dataUrl, updated_by: session.email, updated_at: new Date().toISOString() })
+      });
+      if(!res.ok) throw new Error(await res.text());
+      logActivity('change_logo', null, null);
+      flash('Logo updated for everyone');
+    }catch(e){ console.error(e); flash(sbError(e), true); }
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
 }
 
 function openFooterEditor(){
