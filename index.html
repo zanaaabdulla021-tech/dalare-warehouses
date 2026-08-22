@@ -44,6 +44,12 @@
     --sage:#f4edeb;
     --line:#dfc8c2;
   }
+  .sheet[data-status="warning"]{
+    --forest:#b8860e;
+    --forest-deep:#5c4207;
+    --sage:#f7f0dc;
+    --line:#e6d494;
+  }
   .sheet[data-status="pending"]{
     --forest:#1a1a1a;
     --forest-deep:#000000;
@@ -691,6 +697,11 @@
   }
   table.kpi-table td:first-child{text-align:left;font-weight:700;}
   table.kpi-table input{width:100%;}
+  table.kpi-table input[type="number"]{-moz-appearance:textfield;}
+  table.kpi-table input[type="number"]::-webkit-outer-spin-button,
+  table.kpi-table input[type="number"]::-webkit-inner-spin-button{
+    -webkit-appearance:none;margin:0;
+  }
   table.kpi-table td.readonly-cell{font-family:"IBM Plex Mono",monospace;font-weight:700;color:var(--forest-deep);}
   .kpi-summary-grid{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;
@@ -5741,7 +5752,7 @@ function renderKpiRows(){
   const rowHtml = k => `
     <tr data-task-id="${k.id}">
       <td>${k.label.replace(/</g,'&lt;')}</td>
-      <td><input type="number" min="0" value="100" class="kpi-target"></td>
+      <td><input type="number" min="0" value="0" class="kpi-target"></td>
       <td><input type="number" min="0" value="0" class="kpi-actual"></td>
       <td><input type="number" min="0" max="100" value="100" class="kpi-accuracy"></td>
       <td class="readonly-cell kpi-achievement">0%</td>
@@ -5786,21 +5797,25 @@ function renderKpiRows(){
 function calcKpi(){
   const groupTotals = {}; // groupId -> { weightedScore, totalWeight }
   let accuracySum = 0, count = 0;
+  let anyActualEntered = false;
 
   document.querySelectorAll('#kpiGroupsWrap tr[data-task-id]').forEach(tr => {
     const t = parseFloat(tr.querySelector('.kpi-target').value) || 0;
     const a = parseFloat(tr.querySelector('.kpi-actual').value) || 0;
+    if(a > 0) anyActualEntered = true;
     const ac = Math.min(100, Math.max(0, parseFloat(tr.querySelector('.kpi-accuracy').value) || 0));
     const w = parseFloat(tr.querySelector('.kpi-weight').value) || 0;
 
-    const achievement = t > 0 ? Math.min(100, (a/t)*100) : 0;
+    const def = KPI_DEFS.find(k => k.id === tr.dataset.taskId);
+    const groupId = (def && def.group) || 'data-entry';
+    const isInverse = groupId === 'errors'; // fewer errors relative to target = better score
+    const rawAchievement = t > 0 ? Math.min(100, (a/t)*100) : 0;
+    const achievement = isInverse ? (100 - rawAchievement) : rawAchievement;
     const score = achievement * (ac/100);
 
     tr.querySelector('.kpi-achievement').textContent = achievement.toFixed(1) + '%';
     tr.querySelector('.kpi-score').textContent = (score * (w/100)).toFixed(1) + '%';
 
-    const def = KPI_DEFS.find(k => k.id === tr.dataset.taskId);
-    const groupId = (def && def.group) || 'data-entry';
     if(!groupTotals[groupId]) groupTotals[groupId] = { weightedScore:0, totalWeight:0 };
     groupTotals[groupId].weightedScore += score * w;
     groupTotals[groupId].totalWeight += w;
@@ -5828,9 +5843,15 @@ function calcKpi(){
 
   const level = document.getElementById('kpiLevel');
   level.className = 'kpi-level';
+  const kpiSheet = document.getElementById('kpiForm');
+  if(!anyActualEntered && kpiSheet) kpiSheet.removeAttribute('data-status');
+  else if(finalKpi >= 80){ if(kpiSheet) kpiSheet.removeAttribute('data-status'); }
+  else if(finalKpi >= 70){ if(kpiSheet) kpiSheet.setAttribute('data-status','warning'); }
+  else{ if(kpiSheet) kpiSheet.setAttribute('data-status','rejected'); }
+
   if(finalKpi >= 90){ level.textContent = 'Excellent'; level.classList.add('excellent'); }
-  else if(finalKpi >= 75){ level.textContent = 'Good'; level.classList.add('good'); }
-  else if(finalKpi >= 60){ level.textContent = 'Average'; level.classList.add('average'); }
+  else if(finalKpi >= 80){ level.textContent = 'Good'; level.classList.add('good'); }
+  else if(finalKpi >= 70){ level.textContent = 'Average'; level.classList.add('average'); }
   else{ level.textContent = 'Needs Improvement'; level.classList.add('low'); }
 }
 
@@ -6120,9 +6141,11 @@ function computeKpiScoreFromData(d){
     const t = parseFloat(r.target) || 0;
     const a = parseFloat(r.actual) || 0;
     const ac = Math.min(100, Math.max(0, parseFloat(r.accuracy) || 0));
-    const achievement = t > 0 ? Math.min(100, (a/t)*100) : 0;
-    const score = achievement * (ac/100);
     const groupId = def.group || 'data-entry';
+    const isInverse = groupId === 'errors';
+    const rawAchievement = t > 0 ? Math.min(100, (a/t)*100) : 0;
+    const achievement = isInverse ? (100 - rawAchievement) : rawAchievement;
+    const score = achievement * (ac/100);
     if(!groupTotals[groupId]) groupTotals[groupId] = { weightedScore:0, totalWeight:0 };
     groupTotals[groupId].weightedScore += score * def.weight;
     groupTotals[groupId].totalWeight += def.weight;
@@ -6185,8 +6208,8 @@ async function openEmployeeProfile(id){
     const scores = rows.map(r => computeKpiScoreFromData(r.data || {}));
     const avg = scores.reduce((a,b) => a+b, 0) / scores.length;
     const latest = scores[0];
-    const levelFor = s => s>=90?'Excellent':s>=75?'Good':s>=60?'Average':'Needs Improvement';
-    const colorFor = s => s>=90?'#0f7a3d':s>=75?'#2f7d32':s>=60?'#b9770e':'#a8462e';
+    const levelFor = s => s>=90?'Excellent':s>=80?'Good':s>=70?'Average':'Needs Improvement';
+    const colorFor = s => s>=90?'#0f7a3d':s>=80?'#2f7d32':s>=70?'#b9770e':'#a8462e';
     summaryBox.innerHTML = `
       <div class="kpi-summary-grid" style="padding:0 0 14px;">
         <div class="kpi-stat"><small>Average Score</small><strong style="color:${colorFor(avg)};">${avg.toFixed(1)}%</strong></div>
@@ -6200,7 +6223,7 @@ async function openEmployeeProfile(id){
     const levelCounts = { Excellent:0, Good:0, Average:0, 'Needs Improvement':0 };
     chronological.forEach(r => {
       const s = computeKpiScoreFromData(r.data || {});
-      const lvl = s>=90?'Excellent':s>=75?'Good':s>=60?'Average':'Needs Improvement';
+      const lvl = s>=90?'Excellent':s>=80?'Good':s>=70?'Average':'Needs Improvement';
       levelCounts[lvl]++;
     });
     trendBox.innerHTML = `
@@ -6208,8 +6231,8 @@ async function openEmployeeProfile(id){
       <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
         ${chronological.map((r,i) => {
           const s = computeKpiScoreFromData(r.data || {});
-          const dot = s>=90?'💚':s>=75?'🟢':s>=60?'🟡':'🔴';
-          const levelName = s>=90?'Excellent':s>=75?'Good':s>=60?'Average':'Needs Improvement';
+          const dot = s>=90?'💚':s>=80?'🟢':s>=70?'🟡':'🔴';
+          const levelName = s>=90?'Excellent':s>=80?'Good':s>=70?'Average':'Needs Improvement';
           const month = (r.data && r.data.month) || r.id;
           return `<span title="${month.replace(/</g,'&lt;')}: ${s.toFixed(1)}% (${levelName})" style="font-size:1.1rem;cursor:default;">${dot}</span>`;
         }).join('')}
@@ -6224,7 +6247,7 @@ async function openEmployeeProfile(id){
     list.innerHTML = rows.map((r,i) => {
       const score = scores[i];
       const month = (r.data && r.data.month) || 'No month set';
-      const color = score>=90?'#0f7a3d':score>=75?'#2f7d32':score>=60?'#b9770e':'#a8462e';
+      const color = score>=90?'#0f7a3d':score>=80?'#2f7d32':score>=70?'#b9770e':'#a8462e';
       return `
         <div class="ep-kpi-row" onclick="openEmployeeProfileKpi('${r.id}')">
           <div>
