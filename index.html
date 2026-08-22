@@ -2626,34 +2626,47 @@ function showApp(show){
 }
 
 async function doLogin(){
-  const email = document.getElementById('authEmail').value.trim();
-  const pass  = document.getElementById('authPass').value;
-  const btn   = document.getElementById('authBtn');
-  const err   = document.getElementById('authErr');
-  err.textContent = '';
-  if(!email || !pass){ err.textContent = 'Enter your email and password.'; return; }
-  if(!backendReady()){ err.textContent = 'Backend not configured.'; return; }
-
-  btn.disabled = true; btn.textContent = 'Signing in…';
   try{
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method:'POST',
-      headers:{ 'apikey': SUPABASE_ANON_KEY, 'Content-Type':'application/json' },
-      body: JSON.stringify({ email, password: pass })
-    });
-    const body = await res.json();
-    if(!res.ok) throw new Error(body.error_description || body.msg || body.message || 'Sign in failed');
+    const emailEl = document.getElementById('authEmail');
+    const passEl  = document.getElementById('authPass');
+    const btn     = document.getElementById('authBtn');
+    const err     = document.getElementById('authErr');
+    if(!emailEl || !passEl || !btn || !err){
+      alert('Login form failed to load correctly. Please refresh the page and try again.');
+      return;
+    }
+    const email = emailEl.value.trim();
+    const pass  = passEl.value;
+    err.textContent = '';
+    if(!email || !pass){ err.textContent = 'Enter your email and password.'; return; }
+    if(!backendReady()){ err.textContent = 'Backend not configured.'; return; }
 
-    session.token  = body.access_token;
-    session.email  = body.user && body.user.email;
-    session.userId = body.user && body.user.id;
-    await loadRole();
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    applySession();
-  }catch(e){
-    err.textContent = String(e.message || e);
-  }finally{
-    btn.disabled = false; btn.textContent = 'Sign in';
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try{
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method:'POST',
+        headers:{ 'apikey': SUPABASE_ANON_KEY, 'Content-Type':'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      const body = await res.json();
+      if(!res.ok) throw new Error(body.error_description || body.msg || body.message || 'Sign in failed');
+
+      session.token  = body.access_token;
+      session.email  = body.user && body.user.email;
+      session.userId = body.user && body.user.id;
+      await loadRole();
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      applySession();
+    }catch(e){
+      err.textContent = String(e.message || e);
+    }finally{
+      btn.disabled = false; btn.textContent = 'Sign in';
+    }
+  }catch(outerErr){
+    // Something failed before we even reached the normal flow (e.g. a missing
+    // element). Surface it instead of the button silently doing nothing.
+    console.error('doLogin failed unexpectedly:', outerErr);
+    alert('Something went wrong signing in: ' + (outerErr.message || outerErr));
   }
 }
 
