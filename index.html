@@ -4572,7 +4572,17 @@ async function loadSiteSettings(){
     if(rows.length && rows[0].labels) siteLabels = rows[0].labels;
     if(rows.length && rows[0].theme_color) siteThemeColor = rows[0].theme_color;
     if(rows.length && rows[0].kpi_defs && rows[0].kpi_defs.length){
-      KPI_DEFS = rows[0].kpi_defs;
+      const knownGroups = {
+        'invoice-entry':'data-entry', 'invoice-return':'data-entry', 'definition':'data-entry',
+        'barcode':'data-entry', 'audit-edit':'data-entry', 'branch-maintenance':'data-entry',
+        'account-statement':'data-entry', 'transit':'data-entry',
+        'errors':'errors',
+        'uniform-compliance':'satisfaction', 'management-evaluation':'satisfaction',
+      };
+      KPI_DEFS = rows[0].kpi_defs.map(k => ({
+        ...k,
+        group: k.group || knownGroups[k.id] || 'data-entry'
+      }));
     }
     if(rows.length && rows[0].kpi_group_weights && Object.keys(rows[0].kpi_group_weights).length){
       KPI_GROUP_WEIGHTS = rows[0].kpi_group_weights;
@@ -6012,7 +6022,7 @@ async function saveDailyEntry(){
   })).filter(t => t.label);
   if(newTasks.length){
     try{
-      const updatedDefs = [...KPI_DEFS, ...newTasks.map(t => ({ id:t.id, label:t.label, weight:0, department: currentUserDepartment || '' }))];
+      const updatedDefs = [...KPI_DEFS, ...newTasks.map(t => ({ id:t.id, label:t.label, weight:0, department: currentUserDepartment || '', group: 'data-entry' }))];
       const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
         method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
         body: JSON.stringify({ id:'default', kpi_defs: updatedDefs, updated_by: session.email, updated_at: new Date().toISOString() })
