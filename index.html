@@ -3838,11 +3838,35 @@ async function savePrintColumnsConfig(){
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
+function detectEmptyColumns(tab){
+  const tableSel = tab === 'inv' ? '#form table.pricelist' : '#cfForm table.pricelist';
+  const table = document.querySelector(tableSel);
+  if(!table) return [];
+  const bodyRows = Array.from(table.querySelectorAll('tbody tr'));
+  if(!bodyRows.length) return [];
+  const defs = PRINT_COL_DEFS[tab];
+  const empty = [];
+  defs.forEach(d => {
+    // idx is 1-based across <td> including the row-num cell, so the (idx-1)th <td> matches.
+    const allEmpty = bodyRows.every(tr => {
+      const cell = tr.children[d.idx - 1];
+      if(!cell) return true;
+      const inputs = cell.querySelectorAll('input, textarea');
+      if(!inputs.length) return !cell.textContent.trim();
+      return Array.from(inputs).every(isEmptyInput);
+    });
+    if(allEmpty) empty.push(d.idx);
+  });
+  return empty;
+}
+
 function applyPrintColumnOverrides(){
   removePrintColumnOverrides();
   const tab = activeTab;
   if(tab !== 'inv' && tab !== 'cf') return;
-  const hidden = printColumns[tab] || [];
+  const manualHidden = printColumns[tab] || [];
+  const autoEmpty = detectEmptyColumns(tab);
+  const hidden = [...new Set([...manualHidden, ...autoEmpty])];
   const extras = extraColumns[tab] || [];
   if(!hidden.length && !extras.length) return;
 
