@@ -582,14 +582,22 @@
   table.pricelist input[type="text"], table.pricelist input[type="number"], table.pricelist input[type="date"]{
     width:100%;
     border:none;
+    border-bottom:1px dashed rgba(10,36,23,.15);
     background:transparent;
     text-align:center;
     font-family:"IBM Plex Mono",monospace;
     font-size:.74rem;
     color:#000000;
     padding:3px 2px;
+    border-radius:3px;
+    transition:background .12s ease, border-color .12s ease;
   }
-  table.pricelist input:focus{outline:1px solid var(--forest);}
+  table.pricelist input[type="text"]:hover, table.pricelist input[type="number"]:hover, table.pricelist input[type="date"]:hover{
+    background:rgba(34,153,73,.05);border-bottom-color:rgba(34,153,73,.4);
+  }
+  table.pricelist input:focus{
+    outline:none;background:rgba(34,153,73,.08);border-bottom:1px solid var(--forest);box-shadow:none !important;
+  }
   table.pricelist .row-num{font-weight:700;color:#000000;font-family:"IBM Plex Mono",monospace;width:28px;}
   #form table.pricelist th:nth-child(2){width:9%;}
   #form table.pricelist th:nth-child(3){width:9%;}
@@ -1112,49 +1120,50 @@
   .drawer-overlay.open{opacity:1;visibility:visible;}
   .drawer{
     position:fixed;top:0;left:0;bottom:0;width:280px;max-width:82vw;
-    background:linear-gradient(175deg,#0c1f14 0%,#0a1810 55%,#081209 100%);
-    z-index:1600;box-shadow:8px 0 30px -10px rgba(10,36,23,.35);
+    background:#fff;
+    z-index:1600;box-shadow:8px 0 30px -10px rgba(10,36,23,.18);
     transform:translateX(-100%);transition:transform .25s cubic-bezier(.2,.8,.3,1);
     display:flex;flex-direction:column;overflow-y:auto;
+    border-right:1px solid var(--line);
   }
   .drawer.open{transform:translateX(0);}
   .drawer-head{
     display:flex;align-items:center;gap:10px;padding:18px 16px;
-    background:transparent;color:#fff;
-    border-bottom:1px solid rgba(255,255,255,.08);
+    background:#fff;color:#111;
+    border-bottom:1px solid var(--line);
     position:sticky;top:0;
   }
-  .drawer-logo{width:38px;height:38px;object-fit:contain;background:#fff;border-radius:9px;padding:4px;}
-  .drawer-title{font-weight:800;font-size:1rem;letter-spacing:1px;line-height:1.1;}
-  .drawer-sub{font-size:.6rem;font-weight:700;letter-spacing:1.5px;opacity:.85;}
+  .drawer-logo{width:38px;height:38px;object-fit:contain;background:var(--sage);border-radius:11px;padding:4px;}
+  .drawer-title{font-weight:800;font-size:1rem;letter-spacing:.5px;line-height:1.1;color:#111;}
+  .drawer-sub{font-size:.6rem;font-weight:700;letter-spacing:1.5px;opacity:.55;color:var(--forest);}
   .drawer-close{
-    margin-inline-start:auto;background:rgba(255,255,255,.15);border:none;color:#fff;
+    margin-inline-start:auto;background:var(--sage);border:none;color:var(--forest-deep);
     width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
   }
   .tabbar{display:flex;flex-direction:column;gap:3px;padding:12px;}
   .tabbar button{
-    border:none;background:transparent;color:#b8c9bd;border-radius:10px;
+    border:none;background:transparent;color:#5c6b62;border-radius:12px;
     padding:12px 14px;cursor:pointer;text-align:left;
     font-size:.9rem;font-weight:700;font-family:"IBM Plex Sans",sans-serif;
     display:flex;align-items:center;gap:10px;
     transition:background .15s ease, color .15s ease;
   }
   .tabbar button.active{
-    background:linear-gradient(135deg,var(--forest),#1a5c33);color:#fff;
-    box-shadow:0 4px 12px -4px rgba(0,0,0,.5);
+    background:var(--forest);color:#fff;
+    box-shadow:0 4px 12px -4px rgba(34,153,73,.5);
   }
-  .tabbar button:hover:not(.active){background:rgba(255,255,255,.07);color:#fff;}
+  .tabbar button:hover:not(.active){background:var(--sage);color:var(--forest-deep);}
   .sheet.hidden-tab{display:none !important;}
   .hidden-tab{display:none !important;}
   #customTabsSlot{display:contents;}
   .add-section-btn{
     width:100% !important;justify-content:flex-start !important;
     font-size:.9rem !important;font-weight:700 !important;
-    border-radius:10px !important;color:#8fd6a8 !important;
-    border:1px dashed rgba(255,255,255,.18) !important;margin-top:4px;
+    border-radius:12px !important;color:var(--forest) !important;
+    border:1px dashed var(--line) !important;margin-top:4px;
   }
-  .add-section-btn:hover:not(.active){background:rgba(255,255,255,.06) !important;color:#fff !important;}
+  .add-section-btn:hover:not(.active){background:var(--sage) !important;color:var(--forest-deep) !important;}
   .custom-tab-btn{position:relative;}
 
   /* ---------- Desktop: pin the drawer open as a permanent sidebar ---------- */
@@ -1275,7 +1284,10 @@
     transition:transform .15s cubic-bezier(.2,.8,.3,1), box-shadow .15s ease;
   }
   .stat-card:hover{transform:translateY(-3px);box-shadow:0 1px 2px rgba(10,36,23,.08), 0 16px 30px -16px rgba(10,36,23,.35);}
-  .stat-ic{font-size:1.3rem;margin-bottom:6px;}
+  .stat-ic{
+    font-size:1.15rem;margin-bottom:10px;width:38px;height:38px;border-radius:11px;
+    display:flex;align-items:center;justify-content:center;
+  }
   .stat-val{font-size:1.9rem;font-weight:600;color:#000;font-family:"Fraunces","IBM Plex Mono",monospace;}
   .stat-label{font-size:.72rem;color:#777;font-weight:600;margin-top:2px;}
   .home-card{text-align:left;align-items:stretch;}
@@ -1484,7 +1496,7 @@
     table.pricelist{font-size:.52rem;min-width:0;table-layout:fixed;width:100%;}
     table.pricelist th{padding:2px 1px;font-size:.48rem;white-space:normal;word-break:break-word;line-height:1.1;}
     table.pricelist td{padding:1px;overflow:hidden;}
-    table.pricelist input{font-size:.48rem;padding:1px;}
+    table.pricelist input{font-size:.48rem;padding:1px;border-bottom:none !important;background:transparent !important;}
     table.pricelist th:nth-child(1), table.pricelist td:nth-child(1){width:3%;}
     table.pricelist th:nth-child(2), table.pricelist td:nth-child(2){width:13%;}
     table.pricelist th:nth-child(3), table.pricelist td:nth-child(3){width:11%;}
@@ -5074,7 +5086,7 @@ async function renderHomeStats(){
     const [invRes, cfRes, sopRes, empRes] = await Promise.all(calls.map(c => c ? c.catch(()=>null) : null));
 
     const stats = [];
-    if(invRes && invRes.ok) stats.push({ic:'🧾', label:'Total Invoices', numVal: (await invRes.json()).length, suffix:''});
+    if(invRes && invRes.ok) stats.push({ic:'🧾', label:'Total Invoices', numVal: (await invRes.json()).length, suffix:'', color:'#2f6fed'});
     if(cfRes && cfRes.ok){
       const rows = await cfRes.json();
       let total = 0;
@@ -5082,14 +5094,14 @@ async function renderHomeStats(){
         const rrows = (r.data && r.data.rows) ? r.data.rows : [];
         rrows.forEach(row=>{ total += parseFloat(String(row.cashflow||'0').replace(/,/g,'')) || 0; });
       });
-      stats.push({ic:'💵', label:'Total Cash Flow', numVal: total, suffix:' IQD'});
+      stats.push({ic:'💵', label:'Total Cash Flow', numVal: total, suffix:' IQD', color:'#0c8a4a'});
     }
-    if(sopRes && sopRes.ok) stats.push({ic:'📋', label:'SOP Documents', numVal: (await sopRes.json()).length, suffix:''});
-    if(empRes && empRes.ok) stats.push({ic:'🪪', label:'Staff Members', numVal: (await empRes.json()).length, suffix:''});
+    if(sopRes && sopRes.ok) stats.push({ic:'📋', label:'SOP Documents', numVal: (await sopRes.json()).length, suffix:'', color:'#b8720e'});
+    if(empRes && empRes.ok) stats.push({ic:'🪪', label:'Staff Members', numVal: (await empRes.json()).length, suffix:'', color:'#7c5cd4'});
 
     box.innerHTML = stats.map(s => `
       <div class="stat-card">
-        <div class="stat-ic">${s.ic}</div>
+        <div class="stat-ic" style="background:${s.color}1a;color:${s.color};">${s.ic}</div>
         <div class="stat-val" data-target="${s.numVal}" data-suffix="${(s.suffix||'').replace(/"/g,'&quot;')}">0${s.suffix||''}</div>
         <div class="stat-label">${s.label}</div>
       </div>
