@@ -2096,27 +2096,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 
   <div class="section-header"><div class="num">★</div><div class="title" data-label-key="kpi.sec.table">KPI Scorecard</div></div>
-  <div class="table-actions no-print">
-    <button class="btn-small" onclick="openDailyEntry()">📝 Daily Entry</button>
-    <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Daily Log</button>
-    <button class="btn-small" onclick="openDailyLogViewer()">📋 View Daily Log</button>
-  </div>
-  <div class="price-table-wrap">
-    <table class="pricelist kpi-table">
-      <thead>
-        <tr>
-          <th data-label-key="kpi.col.task">Task / KPI</th>
-          <th data-label-key="kpi.col.target">Target</th>
-          <th data-label-key="kpi.col.actual">Actual</th>
-          <th data-label-key="kpi.col.accuracy">Accuracy %</th>
-          <th data-label-key="kpi.col.achievement">Achievement %</th>
-          <th data-label-key="kpi.col.weight">Weight %</th>
-          <th data-label-key="kpi.col.score">Score</th>
-        </tr>
-      </thead>
-      <tbody id="kpiBody"></tbody>
-    </table>
-  </div>
+  <div id="kpiGroupsWrap"></div>
 
   <div class="section-header"><div class="num">2</div><div class="title" data-label-key="kpi.sec.summary">Performance Summary</div></div>
   <div class="kpi-summary-grid">
@@ -2330,7 +2310,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 <div class="mgr-overlay" id="dailyLogViewerOverlay">
   <div class="mgr-panel" style="max-width:640px;">
     <div class="mgr-head">
-      <h2>Daily Entries Log</h2>
+      <h2>Monthly Entries Log</h2>
       <button class="mgr-close" onclick="closeDailyLogViewer()">×</button>
     </div>
     <div class="mgr-body">
@@ -2343,14 +2323,14 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 <div class="mgr-overlay" id="dailyEntryOverlay">
   <div class="mgr-panel" style="max-width:600px;">
     <div class="mgr-head">
-      <h2>Daily Work Entry</h2>
+      <h2>Monthly Work Entry</h2>
       <button class="mgr-close" onclick="closeDailyEntry()">×</button>
     </div>
     <div class="mgr-body">
-      <div class="adm-hint">Log today's completed work per task. These entries add up automatically for the month's KPI evaluation.</div>
+      <div class="adm-hint">Log this month's completed work per task. These feed directly into the month's KPI evaluation.</div>
       <div class="kpi-info-grid" style="padding:0 0 14px;">
         <div><label>Employee</label><input type="text" id="dailyEntryEmployee" list="employeeNamesList" placeholder="Employee name" onchange="loadDailyEntryForSelectedDay()"></div>
-        <div><label>Date</label><input type="date" id="dailyEntryDate" onchange="loadDailyEntryForSelectedDay()"></div>
+        <div><label>Month</label><input type="month" id="dailyEntryDate" onchange="loadDailyEntryForSelectedDay()"></div>
       </div>
       <div id="dailyEntryFields"></div>
       <button type="button" class="add-section-btn" style="margin-top:8px;margin-bottom:8px;" onclick="addTaskFromDailyEntry()">+ Add Task</button>
@@ -2370,6 +2350,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </div>
     <div class="mgr-body">
       <div class="adm-hint" data-label-key="modal.kpiorder.hint">Drag ⋮⋮ to reorder tasks, or edit names and weights. Weights should add up to 100.</div>
+      <div class="activities-head" style="margin-bottom:6px;">Section Weights (of Total Score)</div>
+      <div id="kpiGroupWeightRow" style="display:flex;gap:10px;margin-bottom:6px;flex-wrap:wrap;"></div>
+      <div id="kpiGroupWeightTotal" style="font-size:.78rem;font-weight:700;margin-bottom:16px;color:#666;"></div>
       <div id="kpiOrderList" class="sb-fields"></div>
       <button type="button" class="add-section-btn" style="margin-top:8px;" onclick="addKpiOrderRow()">+ Add Task</button>
       <div id="kpiOrderTotal" style="font-size:.8rem;font-weight:700;margin-top:8px;color:#666;"></div>
@@ -2792,7 +2775,7 @@ let currentUserDepartment = null;
 async function loadCurrentUserDepartment(){
   currentUserDepartment = null;
   if(!backendReady() || isSuperAdmin() || session.role === 'admin'){
-    if(document.getElementById('kpiBody')) renderKpiRows(); // admins see every department
+    if(document.getElementById('kpiGroupsWrap')) renderKpiRows(); // admins see every department
     return;
   }
   try{
@@ -2801,7 +2784,7 @@ async function loadCurrentUserDepartment(){
     const rows = await res.json();
     if(rows.length && rows[0].department) currentUserDepartment = rows[0].department;
   }catch(e){ /* leave unrestricted-null; renderKpiRows treats null as "show nothing" for non-admins */ }
-  if(document.getElementById('kpiBody')) renderKpiRows();
+  if(document.getElementById('kpiGroupsWrap')) renderKpiRows();
 }
 
 function canViewTab(tab){
@@ -4133,6 +4116,9 @@ function addKpiOrderRow(){
   row.innerHTML = `
     <span class="sb-drag">⋮⋮</span>
     <input type="text" class="kpi-order-label" value="" placeholder="New task name" style="flex:1;">
+    <select class="kpi-order-group" style="width:105px;">
+      ${KPI_GROUPS.map(g => `<option value="${g.id}">${g.icon} ${g.label}</option>`).join('')}
+    </select>
     <input type="text" value="" class="kpi-order-dept" placeholder="Department" list="staffDeptList" style="width:110px;">
     <input type="number" min="0" max="100" value="0" class="kpi-order-weight" style="width:60px;">
     <span style="font-size:.7rem;color:#888;">%</span>
@@ -4159,6 +4145,20 @@ async function loadStaffDeptList(){
 
 function openKpiOrderManager(){
   if(!isSuperAdmin()){ flash('Only a super admin can reorder KPI tasks.', true); return; }
+  const gRow = document.getElementById('kpiGroupWeightRow');
+  gRow.innerHTML = KPI_GROUPS.map(g => `
+    <div style="display:flex;flex-direction:column;gap:4px;">
+      <label style="font-size:.72rem;color:#666;">${g.icon} ${g.label}</label>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <input type="number" min="0" max="100" class="kpi-group-weight" data-group="${g.id}"
+          value="${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : 0}" style="width:70px;">
+        <span style="font-size:.75rem;color:#888;">%</span>
+      </div>
+    </div>
+  `).join('');
+  gRow.querySelectorAll('.kpi-group-weight').forEach(inp => inp.addEventListener('input', updateKpiGroupWeightTotal));
+  updateKpiGroupWeightTotal();
+
   const list = document.getElementById('kpiOrderList');
   list.innerHTML = '';
   KPI_DEFS.forEach(k => {
@@ -4169,6 +4169,9 @@ function openKpiOrderManager(){
     row.innerHTML = `
       <span class="sb-drag">⋮⋮</span>
       <input type="text" class="kpi-order-label" value="${k.label.replace(/"/g,'&quot;')}" style="flex:1;">
+      <select class="kpi-order-group" style="width:105px;">
+        ${KPI_GROUPS.map(g => `<option value="${g.id}" ${g.id === (k.group||'data-entry') ? 'selected' : ''}>${g.icon} ${g.label}</option>`).join('')}
+      </select>
       <input type="text" value="${(k.department||'').replace(/"/g,'&quot;')}" class="kpi-order-dept" placeholder="Department" list="staffDeptList" style="width:110px;">
       <input type="number" min="0" max="100" value="${k.weight}" class="kpi-order-weight" style="width:60px;">
       <span style="font-size:.7rem;color:#888;">%</span>
@@ -4193,22 +4196,36 @@ function updateKpiOrderTotal(){
   box.style.color = total === 100 ? '#0f7a3d' : '#a8462e';
 }
 
+function updateKpiGroupWeightTotal(){
+  const total = Array.from(document.querySelectorAll('.kpi-group-weight'))
+    .reduce((sum, inp) => sum + (parseFloat(inp.value) || 0), 0);
+  const box = document.getElementById('kpiGroupWeightTotal');
+  box.textContent = `Section weights total: ${total}%` + (total !== 100 ? ' (should be 100)' : ' ✓');
+  box.style.color = total === 100 ? '#0f7a3d' : '#a8462e';
+}
+
 async function saveKpiOrder(){
   const rows = Array.from(document.querySelectorAll('#kpiOrderList .sb-field-row'));
   const newDefs = rows.map(row => ({
     id: row.dataset.taskId,
     label: row.querySelector('.kpi-order-label').value.trim() || 'Untitled',
     department: row.querySelector('.kpi-order-dept').value.trim(),
+    group: row.querySelector('.kpi-order-group').value || 'data-entry',
     weight: parseFloat(row.querySelector('.kpi-order-weight').value) || 0
   }));
+  const newGroupWeights = {};
+  document.querySelectorAll('.kpi-group-weight').forEach(inp => {
+    newGroupWeights[inp.dataset.group] = parseFloat(inp.value) || 0;
+  });
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
       method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
-      body: JSON.stringify({ id:'default', kpi_defs: newDefs, updated_by: session.email, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ id:'default', kpi_defs: newDefs, kpi_group_weights: newGroupWeights, updated_by: session.email, updated_at: new Date().toISOString() })
     });
     if(!res.ok) throw new Error(await res.text());
     KPI_DEFS = newDefs;
-    if(document.getElementById('kpiBody')) renderKpiRows();
+    KPI_GROUP_WEIGHTS = newGroupWeights;
+    if(document.getElementById('kpiGroupsWrap')) renderKpiRows();
     closeKpiOrderManager();
     logActivity('save_kpi_order', null, newDefs.map(d=>d.label).join(','));
     flash('KPI tasks updated');
@@ -4536,8 +4553,11 @@ async function loadSiteSettings(){
     if(rows.length && rows[0].theme_color) siteThemeColor = rows[0].theme_color;
     if(rows.length && rows[0].kpi_defs && rows[0].kpi_defs.length){
       KPI_DEFS = rows[0].kpi_defs;
-      if(document.getElementById('kpiBody')) renderKpiRows();
     }
+    if(rows.length && rows[0].kpi_group_weights && Object.keys(rows[0].kpi_group_weights).length){
+      KPI_GROUP_WEIGHTS = rows[0].kpi_group_weights;
+    }
+    if(document.getElementById('kpiGroupsWrap')) renderKpiRows();
     if(rows.length && rows[0].logo_data_url) applyCustomLogo(rows[0].logo_data_url);
     applySubtitleText();
     applyContactText();
@@ -5686,32 +5706,39 @@ function activeTable(){
 
 /* =======================  KPI PERFORMANCE EVALUATION  ======================= */
 let KPI_DEFS = [
-  {id:'invoice-entry', label:'Invoice Entry', weight:15, department:'Data Entry'},
-  {id:'invoice-return', label:'Invoice Return', weight:20, department:'Data Entry'},
-  {id:'definition', label:'Definition', weight:10, department:'Data Entry'},
-  {id:'barcode', label:'Barcode', weight:5, department:'Data Entry'},
-  {id:'audit-edit', label:'Audit & Edit', weight:15, department:'Data Entry'},
-  {id:'branch-maintenance', label:'Branch Maintenance', weight:10, department:'Data Entry'},
-  {id:'account-statement', label:'Account Statement', weight:5, department:'Data Entry'},
-  {id:'transit', label:'Transit', weight:5, department:'Data Entry'},
-  {id:'errors', label:'Errors', weight:8, department:'Data Entry'},
-  {id:'uniform-compliance', label:'Uniform Compliance', weight:2, department:'Data Entry'},
-  {id:'management-evaluation', label:'Management Evaluation', weight:5, department:'Data Entry'},
+  {id:'invoice-entry', label:'Invoice Entry', weight:15, department:'Data Entry', group:'data-entry'},
+  {id:'invoice-return', label:'Invoice Return', weight:20, department:'Data Entry', group:'data-entry'},
+  {id:'definition', label:'Definition', weight:10, department:'Data Entry', group:'data-entry'},
+  {id:'barcode', label:'Barcode', weight:5, department:'Data Entry', group:'data-entry'},
+  {id:'audit-edit', label:'Audit & Edit', weight:15, department:'Data Entry', group:'data-entry'},
+  {id:'branch-maintenance', label:'Branch Maintenance', weight:10, department:'Data Entry', group:'data-entry'},
+  {id:'account-statement', label:'Account Statement', weight:5, department:'Data Entry', group:'data-entry'},
+  {id:'transit', label:'Transit', weight:5, department:'Data Entry', group:'data-entry'},
+  {id:'errors', label:'Errors', weight:8, department:'Data Entry', group:'errors'},
+  {id:'uniform-compliance', label:'Uniform Compliance', weight:2, department:'Data Entry', group:'satisfaction'},
+  {id:'management-evaluation', label:'Management Evaluation', weight:5, department:'Data Entry', group:'satisfaction'},
 ];
+const KPI_GROUPS = [
+  {id:'data-entry', label:'Data Entry', icon:'📝'},
+  {id:'errors', label:'Errors', icon:'⚠️'},
+  {id:'satisfaction', label:'Satisfaction', icon:'⭐'},
+];
+let KPI_GROUP_WEIGHTS = { 'data-entry':50, 'errors':20, 'satisfaction':30 };
 let kpiFormId = null;
 
 function renderKpiRows(){
-  const body = document.getElementById('kpiBody');
+  const wrap = document.getElementById('kpiGroupsWrap');
   const showAll = isSuperAdmin() || session.role === 'admin';
   const visibleDefs = showAll ? KPI_DEFS : KPI_DEFS.filter(k => k.department && k.department === currentUserDepartment);
   if(!visibleDefs.length){
-    body.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">
+    wrap.innerHTML = `<div style="text-align:center;color:#888;padding:14px;">
       <div style="margin-bottom:10px;">${currentUserDepartment ? `No KPI tasks are set up yet for the ${currentUserDepartment} department.` : "Your account isn't linked to a department yet. Ask a super admin to add your login email to your Staff profile."}</div>
       <button type="button" class="btn-small" onclick="switchTab('home')">← Back to Home</button>
-    </td></tr>`;
+    </div>`;
     return;
   }
-  body.innerHTML = visibleDefs.map(k => `
+
+  const rowHtml = k => `
     <tr data-task-id="${k.id}">
       <td>${k.label.replace(/</g,'&lt;')}</td>
       <td><input type="number" min="0" value="100" class="kpi-target"></td>
@@ -5720,14 +5747,47 @@ function renderKpiRows(){
       <td class="readonly-cell kpi-achievement">0%</td>
       <td><input type="number" value="${k.weight}" class="kpi-weight" readonly></td>
       <td class="readonly-cell kpi-score">0%</td>
-    </tr>
-  `).join('');
-  body.querySelectorAll('input').forEach(inp => inp.addEventListener('input', calcKpi));
+    </tr>`;
+
+  wrap.innerHTML = KPI_GROUPS.map(g => {
+    const groupDefs = visibleDefs.filter(k => (k.group || 'data-entry') === g.id);
+    if(!groupDefs.length) return '';
+    const toolsHtml = g.id === 'satisfaction' ? `
+      <div class="table-actions no-print">
+        <button class="btn-small" onclick="openDailyEntry()">📝 Monthly Entry</button>
+        <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Monthly Log</button>
+        <button class="btn-small" onclick="openDailyLogViewer()">📋 View Monthly Log</button>
+      </div>` : '';
+    return `
+      <div class="section-header" style="margin-top:18px;"><div class="num">${g.icon}</div><div class="title">${g.label} <span style="opacity:.75;font-weight:600;">(${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : '—'}% of total)</span></div></div>
+      ${toolsHtml}
+      <div class="price-table-wrap">
+        <table class="pricelist kpi-table">
+          <thead>
+            <tr>
+              <th data-label-key="kpi.col.task">Task / KPI</th>
+              <th data-label-key="kpi.col.target">Target</th>
+              <th data-label-key="kpi.col.actual">Actual</th>
+              <th data-label-key="kpi.col.accuracy">Accuracy %</th>
+              <th data-label-key="kpi.col.achievement">Achievement %</th>
+              <th data-label-key="kpi.col.weight">Weight %</th>
+              <th data-label-key="kpi.col.score">Score</th>
+            </tr>
+          </thead>
+          <tbody>${groupDefs.map(rowHtml).join('')}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('input').forEach(inp => inp.addEventListener('input', calcKpi));
+  applySiteLabels();
 }
 
 function calcKpi(){
-  let weightedScore = 0, totalWeight = 0, accuracySum = 0, count = 0;
-  document.querySelectorAll('#kpiBody tr[data-task-id]').forEach(tr => {
+  const groupTotals = {}; // groupId -> { weightedScore, totalWeight }
+  let accuracySum = 0, count = 0;
+
+  document.querySelectorAll('#kpiGroupsWrap tr[data-task-id]').forEach(tr => {
     const t = parseFloat(tr.querySelector('.kpi-target').value) || 0;
     const a = parseFloat(tr.querySelector('.kpi-actual').value) || 0;
     const ac = Math.min(100, Math.max(0, parseFloat(tr.querySelector('.kpi-accuracy').value) || 0));
@@ -5739,13 +5799,28 @@ function calcKpi(){
     tr.querySelector('.kpi-achievement').textContent = achievement.toFixed(1) + '%';
     tr.querySelector('.kpi-score').textContent = (score * (w/100)).toFixed(1) + '%';
 
-    weightedScore += score * w;
-    totalWeight += w;
+    const def = KPI_DEFS.find(k => k.id === tr.dataset.taskId);
+    const groupId = (def && def.group) || 'data-entry';
+    if(!groupTotals[groupId]) groupTotals[groupId] = { weightedScore:0, totalWeight:0 };
+    groupTotals[groupId].weightedScore += score * w;
+    groupTotals[groupId].totalWeight += w;
+
     accuracySum += ac;
     count++;
   });
 
-  const finalKpi = totalWeight ? weightedScore/totalWeight : 0;
+  // Each visible group contributes its own within-group average, scaled by that group's overall weight.
+  let combinedScore = 0, combinedGroupWeight = 0;
+  Object.keys(groupTotals).forEach(groupId => {
+    const g = groupTotals[groupId];
+    if(g.totalWeight <= 0) return;
+    const groupScore = g.weightedScore / g.totalWeight; // 0-100 within this group
+    const groupWeight = KPI_GROUP_WEIGHTS[groupId] !== undefined ? KPI_GROUP_WEIGHTS[groupId] : (100 / Object.keys(groupTotals).length);
+    combinedScore += groupScore * groupWeight;
+    combinedGroupWeight += groupWeight;
+  });
+
+  const finalKpi = combinedGroupWeight ? combinedScore / combinedGroupWeight : 0;
   const avgAccuracy = count ? accuracySum/count : 0;
 
   document.getElementById('kpiTotalScore').textContent = finalKpi.toFixed(1) + '%';
@@ -5760,7 +5835,7 @@ function calcKpi(){
 }
 
 function serializeKpi(){
-  const rows = Array.from(document.querySelectorAll('#kpiBody tr[data-task-id]')).map(tr => ({
+  const rows = Array.from(document.querySelectorAll('#kpiGroupsWrap tr[data-task-id]')).map(tr => ({
     taskId: tr.dataset.taskId,
     target: tr.querySelector('.kpi-target').value,
     actual: tr.querySelector('.kpi-actual').value,
@@ -5784,7 +5859,7 @@ function restoreKpi(d){
   document.querySelector('.kpi-supervisor').value = d.supervisor || '';
   document.querySelector('.kpi-notes').value = d.notes || '';
   const savedRows = d.rows || [];
-  document.querySelectorAll('#kpiBody tr[data-task-id]').forEach((tr, i) => {
+  document.querySelectorAll('#kpiGroupsWrap tr[data-task-id]').forEach((tr, i) => {
     // Prefer matching by stable task id (safe across reordering); fall back to
     // array position for older saved forms recorded before this existed.
     const r = savedRows.find(x => x.taskId === tr.dataset.taskId) || savedRows[i];
@@ -5827,7 +5902,7 @@ function refreshKpiFormIdFromEmployee(){
 /* =======================  DAILY WORK ENTRY (feeds KPI Actual totals)  ======================= */
 function openDailyEntry(){
   document.getElementById('dailyEntryEmployee').value = document.querySelector('.kpi-employee').value || '';
-  document.getElementById('dailyEntryDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('dailyEntryDate').value = new Date().toISOString().slice(0,7);
   const box = document.getElementById('dailyEntryFields');
   const showAll = isSuperAdmin() || session.role === 'admin';
   const visibleDefs = showAll ? KPI_DEFS : KPI_DEFS.filter(k => k.department && k.department === currentUserDepartment);
@@ -5845,8 +5920,9 @@ function closeDailyEntry(){ document.getElementById('dailyEntryOverlay').classLi
 async function loadDailyEntryForSelectedDay(){
   document.querySelectorAll('.daily-entry-value').forEach(inp => inp.value = '');
   const employee = document.getElementById('dailyEntryEmployee').value.trim();
-  const date = document.getElementById('dailyEntryDate').value;
-  if(!employee || !date || !backendReady()) return;
+  const month = document.getElementById('dailyEntryDate').value; // YYYY-MM
+  if(!employee || !month || !backendReady()) return;
+  const date = month + '-01';
   const id = `${slugifyEmployeeName(employee)}-${date}`;
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_daily_entries?id=eq.${encodeURIComponent(id)}&select=data`, { headers: sbHeaders() });
@@ -5857,7 +5933,7 @@ async function loadDailyEntryForSelectedDay(){
       const inp = document.querySelector(`.daily-entry-value[data-task-id="${taskId}"]`);
       if(inp) inp.value = val;
     });
-    flash('Loaded existing entry for ' + date);
+    flash('Loaded existing entry for ' + month);
   }catch(e){ /* fine to start blank */ }
 }
 
@@ -5877,9 +5953,10 @@ function addTaskFromDailyEntry(){
 
 async function saveDailyEntry(){
   const employee = document.getElementById('dailyEntryEmployee').value.trim();
-  const date = document.getElementById('dailyEntryDate').value;
+  const month = document.getElementById('dailyEntryDate').value; // YYYY-MM
   if(!employee){ flash('Enter an employee name.', true); return; }
-  if(!date){ flash('Pick a date.', true); return; }
+  if(!month){ flash('Pick a month.', true); return; }
+  const date = month + '-01';
 
   // Persist any newly-added tasks to the shared KPI task list first.
   const newRows = Array.from(document.querySelectorAll('#dailyEntryFields [data-new-task="true"]'));
@@ -5896,7 +5973,7 @@ async function saveDailyEntry(){
       });
       if(!res.ok) throw new Error(await res.text());
       KPI_DEFS = updatedDefs;
-      if(document.getElementById('kpiBody')) renderKpiRows();
+      if(document.getElementById('kpiGroupsWrap')) renderKpiRows();
     }catch(e){
       console.error(e);
       flash('Could not add new task (' + sbError(e) + '). Ask a super admin to set its weight in Reorder KPI Tasks.', true);
@@ -5916,7 +5993,7 @@ async function saveDailyEntry(){
     });
     if(!res.ok) throw new Error(await res.text());
     closeDailyEntry();
-    flash('Daily entry saved for ' + date);
+    flash('Monthly entry saved for ' + month);
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
@@ -5926,27 +6003,19 @@ async function pullFromDailyLog(){
   if(!employee){ flash('Enter the employee name first.', true); return; }
   if(!month){ flash('Pick the evaluation month first.', true); return; }
   if(!backendReady()){ flash('Backend not configured.', true); return; }
-  const from = `${month}-01`;
-  const [y, m] = month.split('-').map(Number);
-  const lastDay = new Date(y, m, 0).getDate();
-  const to = `${month}-${String(lastDay).padStart(2,'0')}`;
+  const id = `${slugifyEmployeeName(employee)}-${month}-01`;
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_daily_entries?employee_name=eq.${encodeURIComponent(employee)}&entry_date=gte.${from}&entry_date=lte.${to}&select=data`, { headers: sbHeaders() });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_daily_entries?id=eq.${encodeURIComponent(id)}&select=data`, { headers: sbHeaders() });
     if(!res.ok) throw new Error(await res.text());
     const rows = await res.json();
-    if(!rows.length){ flash('No daily entries found for ' + employee + ' in ' + month, true); return; }
-    const totals = {};
-    rows.forEach(r => {
-      Object.entries(r.data || {}).forEach(([taskId, val]) => {
-        totals[taskId] = (totals[taskId] || 0) + (parseFloat(val) || 0);
-      });
-    });
-    document.querySelectorAll('#kpiBody tr[data-task-id]').forEach(tr => {
-      const total = totals[tr.dataset.taskId];
-      if(total !== undefined) tr.querySelector('.kpi-actual').value = total;
+    if(!rows.length){ flash('No monthly entry found for ' + employee + ' in ' + month, true); return; }
+    const data = rows[0].data || {};
+    document.querySelectorAll('#kpiGroupsWrap tr[data-task-id]').forEach(tr => {
+      const val = data[tr.dataset.taskId];
+      if(val !== undefined) tr.querySelector('.kpi-actual').value = val;
     });
     calcKpi();
-    flash(`Pulled ${rows.length} daily entries into Actual totals`);
+    flash('Pulled monthly entry into Actual totals');
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
@@ -5981,16 +6050,17 @@ async function openDailyLogViewer(){
     let rows = await res.json();
     if(allowedNames) rows = rows.filter(r => allowedNames.has(r.employee_name));
 
-    if(!rows.length){ box.innerHTML = '<div class="mgr-empty">No daily entries found.</div>'; return; }
+    if(!rows.length){ box.innerHTML = '<div class="mgr-empty">No monthly entries found.</div>'; return; }
 
     box.innerHTML = rows.map(r => {
       const taskLines = Object.entries(r.data || {}).map(([taskId, val]) => {
         const def = KPI_DEFS.find(k => k.id === taskId);
         return `${(def ? def.label : taskId).replace(/</g,'&lt;')}: ${val}`;
       }).join(' · ');
+      const monthLabel = (r.entry_date || '').slice(0,7); // YYYY-MM-01 -> YYYY-MM
       return `
         <div class="ep-kpi-row" style="cursor:default;flex-direction:column;align-items:flex-start;">
-          <div style="font-weight:700;font-size:.82rem;">${r.employee_name.replace(/</g,'&lt;')} — ${r.entry_date}</div>
+          <div style="font-weight:700;font-size:.82rem;">${r.employee_name.replace(/</g,'&lt;')} — ${monthLabel}</div>
           <div style="font-size:.72rem;color:#777;margin-top:2px;">${taskLines || 'No tasks logged'}</div>
         </div>
       `;
@@ -6043,7 +6113,7 @@ async function openKPI(id){
 }
 
 function computeKpiScoreFromData(d){
-  let weightedScore = 0, totalWeight = 0;
+  const groupTotals = {};
   (d.rows || []).forEach((r, i) => {
     const def = (r.taskId && KPI_DEFS.find(k => k.id === r.taskId)) || KPI_DEFS[i];
     if(!def) return;
@@ -6052,10 +6122,21 @@ function computeKpiScoreFromData(d){
     const ac = Math.min(100, Math.max(0, parseFloat(r.accuracy) || 0));
     const achievement = t > 0 ? Math.min(100, (a/t)*100) : 0;
     const score = achievement * (ac/100);
-    weightedScore += score * def.weight;
-    totalWeight += def.weight;
+    const groupId = def.group || 'data-entry';
+    if(!groupTotals[groupId]) groupTotals[groupId] = { weightedScore:0, totalWeight:0 };
+    groupTotals[groupId].weightedScore += score * def.weight;
+    groupTotals[groupId].totalWeight += def.weight;
   });
-  return totalWeight ? weightedScore/totalWeight : 0;
+  let combinedScore = 0, combinedGroupWeight = 0;
+  Object.keys(groupTotals).forEach(groupId => {
+    const g = groupTotals[groupId];
+    if(g.totalWeight <= 0) return;
+    const groupScore = g.weightedScore / g.totalWeight;
+    const groupWeight = KPI_GROUP_WEIGHTS[groupId] !== undefined ? KPI_GROUP_WEIGHTS[groupId] : (100 / Object.keys(groupTotals).length);
+    combinedScore += groupScore * groupWeight;
+    combinedGroupWeight += groupWeight;
+  });
+  return combinedGroupWeight ? combinedScore / combinedGroupWeight : 0;
 }
 
 async function openEmployeeProfile(id){
