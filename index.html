@@ -581,12 +581,12 @@
   #form table.pricelist th:nth-child(5){width:8%;}
   #form table.pricelist th:nth-child(6){width:7%;}
   #form table.pricelist th:nth-child(7){width:7%;}
-  #form table.pricelist th:nth-child(8){width:9%;}
-  #form table.pricelist th:nth-child(9){width:9%;}
+  #form table.pricelist th:nth-child(8){width:6%;}
+  #form table.pricelist th:nth-child(9){width:6%;}
   #form table.pricelist th:nth-child(10){width:6%;}
   #form table.pricelist th:nth-child(11){width:6%;}
   #form table.pricelist th:nth-child(12){width:6%;}
-  #form table.pricelist th:nth-child(13){width:9%;}
+  #form table.pricelist th:nth-child(13){width:15%;}
   #form table.pricelist th:nth-child(14){width:6%;}
   #cfForm table.pricelist th:nth-child(2){width:17%;}
   #cfForm table.pricelist th:nth-child(3){width:14%;}
@@ -597,8 +597,8 @@
 
   /* ---------- Desktop: widen Invoice/Cash Flow and enlarge their tables ---------- */
   @media (min-width:1100px){
-    .toolbar{max-width:1280px;}
-    #form, #cfForm{max-width:1280px;}
+    .toolbar{max-width:1480px;}
+    #form, #cfForm{max-width:1480px;}
     #form table.pricelist th, #cfForm table.pricelist th{font-size:.8rem;padding:10px 7px;}
     #form table.pricelist td, #cfForm table.pricelist td{padding:7px;}
     #form table.pricelist input[type="text"], #form table.pricelist input[type="number"], #form table.pricelist input[type="date"],
@@ -1440,13 +1440,13 @@
     table.pricelist th:nth-child(5), table.pricelist td:nth-child(5){width:9%;}
     table.pricelist th:nth-child(6), table.pricelist td:nth-child(6){width:5%;}
     table.pricelist th:nth-child(7), table.pricelist td:nth-child(7){width:5%;}
-    table.pricelist th:nth-child(8), table.pricelist td:nth-child(8){width:10%;}
-    table.pricelist th:nth-child(9), table.pricelist td:nth-child(9){width:10%;}
+    table.pricelist th:nth-child(8), table.pricelist td:nth-child(8){width:7%;}
+    table.pricelist th:nth-child(9), table.pricelist td:nth-child(9){width:7%;}
     table.pricelist th:nth-child(10), table.pricelist td:nth-child(10){width:4%;}
     table.pricelist th:nth-child(11), table.pricelist td:nth-child(11){width:4%;}
     table.pricelist th:nth-child(12), table.pricelist td:nth-child(12){width:4%;}
-    table.pricelist th:nth-child(13), table.pricelist td:nth-child(13){width:9%;}
-    table.pricelist th:nth-child(14), table.pricelist td:nth-child(14){width:6%;}
+    table.pricelist th:nth-child(13), table.pricelist td:nth-child(13){width:21%;}
+    table.pricelist th:nth-child(14), table.pricelist td:nth-child(14){display:none !important;}
     table.pricelist th:nth-child(15), table.pricelist td:nth-child(15){width:1%;}
     table.customlist{font-size:.62rem;}
     table.customlist th{padding:3px 2px;font-size:.58rem;}
@@ -1491,7 +1491,7 @@
   }
 
   /* Duplicate of print rules, applied via JS as a real class so we can measure exact print layout height before printing (for auto-fit-to-A4 scaling) */
-body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;height:auto;}body.print-fit .toolbar{display:none;}body.print-fit .qr-block{width:64px;height:64px;padding:4px;}body.print-fit .sheet{box-shadow:none;border:1px solid var(--line);border-radius:16px;max-width:100%;}body.print-fit .sheet::before{display:none;}body.print-fit .seal{display:none;}body.print-fit .logo-badge{width:64px;height:64px;padding:5px;top:6px;inset-inline-start:10px;}body.print-fit .qr-block{top:6px;}body.print-fit .footer-logo{height:26px;}body.print-fit .btn-small{display:none;}body.print-fit header.title-block{padding:10px 14px 8px;gap:10px;}body.print-fit header.title-block h1{font-size:1.3rem;margin:0 0 3px;}body.print-fit header.title-block div{font-size:1rem !important;}body.print-fit .subtitle-bar{padding:5px;font-size:.8rem;}body.print-fit .tagline{padding:5px 14px;font-size:.75rem;}body.print-fit .meta-row .field{padding:4px 8px;}body.print-fit .meta-row label{font-size:.68rem;margin-bottom:2px;}body.print-fit .meta-row input{font-size:.82rem;padding:2px 3px;}body.print-fit .section-header{margin:8px 10px 0;}body.print-fit .section-header .num{width:22px;font-size:.85rem;}body.print-fit .section-header .title{padding:3px 10px;font-size:.85rem;}body.print-fit .grid2{margin:0 10px;}body.print-fit .grid2 .field{padding:3px 10px;gap:6px;}body.print-fit .grid2 .field label{font-size:.75rem;min-width:90px;}body.print-fit .grid2 .field input, body.print-fit .grid2 .field textarea{font-size:.8rem;padding:2px 3px;}body.print-fit table.checklist{margin:0 10px;font-size:.75rem;width:calc(100% - 20px);}body.print-fit .qa-list{gap:3px;margin-top:3px;}body.print-fit .qa-row{padding:3px 8px;gap:6px;}body.print-fit .qa-row .qa-text{font-size:.75rem;min-width:100px;}body.print-fit .qa-row .opt{padding:2px 7px;font-size:.7rem;gap:3px;}body.print-fit .qa-row .opt input{width:13px;height:13px;}body.print-fit table.checklist th{padding:3px 8px;font-size:.72rem;}body.print-fit table.checklist td{padding:3px 8px;}body.print-fit table.checklist td.chk{width:38px;}body.print-fit .checkbox{width:16px;height:16px;}body.print-fit .blacklist-row{margin:6px 10px 0;gap:8px;}body.print-fit .blacklist-row .opt{padding:5px;font-size:.75rem;gap:7px;}body.print-fit .qa-row .blacklist-row{margin:3px 0 0;}body.print-fit .price-table-wrap{margin:0 10px;overflow:visible;}body.print-fit table.pricelist{font-size:.52rem;min-width:0;table-layout:fixed;width:100%;}body.print-fit table.pricelist th{padding:2px 1px;font-size:.48rem;white-space:normal;word-break:break-word;line-height:1.1;}body.print-fit table.pricelist td{padding:1px;overflow:hidden;}body.print-fit table.pricelist input{font-size:.48rem;padding:1px;}body.print-fit table.pricelist th:nth-child(1), body.print-fit table.pricelist td:nth-child(1){width:3%;}body.print-fit table.pricelist th:nth-child(2), body.print-fit table.pricelist td:nth-child(2){width:8%;}body.print-fit table.pricelist th:nth-child(3), body.print-fit table.pricelist td:nth-child(3){width:8%;}body.print-fit table.pricelist th:nth-child(4), body.print-fit table.pricelist td:nth-child(4){width:9%;}body.print-fit table.pricelist th:nth-child(5), body.print-fit table.pricelist td:nth-child(5){width:8%;}body.print-fit table.pricelist th:nth-child(6), body.print-fit table.pricelist td:nth-child(6){width:7%;}body.print-fit table.pricelist th:nth-child(7), body.print-fit table.pricelist td:nth-child(7){width:7%;}body.print-fit table.pricelist th:nth-child(8), body.print-fit table.pricelist td:nth-child(8){width:9%;}body.print-fit table.pricelist th:nth-child(9), body.print-fit table.pricelist td:nth-child(9){width:6%;}body.print-fit table.pricelist th:nth-child(10), body.print-fit table.pricelist td:nth-child(10){width:6%;}body.print-fit table.pricelist th:nth-child(11), body.print-fit table.pricelist td:nth-child(11){width:6%;}body.print-fit table.pricelist th:nth-child(12), body.print-fit table.pricelist td:nth-child(12){width:12%;}body.print-fit table.pricelist th:nth-child(13), body.print-fit table.pricelist td:nth-child(13){width:1%;}body.print-fit .table-actions{margin:4px 10px 0;}body.print-fit .totals-row{margin:4px 10px 0;padding:5px 10px;font-size:.75rem;}body.print-fit .notes-box{margin:0 10px;}body.print-fit .notes-box textarea{min-height:32px;padding:6px;font-size:.75rem;}body.print-fit .signatures{margin:0 10px;}body.print-fit .sig-col .role{padding:3px;font-size:.75rem;}body.print-fit .sig-col .row-field{padding:3px 10px;font-size:.72rem;gap:6px;}body.print-fit .sig-col .row-field input{font-size:.72rem;padding:2px 3px;}body.print-fit .final-status{margin:6px 10px 8px;gap:7px;}body.print-fit .final-status label{padding:5px;font-size:.75rem;gap:6px;}body.print-fit .final-status input{width:16px;height:16px;}body.print-fit footer.contact{padding:5px;font-size:.68rem;}body.print-fit div[style*="display:flex"][style*="gap:14px"]{margin-top:5px !important;gap:8px !important;}body.print-fit input, body.print-fit textarea{
+body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;height:auto;}body.print-fit .toolbar{display:none;}body.print-fit .qr-block{width:64px;height:64px;padding:4px;}body.print-fit .sheet{box-shadow:none;border:1px solid var(--line);border-radius:16px;max-width:100%;}body.print-fit .sheet::before{display:none;}body.print-fit .seal{display:none;}body.print-fit .logo-badge{width:64px;height:64px;padding:5px;top:6px;inset-inline-start:10px;}body.print-fit .qr-block{top:6px;}body.print-fit .footer-logo{height:26px;}body.print-fit .btn-small{display:none;}body.print-fit header.title-block{padding:10px 14px 8px;gap:10px;}body.print-fit header.title-block h1{font-size:1.3rem;margin:0 0 3px;}body.print-fit header.title-block div{font-size:1rem !important;}body.print-fit .subtitle-bar{padding:5px;font-size:.8rem;}body.print-fit .tagline{padding:5px 14px;font-size:.75rem;}body.print-fit .meta-row .field{padding:4px 8px;}body.print-fit .meta-row label{font-size:.68rem;margin-bottom:2px;}body.print-fit .meta-row input{font-size:.82rem;padding:2px 3px;}body.print-fit .section-header{margin:8px 10px 0;}body.print-fit .section-header .num{width:22px;font-size:.85rem;}body.print-fit .section-header .title{padding:3px 10px;font-size:.85rem;}body.print-fit .grid2{margin:0 10px;}body.print-fit .grid2 .field{padding:3px 10px;gap:6px;}body.print-fit .grid2 .field label{font-size:.75rem;min-width:90px;}body.print-fit .grid2 .field input, body.print-fit .grid2 .field textarea{font-size:.8rem;padding:2px 3px;}body.print-fit table.checklist{margin:0 10px;font-size:.75rem;width:calc(100% - 20px);}body.print-fit .qa-list{gap:3px;margin-top:3px;}body.print-fit .qa-row{padding:3px 8px;gap:6px;}body.print-fit .qa-row .qa-text{font-size:.75rem;min-width:100px;}body.print-fit .qa-row .opt{padding:2px 7px;font-size:.7rem;gap:3px;}body.print-fit .qa-row .opt input{width:13px;height:13px;}body.print-fit table.checklist th{padding:3px 8px;font-size:.72rem;}body.print-fit table.checklist td{padding:3px 8px;}body.print-fit table.checklist td.chk{width:38px;}body.print-fit .checkbox{width:16px;height:16px;}body.print-fit .blacklist-row{margin:6px 10px 0;gap:8px;}body.print-fit .blacklist-row .opt{padding:5px;font-size:.75rem;gap:7px;}body.print-fit .qa-row .blacklist-row{margin:3px 0 0;}body.print-fit .price-table-wrap{margin:0 10px;overflow:visible;}body.print-fit table.pricelist{font-size:.52rem;min-width:0;table-layout:fixed;width:100%;}body.print-fit table.pricelist th{padding:2px 1px;font-size:.48rem;white-space:normal;word-break:break-word;line-height:1.1;}body.print-fit table.pricelist td{padding:1px;overflow:hidden;}body.print-fit table.pricelist input{font-size:.48rem;padding:1px;}body.print-fit table.pricelist th:nth-child(1), body.print-fit table.pricelist td:nth-child(1){width:3%;}body.print-fit table.pricelist th:nth-child(2), body.print-fit table.pricelist td:nth-child(2){width:8%;}body.print-fit table.pricelist th:nth-child(3), body.print-fit table.pricelist td:nth-child(3){width:8%;}body.print-fit table.pricelist th:nth-child(4), body.print-fit table.pricelist td:nth-child(4){width:9%;}body.print-fit table.pricelist th:nth-child(5), body.print-fit table.pricelist td:nth-child(5){width:8%;}body.print-fit table.pricelist th:nth-child(6), body.print-fit table.pricelist td:nth-child(6){width:7%;}body.print-fit table.pricelist th:nth-child(7), body.print-fit table.pricelist td:nth-child(7){width:7%;}body.print-fit table.pricelist th:nth-child(8), body.print-fit table.pricelist td:nth-child(8){width:9%;}body.print-fit table.pricelist th:nth-child(9), body.print-fit table.pricelist td:nth-child(9){width:6%;}body.print-fit table.pricelist th:nth-child(10), body.print-fit table.pricelist td:nth-child(10){width:6%;}body.print-fit table.pricelist th:nth-child(11), body.print-fit table.pricelist td:nth-child(11){width:6%;}body.print-fit table.pricelist th:nth-child(12), body.print-fit table.pricelist td:nth-child(12){width:12%;}body.print-fit table.pricelist th:nth-child(13), body.print-fit table.pricelist td:nth-child(13){width:1%;}body.print-fit table.pricelist th:nth-child(14), body.print-fit table.pricelist td:nth-child(14){display:none !important;}body.print-fit .table-actions{margin:4px 10px 0;}body.print-fit .totals-row{margin:4px 10px 0;padding:5px 10px;font-size:.75rem;}body.print-fit .notes-box{margin:0 10px;}body.print-fit .notes-box textarea{min-height:32px;padding:6px;font-size:.75rem;}body.print-fit .signatures{margin:0 10px;}body.print-fit .sig-col .role{padding:3px;font-size:.75rem;}body.print-fit .sig-col .row-field{padding:3px 10px;font-size:.72rem;gap:6px;}body.print-fit .sig-col .row-field input{font-size:.72rem;padding:2px 3px;}body.print-fit .final-status{margin:6px 10px 8px;gap:7px;}body.print-fit .final-status label{padding:5px;font-size:.75rem;gap:6px;}body.print-fit .final-status input{width:16px;height:16px;}body.print-fit footer.contact{padding:5px;font-size:.68rem;}body.print-fit div[style*="display:flex"][style*="gap:14px"]{margin-top:5px !important;gap:8px !important;}body.print-fit input, body.print-fit textarea{
       pointer-events:none !important;
       -webkit-appearance:none;
       appearance:none;
@@ -1535,7 +1535,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 <body>
 
 <datalist id="companyNamesList"></datalist>
+<datalist id="employeeNamesList"></datalist>
 <datalist id="staffDeptList"></datalist>
+<datalist id="cfSectionList"></datalist>
 
 <div class="auth-overlay" id="authOverlay">
 
@@ -1955,7 +1957,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <tr>
           <th>No.</th>
           <th data-label-key="cf.col.product">Product</th>
-          <th data-label-key="cf.col.sectionno">Section Number</th>
+          <th data-label-key="cf.col.sectionno">Batch/Lot Number</th>
           <th data-label-key="cf.col.itemsperpkg">Items per Package</th>
           <th data-label-key="cf.col.cashflow">Cash Flow</th>
           <th data-label-key="cf.col.stock">Stock Dalare</th>
@@ -1991,7 +1993,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
   <div class="company-banner">
     <span class="company-label" data-label-key="kpi.lbl.employee">Employee</span>
-    <input type="text" class="company-name-input kpi-employee" placeholder="Employee Name" list="companyNamesList">
+    <input type="text" class="company-name-input kpi-employee" placeholder="Employee Name" list="employeeNamesList">
   </div>
   <div class="form-meta-bar">
     <div class="form-id-box">
@@ -2261,7 +2263,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div class="adm-hint">Log today's completed work per task. These entries add up automatically for the month's KPI evaluation.</div>
       <div class="kpi-info-grid" style="padding:0 0 14px;">
-        <div><label>Employee</label><input type="text" id="dailyEntryEmployee" list="companyNamesList" placeholder="Employee name" onchange="loadDailyEntryForSelectedDay()"></div>
+        <div><label>Employee</label><input type="text" id="dailyEntryEmployee" list="employeeNamesList" placeholder="Employee name" onchange="loadDailyEntryForSelectedDay()"></div>
         <div><label>Date</label><input type="date" id="dailyEntryDate" onchange="loadDailyEntryForSelectedDay()"></div>
       </div>
       <div id="dailyEntryFields"></div>
@@ -2656,6 +2658,8 @@ function applySession(){
   loadRolePermissions();
   loadCurrentUserDepartment();
   loadCompanyNamesList();
+  loadEmployeeNamesList();
+  loadCfSectionList();
   document.body.classList.toggle('super-admin-mode', isSuperAdmin());
   document.querySelector('.toolbar').style.display = (activeTab === 'home' || isEmployee()) ? 'none' : 'flex';
 }
@@ -3579,16 +3583,16 @@ const PRINT_COL_DEFS = {
     {idx:5,  label:'Bonus (IQD)',      width:9},
     {idx:6,  label:'Cash Back (%)',    width:5},
     {idx:7,  label:'Discount (%)',     width:5},
-    {idx:8,  label:'Before Discount',  width:10},
-    {idx:9,  label:'After Discount',   width:10},
+    {idx:8,  label:'Before Discount',  width:7},
+    {idx:9,  label:'After Discount',   width:7},
     {idx:10, label:'Price Verified',   width:4},
     {idx:11, label:'Bonus Verified',   width:4},
     {idx:12, label:'Qty Verified',     width:4},
-    {idx:13, label:'Notes',            width:11}
+    {idx:13, label:'Notes',            width:17}
   ],
   cf: [
     {idx:2, label:'Product'},
-    {idx:3, label:'Section Number'},
+    {idx:3, label:'Batch/Lot Number'},
     {idx:4, label:'Items per Package'},
     {idx:5, label:'Cash Flow'},
     {idx:6, label:'Stock Dalare'},
@@ -4267,18 +4271,44 @@ async function permanentlyDeleteTrashItem(table, id){
 async function loadCompanyNamesList(){
   if(!backendReady()) return;
   try{
-    const [invRes, cfRes, kpiRes] = await Promise.all([
+    const [invRes, cfRes] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
       fetch(`${SUPABASE_URL}/rest/v1/cashflow_forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
-      fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
     ]);
     const invRows = invRes.ok ? await invRes.json() : [];
     const cfRows = cfRes.ok ? await cfRes.json() : [];
-    const kpiRows = kpiRes.ok ? await kpiRes.json() : [];
-    const names = [...new Set([...invRows, ...cfRows, ...kpiRows].map(r => (r.company_name||'').trim()).filter(Boolean))];
+    const names = [...new Set([...invRows, ...cfRows].map(r => (r.company_name||'').trim()).filter(Boolean))];
     const list = document.getElementById('companyNamesList');
     if(list) list.innerHTML = names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">`).join('');
   }catch(e){ /* autocomplete is a nice-to-have; fail silently */ }
+}
+
+async function loadEmployeeNamesList(){
+  if(!backendReady()) return;
+  try{
+    const [empRes, kpiRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/employees?select=full_name`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?select=company_name&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() }),
+    ]);
+    const empRows = empRes.ok ? await empRes.json() : [];
+    const kpiRows = kpiRes.ok ? await kpiRes.json() : [];
+    const names = [...new Set([...empRows.map(r=>r.full_name), ...kpiRows.map(r=>r.company_name)].map(n => (n||'').trim()).filter(Boolean))];
+    const list = document.getElementById('employeeNamesList');
+    if(list) list.innerHTML = names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+  }catch(e){ /* autocomplete is a nice-to-have; fail silently */ }
+}
+
+async function loadCfSectionList(){
+  if(!backendReady()) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/cashflow_forms?select=data&deleted_at=is.null&order=updated_at.desc&limit=200`, { headers: sbHeaders() });
+    if(!res.ok) return;
+    const rows = await res.json();
+    const sections = new Set();
+    rows.forEach(r => (r.data && r.data.rows || []).forEach(row => { if(row.sectionNo) sections.add(String(row.sectionNo).trim()); }));
+    const list = document.getElementById('cfSectionList');
+    if(list) list.innerHTML = [...sections].map(s => `<option value="${s.replace(/"/g,'&quot;')}">`).join('');
+  }catch(e){ /* fine, list just stays empty */ }
 }
 
 async function loadRolePermissions(){
@@ -5385,7 +5415,7 @@ function addRowCF(){
   tr.innerHTML = `
     <td class="row-num">${cfRowCount}</td>
     <td><input type="text"></td>
-    <td><input type="text"></td>
+    <td><input type="text" list="cfSectionList" class="cf-section-input"></td>
     <td><input type="number" min="0"></td>
     <td><input type="text" inputmode="decimal" class="cash-input" oninput="calcCFTotal()" onblur="formatMoneyField(this)"></td>
     <td><input type="text" inputmode="decimal" class="stock-input" onblur="formatMoneyField(this)"></td>
@@ -5799,6 +5829,7 @@ async function saveKPI(){
     if(!res.ok) throw new Error(await res.text());
     logActivity('save', kpiFormId, payload.company_name);
     flash('Saved ✓ ' + kpiFormId);
+    loadEmployeeNamesList();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
@@ -5966,6 +5997,7 @@ async function saveCF(){
     logActivity('save', cfFormId);
     flash('Saved ✓ ' + cfFormId);
     loadCompanyNamesList();
+    loadCfSectionList();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
