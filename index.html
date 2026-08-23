@@ -2370,7 +2370,6 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </div>
     <div class="mgr-body">
       <div class="sb-fields">
-        <label>Actual<input type="number" min="0" id="kpiTaskEditActual" placeholder="0"></label>
         <label>Accuracy %<input type="number" min="0" max="100" id="kpiTaskEditAccuracy" placeholder="100"></label>
       </div>
       <div class="table-actions" style="margin-top:14px;">
@@ -5803,7 +5802,6 @@ function openKpiTaskEdit(taskId){
   kpiTaskEditId = taskId;
   const def = KPI_DEFS.find(k => k.id === taskId);
   document.getElementById('kpiTaskEditTitle').textContent = def ? def.label : 'Task';
-  document.getElementById('kpiTaskEditActual').value = tr.querySelector('.kpi-actual').value;
   document.getElementById('kpiTaskEditAccuracy').value = tr.querySelector('.kpi-accuracy').value;
   document.getElementById('kpiTaskEditOverlay').classList.add('open');
 }
@@ -5815,7 +5813,6 @@ function saveKpiTaskEdit(){
   if(!kpiTaskEditId) return;
   const tr = document.querySelector(`#kpiGroupsWrap tr[data-task-id="${kpiTaskEditId}"]`);
   if(!tr){ closeKpiTaskEdit(); return; }
-  tr.querySelector('.kpi-actual').value = document.getElementById('kpiTaskEditActual').value;
   tr.querySelector('.kpi-accuracy').value = document.getElementById('kpiTaskEditAccuracy').value;
   calcKpi();
   closeKpiTaskEdit();
@@ -5835,12 +5832,12 @@ function renderKpiRows(){
 
   const rowHtml = k => `
     <tr data-task-id="${k.id}">
-      <td>${k.label.replace(/</g,'&lt;')} <span class="kpi-edit-icon" onclick="openKpiTaskEdit('${k.id}')" title="Enter Actual / Accuracy">✎</span></td>
+      <td>${k.label.replace(/</g,'&lt;')} <span class="kpi-edit-icon" onclick="openKpiTaskEdit('${k.id}')" title="Enter Accuracy %">✎</span></td>
+      <td><input type="number" value="${k.weight}" class="kpi-weight" readonly></td>
       <td><input type="number" min="0" class="kpi-target" placeholder="0"></td>
-      <td class="kpi-hidden-col"><input type="number" min="0" class="kpi-actual" placeholder="0"></td>
+      <td><input type="number" min="0" class="kpi-actual" placeholder="0"></td>
       <td class="kpi-hidden-col"><input type="number" min="0" max="100" class="kpi-accuracy" placeholder="100"></td>
       <td class="readonly-cell kpi-achievement kpi-hidden-col">0%</td>
-      <td><input type="number" value="${k.weight}" class="kpi-weight" readonly></td>
       <td class="readonly-cell kpi-score">0%</td>
     </tr>`;
 
@@ -5855,24 +5852,23 @@ function renderKpiRows(){
           <thead>
             <tr>
               <th data-label-key="kpi.col.task">Task / KPI</th>
+              <th data-label-key="kpi.col.weight">Weight %</th>
               <th data-label-key="kpi.col.target">Target</th>
-              <th class="kpi-hidden-col" data-label-key="kpi.col.actual">Actual</th>
+              <th data-label-key="kpi.col.actual">total</th>
               <th class="kpi-hidden-col" data-label-key="kpi.col.accuracy">Accuracy %</th>
               <th class="kpi-hidden-col" data-label-key="kpi.col.achievement">Achievement %</th>
-              <th data-label-key="kpi.col.weight">Weight %</th>
               <th data-label-key="kpi.col.score">Score</th>
             </tr>
           </thead>
           <tbody>${groupDefs.map(rowHtml).join('')}</tbody>
           <tfoot>
             <tr class="kpi-group-total-row" data-group="${g.id}">
-              <td colspan="2" class="readonly-cell">
-                <span data-label-key="kpi.col.total">Total</span>
-                <span style="opacity:.7;font-weight:600;margin-inline-start:8px;">(Monthly Actual: <span class="kpi-group-actual-sum">0</span>)</span>
-              </td>
-              <td class="kpi-hidden-col"></td>
-              <td class="kpi-hidden-col"></td>
+              <td class="readonly-cell" data-label-key="kpi.col.total">Total</td>
               <td class="readonly-cell">${weightSum}</td>
+              <td></td>
+              <td class="readonly-cell kpi-group-actual-sum">0</td>
+              <td class="kpi-hidden-col"></td>
+              <td class="kpi-hidden-col"></td>
               <td class="readonly-cell kpi-group-score-sum">0%</td>
             </tr>
           </tfoot>
