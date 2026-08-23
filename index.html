@@ -5907,7 +5907,9 @@ function calcKpi(){
     const groupId = (def && def.group) || 'data-entry';
     const isInverse = groupId === 'errors'; // fewer errors relative to target = better score
     const rawAchievement = t > 0 ? Math.min(100, (a/t)*100) : 0;
-    const achievement = isInverse ? (100 - rawAchievement) : rawAchievement;
+    // A task with no Target set yet hasn't really been evaluated — don't let the
+    // inverse formula read that as "zero errors = perfect score" by default.
+    const achievement = isInverse ? (t > 0 ? (100 - rawAchievement) : 0) : rawAchievement;
     const score = achievement * (ac/100);
 
     tr.querySelector('.kpi-achievement').textContent = achievement.toFixed(1) + '%';
@@ -6256,7 +6258,7 @@ function computeKpiScoreFromData(d){
     const groupId = def.group || 'data-entry';
     const isInverse = groupId === 'errors';
     const rawAchievement = t > 0 ? Math.min(100, (a/t)*100) : 0;
-    const achievement = isInverse ? (100 - rawAchievement) : rawAchievement;
+    const achievement = isInverse ? (t > 0 ? (100 - rawAchievement) : 0) : rawAchievement;
     const score = achievement * (ac/100);
     if(!groupTotals[groupId]) groupTotals[groupId] = { weightedScore:0, totalWeight:0 };
     groupTotals[groupId].weightedScore += score * def.weight;
