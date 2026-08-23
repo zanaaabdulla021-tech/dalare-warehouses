@@ -714,6 +714,12 @@
     -webkit-appearance:none;margin:0;
   }
   table.kpi-table td.readonly-cell{font-family:"IBM Plex Mono",monospace;font-weight:700;color:var(--forest-deep);}
+  table.kpi-table .kpi-hidden-col{display:none;}
+  .kpi-edit-icon{
+    cursor:pointer;font-size:.85rem;opacity:.55;margin-inline-start:4px;
+    transition:opacity .12s ease;
+  }
+  .kpi-edit-icon:hover{opacity:1;}
   table.kpi-table tr.kpi-group-divider td{padding:0;border:none;}
   table.kpi-table tr.kpi-group-divider td::before{
     content:"";display:block;height:3px;background:var(--forest);opacity:.35;
@@ -2352,6 +2358,24 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div class="adm-hint" id="dailyLogScopeHint"></div>
       <div id="dailyLogResults"><div class="mgr-empty">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="kpiTaskEditOverlay">
+  <div class="mgr-panel" style="max-width:380px;">
+    <div class="mgr-head">
+      <h2 id="kpiTaskEditTitle">Task</h2>
+      <button class="mgr-close" onclick="closeKpiTaskEdit()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="sb-fields">
+        <label>Actual<input type="number" min="0" id="kpiTaskEditActual" placeholder="0"></label>
+        <label>Accuracy %<input type="number" min="0" max="100" id="kpiTaskEditAccuracy" placeholder="100"></label>
+      </div>
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="btn-small" onclick="saveKpiTaskEdit()">💾 Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -5772,6 +5796,31 @@ const KPI_GROUPS = [
 let KPI_GROUP_WEIGHTS = { 'data-entry':50, 'errors':20, 'satisfaction':30 };
 let kpiFormId = null;
 
+let kpiTaskEditId = null;
+function openKpiTaskEdit(taskId){
+  const tr = document.querySelector(`#kpiGroupsWrap tr[data-task-id="${taskId}"]`);
+  if(!tr) return;
+  kpiTaskEditId = taskId;
+  const def = KPI_DEFS.find(k => k.id === taskId);
+  document.getElementById('kpiTaskEditTitle').textContent = def ? def.label : 'Task';
+  document.getElementById('kpiTaskEditActual').value = tr.querySelector('.kpi-actual').value;
+  document.getElementById('kpiTaskEditAccuracy').value = tr.querySelector('.kpi-accuracy').value;
+  document.getElementById('kpiTaskEditOverlay').classList.add('open');
+}
+function closeKpiTaskEdit(){
+  document.getElementById('kpiTaskEditOverlay').classList.remove('open');
+  kpiTaskEditId = null;
+}
+function saveKpiTaskEdit(){
+  if(!kpiTaskEditId) return;
+  const tr = document.querySelector(`#kpiGroupsWrap tr[data-task-id="${kpiTaskEditId}"]`);
+  if(!tr){ closeKpiTaskEdit(); return; }
+  tr.querySelector('.kpi-actual').value = document.getElementById('kpiTaskEditActual').value;
+  tr.querySelector('.kpi-accuracy').value = document.getElementById('kpiTaskEditAccuracy').value;
+  calcKpi();
+  closeKpiTaskEdit();
+}
+
 function renderKpiRows(){
   const wrap = document.getElementById('kpiGroupsWrap');
   const showAll = isSuperAdmin() || session.role === 'admin';
@@ -5786,11 +5835,11 @@ function renderKpiRows(){
 
   const rowHtml = k => `
     <tr data-task-id="${k.id}">
-      <td>${k.label.replace(/</g,'&lt;')}</td>
+      <td>${k.label.replace(/</g,'&lt;')} <span class="kpi-edit-icon" onclick="openKpiTaskEdit('${k.id}')" title="Enter Actual / Accuracy">✎</span></td>
       <td><input type="number" min="0" class="kpi-target" placeholder="0"></td>
-      <td><input type="number" min="0" class="kpi-actual" placeholder="0"></td>
-      <td><input type="number" min="0" max="100" class="kpi-accuracy" placeholder="100"></td>
-      <td class="readonly-cell kpi-achievement">0%</td>
+      <td class="kpi-hidden-col"><input type="number" min="0" class="kpi-actual" placeholder="0"></td>
+      <td class="kpi-hidden-col"><input type="number" min="0" max="100" class="kpi-accuracy" placeholder="100"></td>
+      <td class="readonly-cell kpi-achievement kpi-hidden-col">0%</td>
       <td><input type="number" value="${k.weight}" class="kpi-weight" readonly></td>
       <td class="readonly-cell kpi-score">0%</td>
     </tr>`;
@@ -5806,9 +5855,9 @@ function renderKpiRows(){
             <tr>
               <th data-label-key="kpi.col.task">Task / KPI</th>
               <th data-label-key="kpi.col.target">Target</th>
-              <th data-label-key="kpi.col.actual">Actual</th>
-              <th data-label-key="kpi.col.accuracy">Accuracy %</th>
-              <th data-label-key="kpi.col.achievement">Achievement %</th>
+              <th class="kpi-hidden-col" data-label-key="kpi.col.actual">Actual</th>
+              <th class="kpi-hidden-col" data-label-key="kpi.col.accuracy">Accuracy %</th>
+              <th class="kpi-hidden-col" data-label-key="kpi.col.achievement">Achievement %</th>
               <th data-label-key="kpi.col.weight">Weight %</th>
               <th data-label-key="kpi.col.score">Score</th>
             </tr>
