@@ -5847,6 +5847,7 @@ function renderKpiRows(){
   wrap.innerHTML = KPI_GROUPS.map(g => {
     const groupDefs = visibleDefs.filter(k => (k.group || 'data-entry') === g.id);
     if(!groupDefs.length) return '';
+    const weightSum = groupDefs.reduce((s,k) => s + (parseFloat(k.weight)||0), 0);
     return `
       <div class="section-header" style="margin-top:18px;"><div class="num">${g.icon}</div><div class="title">${g.label} <span style="opacity:.75;font-weight:600;">(${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : '—'}% of total)</span></div></div>
       <div class="price-table-wrap">
@@ -5863,6 +5864,18 @@ function renderKpiRows(){
             </tr>
           </thead>
           <tbody>${groupDefs.map(rowHtml).join('')}</tbody>
+          <tfoot>
+            <tr class="kpi-group-total-row" data-group="${g.id}">
+              <td colspan="2" class="readonly-cell">
+                <span data-label-key="kpi.col.total">Total</span>
+                <span style="opacity:.7;font-weight:600;margin-inline-start:8px;">(Monthly Actual: <span class="kpi-group-actual-sum">0</span>)</span>
+              </td>
+              <td class="kpi-hidden-col"></td>
+              <td class="kpi-hidden-col"></td>
+              <td class="readonly-cell">${weightSum}</td>
+              <td class="readonly-cell kpi-group-score-sum">0%</td>
+            </tr>
+          </tfoot>
         </table>
       </div>`;
   }).join('');
@@ -5900,9 +5913,11 @@ function calcKpi(){
     tr.querySelector('.kpi-achievement').textContent = achievement.toFixed(1) + '%';
     tr.querySelector('.kpi-score').textContent = (score * (w/100)).toFixed(1) + '%';
 
-    if(!groupTotals[groupId]) groupTotals[groupId] = { weightedScore:0, totalWeight:0 };
+    if(!groupTotals[groupId]) groupTotals[groupId] = { weightedScore:0, totalWeight:0, scoreSum:0, actualSum:0 };
     groupTotals[groupId].weightedScore += score * w;
     groupTotals[groupId].totalWeight += w;
+    groupTotals[groupId].scoreSum += score * (w/100);
+    groupTotals[groupId].actualSum += a;
 
     accuracySum += ac;
     count++;
@@ -5912,6 +5927,10 @@ function calcKpi(){
   let combinedScore = 0, combinedGroupWeight = 0;
   Object.keys(groupTotals).forEach(groupId => {
     const g = groupTotals[groupId];
+    const totalCell = document.querySelector(`.kpi-group-total-row[data-group="${groupId}"] .kpi-group-score-sum`);
+    if(totalCell) totalCell.textContent = g.scoreSum.toFixed(1) + '%';
+    const actualCell = document.querySelector(`.kpi-group-total-row[data-group="${groupId}"] .kpi-group-actual-sum`);
+    if(actualCell) actualCell.textContent = g.actualSum;
     if(g.totalWeight <= 0) return;
     const groupScore = g.weightedScore / g.totalWeight; // 0-100 within this group
     const groupWeight = KPI_GROUP_WEIGHTS[groupId] !== undefined ? KPI_GROUP_WEIGHTS[groupId] : (100 / Object.keys(groupTotals).length);
