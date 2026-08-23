@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     --ink:#0c2a1c;
@@ -1785,7 +1786,11 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
           <select id="admLogModuleFilter" onchange="renderActivityLog()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
             <option value="">All modules</option>
           </select>
+          <input type="date" id="admLogFrom" onchange="renderActivityLog()" title="From date" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+          <input type="date" id="admLogTo" onchange="renderActivityLog()" title="To date" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+          <button class="btn-small" onclick="exportActivityLogCSV()">⬇ Export CSV</button>
         </div>
+        <div id="admLogSummary" style="font-size:.78rem;color:#666;margin-bottom:10px;"></div>
         <div id="admLog">Loading…</div>
       </div>
 
@@ -1879,6 +1884,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <input type="text" id="mgrSearch" placeholder="Search by Form ID or company name…" oninput="renderManagerList()">
         <button class="mgr-btn" style="background:#888;color:#fff;" onclick="closeManager()">Cancel</button>
         <button class="mgr-btn open-b" onclick="loadFormsList()">Refresh</button>
+        <button class="mgr-btn open-b" id="mgrExcelExportBtn" style="display:none;" onclick="exportFormsToExcel()">⬇ Export to Excel</button>
       </div>
       <div class="mgr-list" id="mgrList">
         <div class="mgr-empty">Loading…</div>
@@ -2142,6 +2148,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="btn-small" onclick="openDailyEntry()">📝 Monthly Entry</button>
     <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Monthly Log</button>
     <button class="btn-small" onclick="openDailyLogViewer()">📋 View Monthly Log</button>
+    <button class="btn-small" onclick="openKpiCompare()">📊 Compare Employees</button>
   </div>
   <div id="kpiGroupsWrap"></div>
 
@@ -2367,6 +2374,21 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div class="adm-hint" id="dailyLogScopeHint"></div>
       <div id="dailyLogResults"><div class="mgr-empty">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="kpiCompareOverlay">
+  <div class="mgr-panel" style="max-width:680px;">
+    <div class="mgr-head">
+      <h2>Compare Employees</h2>
+      <button class="mgr-close" onclick="closeKpiCompare()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <label style="font-size:.8rem;font-weight:700;">Month<input type="month" id="kpiCompareMonth" onchange="loadKpiCompare()" style="margin-inline-start:6px;"></label>
+      </div>
+      <div id="kpiCompareResults"><div class="mgr-empty">Pick a month to compare.</div></div>
     </div>
   </div>
 </div>
@@ -3074,6 +3096,31 @@ function restoreForm(d){
 }
 
 /* ---------- Backend operations ---------- */
+function findDuplicateInvoiceNumbers(data){
+  const seen = {};
+  const dupes = new Set();
+  (data.rows || []).forEach(r => {
+    const no = (r.invoiceNo || '').trim();
+    if(!no) return;
+    if(seen[no]) dupes.add(no);
+    seen[no] = true;
+  });
+  return [...dupes];
+}
+
+async function checkSameCompanyToday(table, companyName, excludeId){
+  if(!companyName || !backendReady()) return [];
+  try{
+    const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/${table}?select=id,updated_at&company_name=eq.${encodeURIComponent(companyName)}&id=neq.${encodeURIComponent(excludeId)}&updated_at=gte.${todayStart.toISOString()}&deleted_at=is.null`,
+      { headers: sbHeaders() }
+    );
+    if(!res.ok) return [];
+    return await res.json();
+  }catch(e){ return []; }
+}
+
 async function saveInv(){
   if(!backendReady()){
     flash('Backend not configured — see CONFIG at top of file.', true);
@@ -3081,11 +3128,26 @@ async function saveInv(){
   }
   if(!currentFormId) setFormId(makeFormId());
 
+  const newData = serializeForm();
+  const oldData = await fetchExistingFormData('forms', currentFormId);
+  const companyName = document.querySelector('.company-name-input').value || '(unnamed)';
+
+  const dupeInvoiceNos = findDuplicateInvoiceNumbers(newData);
+  if(dupeInvoiceNos.length){
+    const proceed = confirm(`This form has repeated Invoice Number(s): ${dupeInvoiceNos.join(', ')}. Save anyway?`);
+    if(!proceed) return;
+  }
+  const sameCompanyToday = await checkSameCompanyToday('forms', companyName, currentFormId);
+  if(sameCompanyToday.length){
+    const proceed = confirm(`${sameCompanyToday.length} other invoice form(s) for "${companyName}" were already saved today. This might be a duplicate — save anyway?`);
+    if(!proceed) return;
+  }
+
   const payload = {
     id: currentFormId,
-    company_name: document.querySelector('.company-name-input').value || '(unnamed)',
+    company_name: companyName,
     stage: currentStage,
-    data: serializeForm(),
+    data: newData,
     updated_at: new Date().toISOString(),
     updated_by: session.email || null
   };
@@ -3097,13 +3159,66 @@ async function saveInv(){
       body: JSON.stringify(payload)
     });
     if(!res.ok) throw new Error(await res.text());
-    logActivity('save', currentFormId);
+    logActivity('save', currentFormId, describeFormDiff(oldData, newData));
     flash('Saved ✓ ' + currentFormId);
     loadCompanyNamesList();
   }catch(e){
     console.error(e);
     flash(sbError(e), true);
   }
+}
+
+const FIELD_LABELS = {
+  invoiceNo:'Invoice #', price:'Price', bonus:'Bonus', cashback:'Cash Back', discount:'Discount',
+  priceOk:'Price Verified', bonusOk:'Bonus Verified', qtyOk:'Qty Verified', notes:'Notes', paid:'Paid', date:'Date',
+  product:'Product', sectionNo:'Batch/Lot', itemsPerPkg:'Items/Pkg', cashflow:'Cash Flow', stock:'Stock', note:'Note',
+  companyName:'Company', employee:'Employee', target:'Target', actual:'Actual', accuracy:'Accuracy',
+};
+function fieldLabel(k){ return FIELD_LABELS[k] || k; }
+
+function describeFormDiff(oldData, newData){
+  if(!oldData) return null; // brand new form — nothing to diff against
+  const changes = [];
+
+  // Top-level scalar fields (skip 'rows' — handled separately).
+  Object.keys(newData || {}).forEach(k => {
+    if(k === 'rows') return;
+    const ov = oldData[k], nv = newData[k];
+    if(typeof nv === 'object') return;
+    if((ov ?? '') !== (nv ?? '')) changes.push(`${fieldLabel(k)}: "${ov ?? ''}" → "${nv ?? ''}"`);
+  });
+
+  // Row-level diffs, matched by index.
+  const oldRows = oldData.rows || [];
+  const newRows = newData.rows || [];
+  const maxLen = Math.max(oldRows.length, newRows.length);
+  for(let i = 0; i < maxLen; i++){
+    const or = oldRows[i], nr = newRows[i];
+    if(or && !nr){ changes.push(`Row ${i+1} removed`); continue; }
+    if(!or && nr){ changes.push(`Row ${i+1} added`); continue; }
+    Object.keys(nr || {}).forEach(k => {
+      if(k === 'extra') return;
+      const ov = or[k], nv = nr[k];
+      if(typeof nv === 'object') return;
+      const ovN = ov === true ? 'Yes' : ov === false ? 'No' : (ov ?? '');
+      const nvN = nv === true ? 'Yes' : nv === false ? 'No' : (nv ?? '');
+      if(String(ovN) !== String(nvN)) changes.push(`Row ${i+1} ${fieldLabel(k)}: "${ovN}" → "${nvN}"`);
+    });
+  }
+
+  if(!changes.length) return null;
+  const shown = changes.slice(0, 5).join('; ');
+  return changes.length > 5 ? `${shown}; +${changes.length - 5} more change(s)` : shown;
+}
+
+async function fetchExistingFormData(table, id){
+  if(!id) return null;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=data`, { headers: sbHeaders() });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return rows.length ? rows[0].data : null;
+  }catch(e){ return null; }
 }
 
 async function loadFormsList(){
@@ -3223,6 +3338,8 @@ function openManager(){
     : activeTab === 'sop' ? 'Saved SOP Documents'
     : activeTab === 'kpi' ? 'Saved KPI Evaluations'
     : 'Saved Invoice Forms';
+  const excelBtn = document.getElementById('mgrExcelExportBtn');
+  if(excelBtn) excelBtn.style.display = (activeTab === 'inv' || activeTab === 'cf') ? '' : 'none';
   document.getElementById('mgrOverlay').classList.add('open');
   loadFormsList();
 }
@@ -5517,10 +5634,14 @@ function renderActivityLog(){
   const search = (document.getElementById('admLogSearch').value || '').toLowerCase();
   const actionFilter = document.getElementById('admLogActionFilter').value;
   const moduleFilter = document.getElementById('admLogModuleFilter').value;
+  const fromDate = document.getElementById('admLogFrom').value;
+  const toDate = document.getElementById('admLogTo').value;
 
   let rows = activityLogRows;
   if(actionFilter) rows = rows.filter(r => r.action === actionFilter);
   if(moduleFilter) rows = rows.filter(r => r.form_type === moduleFilter);
+  if(fromDate) rows = rows.filter(r => r.created_at >= fromDate);
+  if(toDate) rows = rows.filter(r => r.created_at <= toDate + 'T23:59:59');
   if(search){
     rows = rows.filter(r =>
       (r.user_email||'').toLowerCase().includes(search) ||
@@ -5529,22 +5650,65 @@ function renderActivityLog(){
     );
   }
 
+  const uniqueUsers = new Set(rows.map(r => r.user_email)).size;
+  const summaryEl = document.getElementById('admLogSummary');
+  if(summaryEl) summaryEl.textContent = `${rows.length} action${rows.length===1?'':'s'} · ${uniqueUsers} user${uniqueUsers===1?'':'s'}`;
+
   if(!rows.length){ box.innerHTML = '<div class="mgr-empty">No matching activity.</div>'; return; }
+
+  // Group consecutive rows by calendar day for easier scanning.
+  let lastDay = null;
+  const bodyRows = rows.map(r=>{
+    const day = new Date(r.created_at).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+    const dayHeader = day !== lastDay ? `<tr><td colspan="6" style="background:var(--sage);font-weight:700;font-size:.72rem;color:var(--forest-deep);padding:5px 9px;">${day}</td></tr>` : '';
+    lastDay = day;
+    const color = activityActionColor(r.action);
+    return dayHeader + `<tr>
+      <td title="${new Date(r.created_at).toLocaleString('en-US')}">${relativeTime(r.created_at)}</td>
+      <td>${(r.user_email||'').replace(/</g,'&lt;')}</td>
+      <td>${(r.form_type||'—').replace(/</g,'&lt;')}</td>
+      <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${r.action}</span></td>
+      <td>${r.detail ? String(r.detail).replace(/</g,'&lt;') : ''}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;">${r.form_id || ''}</td>
+    </tr>`;
+  }).join('');
 
   box.innerHTML = `<table class="adm-table">
     <tr><th>When</th><th>User</th><th>Module</th><th>Action</th><th>Detail</th><th>Form ID</th></tr>
-    ${rows.map(r=>{
-      const color = activityActionColor(r.action);
-      return `<tr>
-        <td title="${new Date(r.created_at).toLocaleString('en-US')}">${relativeTime(r.created_at)}</td>
-        <td>${(r.user_email||'').replace(/</g,'&lt;')}</td>
-        <td>${(r.form_type||'—').replace(/</g,'&lt;')}</td>
-        <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${r.action}</span></td>
-        <td>${r.detail ? String(r.detail).replace(/</g,'&lt;') : ''}</td>
-        <td style="font-family:'IBM Plex Mono',monospace;">${r.form_id || ''}</td>
-      </tr>`;
-    }).join('')}
+    ${bodyRows}
   </table>`;
+}
+
+function exportActivityLogCSV(){
+  const search = (document.getElementById('admLogSearch').value || '').toLowerCase();
+  const actionFilter = document.getElementById('admLogActionFilter').value;
+  const moduleFilter = document.getElementById('admLogModuleFilter').value;
+  const fromDate = document.getElementById('admLogFrom').value;
+  const toDate = document.getElementById('admLogTo').value;
+
+  let rows = activityLogRows;
+  if(actionFilter) rows = rows.filter(r => r.action === actionFilter);
+  if(moduleFilter) rows = rows.filter(r => r.form_type === moduleFilter);
+  if(fromDate) rows = rows.filter(r => r.created_at >= fromDate);
+  if(toDate) rows = rows.filter(r => r.created_at <= toDate + 'T23:59:59');
+  if(search){
+    rows = rows.filter(r =>
+      (r.user_email||'').toLowerCase().includes(search) ||
+      (r.detail||'').toLowerCase().includes(search) ||
+      (r.form_id||'').toLowerCase().includes(search)
+    );
+  }
+  if(!rows.length){ flash('Nothing to export.', true); return; }
+
+  const cols = ['created_at','user_email','form_type','action','detail','form_id'];
+  let csv = cols.join(',') + '\n';
+  rows.forEach(r=>{ csv += cols.map(k=>csvCell(r[k])).join(',') + '\n'; });
+
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `activity-log-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
 }
 
 
@@ -5552,6 +5716,63 @@ function renderActivityLog(){
 function csvCell(v){
   const s = v === null || v === undefined ? '' : String(v);
   return '"' + s.replace(/"/g,'""') + '"';
+}
+
+async function exportFormsToExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load. Check your connection and try again.', true); return; }
+  const tab = activeTab;
+  if(tab !== 'inv' && tab !== 'cf'){ flash('Excel export is available for Invoice and Cash Flow only.', true); return; }
+  const table = tab === 'inv' ? 'forms' : 'cashflow_forms';
+  const q = (document.getElementById('mgrSearch').value || '').toLowerCase().trim();
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=*&deleted_at=is.null&order=updated_at.desc`, { headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    let forms = await res.json();
+    if(q){
+      forms = forms.filter(f =>
+        (f.id||'').toLowerCase().includes(q) ||
+        (f.company_name||'').toLowerCase().includes(q)
+      );
+    }
+    if(!forms.length){ flash('No forms match your search — nothing to export.', true); return; }
+
+    const flatRows = [];
+    forms.forEach(f => {
+      const company = f.company_name || '(unnamed)';
+      const rows = (f.data && f.data.rows) ? f.data.rows : [];
+      if(!rows.length){
+        flatRows.push({ 'Company': company, 'Form ID': f.id, 'Updated By': f.updated_by || '', 'Updated At': f.updated_at || '' });
+        return;
+      }
+      rows.forEach(r => {
+        if(tab === 'inv'){
+          flatRows.push({
+            'Company': company, 'Form ID': f.id,
+            'Date': r.date || '', 'Invoice Number': r.invoiceNo || '',
+            'Price (IQD)': r.price || '', 'Bonus (IQD)': r.bonus || '',
+            'Cash Back (%)': r.cashback || '', 'Discount (%)': r.discount || '',
+            'Notes': r.notes || '', 'Paid': r.paid ? 'Yes' : 'No',
+            'Updated By': f.updated_by || '', 'Updated At': f.updated_at || ''
+          });
+        }else{
+          flatRows.push({
+            'Company': company, 'Form ID': f.id,
+            'Product': r.product || '', 'Batch/Lot Number': r.sectionNo || '',
+            'Items per Package': r.itemsPerPkg || '', 'Cash Flow': r.cashflow || '',
+            'Stock Dalare': r.stock || '', 'Note': r.note || '',
+            'Updated By': f.updated_by || '', 'Updated At': f.updated_at || ''
+          });
+        }
+      });
+    });
+
+    const ws = XLSX.utils.json_to_sheet(flatRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, tab === 'inv' ? 'Invoices' : 'Cash Flow');
+    XLSX.writeFile(wb, `${tab === 'inv' ? 'invoice' : 'cashflow'}-export-${new Date().toISOString().slice(0,10)}.xlsx`);
+    logActivity('export_excel', null, table);
+    flash(`Exported ${forms.length} forms (${flatRows.length} rows)`);
+  }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 async function exportCSV(){
@@ -6224,6 +6445,75 @@ async function pullFromDailyLog(){
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
+function openKpiCompare(){
+  document.getElementById('kpiCompareOverlay').classList.add('open');
+  const monthInp = document.getElementById('kpiCompareMonth');
+  if(!monthInp.value){
+    const now = new Date();
+    monthInp.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+  loadKpiCompare();
+}
+function closeKpiCompare(){
+  document.getElementById('kpiCompareOverlay').classList.remove('open');
+}
+
+async function loadKpiCompare(){
+  const box = document.getElementById('kpiCompareResults');
+  const month = document.getElementById('kpiCompareMonth').value;
+  if(!month){ box.innerHTML = '<div class="mgr-empty">Pick a month to compare.</div>'; return; }
+  box.innerHTML = '<div class="mgr-empty">Loading…</div>';
+  if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
+
+  try{
+    let allowedNames = null;
+    let scopeNote = 'Showing every department.';
+    if(!isSuperAdmin() && session.role !== 'admin'){
+      const meRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?email=eq.${encodeURIComponent(session.email)}&select=department`, { headers: sbHeaders() });
+      const meRows = meRes.ok ? await meRes.json() : [];
+      if(!meRows.length || !meRows[0].department){
+        box.innerHTML = '<div class="mgr-empty">Your account isn\'t linked to a department yet.</div>';
+        return;
+      }
+      const dept = meRows[0].department;
+      scopeNote = `Showing the ${dept} department only.`;
+      const teamRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?department=eq.${encodeURIComponent(dept)}&select=full_name`, { headers: sbHeaders() });
+      const teamRows = teamRes.ok ? await teamRes.json() : [];
+      allowedNames = new Set(teamRows.map(r => r.full_name));
+    }
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?select=*&deleted_at=is.null`, { headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    let forms = await res.json();
+    forms = forms.filter(f => f.data && f.data.month === month);
+    if(allowedNames) forms = forms.filter(f => allowedNames.has(f.company_name));
+
+    if(!forms.length){ box.innerHTML = `<div class="mgr-empty">No KPI evaluations found for ${month}.</div>`; return; }
+
+    const ranked = forms.map(f => ({
+      employee: f.company_name || '(unnamed)',
+      score: computeKpiScoreFromData(f.data || {}),
+    })).sort((a,b) => b.score - a.score);
+
+    const maxScore = Math.max(...ranked.map(r => r.score), 1);
+    box.innerHTML = `
+      <div class="adm-hint">${scopeNote} — ${ranked.length} employee(s) evaluated for ${month}.</div>
+      <table class="adm-table">
+        <tr><th>Rank</th><th>Employee</th><th>Score</th><th></th></tr>
+        ${ranked.map((r,i) => {
+          const barColor = r.score>=90?'#0f7a3d':r.score>=80?'#2f7d32':r.score>=70?'#b9770e':'#a8462e';
+          const barWidth = Math.max(4, (r.score/maxScore)*100);
+          return `<tr>
+            <td style="font-weight:800;">${i+1}</td>
+            <td>${r.employee.replace(/</g,'&lt;')}</td>
+            <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;">${r.score.toFixed(1)}%</td>
+            <td style="width:40%;"><div style="background:${barColor};height:10px;border-radius:5px;width:${barWidth}%;"></div></td>
+          </tr>`;
+        }).join('')}
+      </table>`;
+  }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">'+sbError(e)+'</div>'; }
+}
+
 async function openDailyLogViewer(){
   document.getElementById('dailyLogViewerOverlay').classList.add('open');
   const hint = document.getElementById('dailyLogScopeHint');
@@ -6284,10 +6574,12 @@ function newFormKPI(){
 async function saveKPI(){
   if(!backendReady()){ flash('Backend not configured.', true); return; }
   if(!kpiFormId) setKpiFormId(makeKpiFormId());
+  const newData = serializeKpi();
+  const oldData = await fetchExistingFormData('kpi_forms', kpiFormId);
   const payload = {
     id: kpiFormId,
     company_name: document.querySelector('.kpi-employee').value || '(unnamed)',
-    data: serializeKpi(),
+    data: newData,
     updated_by: session.email,
     updated_at: new Date().toISOString()
   };
@@ -6297,7 +6589,7 @@ async function saveKPI(){
       body: JSON.stringify(payload)
     });
     if(!res.ok) throw new Error(await res.text());
-    logActivity('save', kpiFormId, payload.company_name);
+    logActivity('save', kpiFormId, describeFormDiff(oldData, newData) || payload.company_name);
     flash('Saved ✓ ' + kpiFormId);
     loadEmployeeNamesList();
   }catch(e){ console.error(e); flash(sbError(e), true); }
@@ -6463,11 +6755,13 @@ function newFormCF(){
 async function saveCF(){
   if(!backendReady()){ flash('Backend not configured — see CONFIG at top of file.', true); return; }
   if(!cfFormId) setCFFormId(makeCFFormId());
+  const newData = serializeCF();
+  const oldData = await fetchExistingFormData('cashflow_forms', cfFormId);
   const payload = {
     id: cfFormId,
     company_name: document.querySelector('.cf-company').value || '(unnamed)',
     stage: 'entry',
-    data: serializeCF(),
+    data: newData,
     updated_at: new Date().toISOString(),
     updated_by: session.email || null
   };
@@ -6477,7 +6771,7 @@ async function saveCF(){
       body: JSON.stringify(payload)
     });
     if(!res.ok) throw new Error(await res.text());
-    logActivity('save', cfFormId);
+    logActivity('save', cfFormId, describeFormDiff(oldData, newData));
     flash('Saved ✓ ' + cfFormId);
     loadCompanyNamesList();
     loadCfSectionList();
