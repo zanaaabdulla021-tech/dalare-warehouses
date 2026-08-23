@@ -261,7 +261,7 @@
   .mgr-overlay{
     position:fixed;inset:0;background:rgba(10,25,16,.55);
     display:flex;align-items:flex-start;justify-content:center;
-    z-index:900;padding:24px 12px;overflow:auto;
+    z-index:2000;padding:24px 12px;overflow:auto;
     opacity:0;visibility:hidden;pointer-events:none;
     transition:opacity .16s ease;
     backdrop-filter:blur(2px);
@@ -1091,7 +1091,7 @@
 
   /* QR badge modal */
   .qr-modal{
-    position:fixed;inset:0;background:rgba(10,25,16,.6);z-index:1200;
+    position:fixed;inset:0;background:rgba(10,25,16,.6);z-index:2000;
     display:flex;align-items:center;justify-content:center;padding:20px;
     opacity:0;visibility:hidden;pointer-events:none;transition:opacity .16s ease;
     backdrop-filter:blur(2px);
@@ -1868,6 +1868,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div class="mgr-search">
         <input type="text" id="mgrSearch" placeholder="Search by Form ID or company name…" oninput="renderManagerList()">
+        <button class="mgr-btn" style="background:#888;color:#fff;" onclick="closeManager()">Cancel</button>
         <button class="mgr-btn open-b" onclick="loadFormsList()">Refresh</button>
       </div>
       <div class="mgr-list" id="mgrList">
@@ -2196,7 +2197,6 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
   <div class="section-header"><div class="num">★</div><div class="title" data-label-key="staff.sec.employees">Employees</div></div>
   <div class="staff-tools no-print">
-    <button class="btn-small" onclick="switchTab('home')" title="Back to Home">← Back</button>
     <input type="text" id="empSearch" placeholder="Search by name, department or ID…" oninput="renderEmployees()">
     <button class="btn-small" onclick="addEmployee()">+ Add Employee</button>
     <button class="btn-small" onclick="loadEmployees()">Refresh</button>
