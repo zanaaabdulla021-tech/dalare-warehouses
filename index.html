@@ -1776,7 +1776,16 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       </div>
 
       <div class="adm-pane" id="admPaneLog">
-        <div class="adm-hint">Most recent 100 actions across all three form types.</div>
+        <div class="adm-hint">Most recent 100 actions across all form types.</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <input type="text" id="admLogSearch" placeholder="Search by user or detail…" oninput="renderActivityLog()" style="flex:1;min-width:160px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+          <select id="admLogActionFilter" onchange="renderActivityLog()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+            <option value="">All actions</option>
+          </select>
+          <select id="admLogModuleFilter" onchange="renderActivityLog()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+            <option value="">All modules</option>
+          </select>
+        </div>
         <div id="admLog">Loading…</div>
       </div>
 
@@ -5456,6 +5465,31 @@ async function logActivity(action, formId, detail){
   }catch(e){ /* logging must never block the user */ }
 }
 
+let activityLogRows = [];
+
+const ACTIVITY_ACTION_COLORS = {
+  save: '#0f7a3d', save_kpi: '#0f7a3d', save_employee: '#0f7a3d', save_card_layout: '#0f7a3d', save_kpi_order: '#0f7a3d',
+  delete: '#a8462e', delete_employee: '#a8462e',
+  change_logo: '#7c5cd4',
+};
+function activityActionColor(action){
+  if(ACTIVITY_ACTION_COLORS[action]) return ACTIVITY_ACTION_COLORS[action];
+  if(action.startsWith('save')) return '#0f7a3d';
+  if(action.startsWith('delete')) return '#a8462e';
+  return '#555';
+}
+function relativeTime(dateStr){
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if(mins < 1) return 'just now';
+  if(mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if(hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if(days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-US');
+}
+
 async function loadActivity(){
   const box = document.getElementById('admLog');
   box.innerHTML = 'Loading…';
@@ -5464,19 +5498,55 @@ async function loadActivity(){
       `${SUPABASE_URL}/rest/v1/activity_log?select=*&order=created_at.desc&limit=100`,
       { headers: sbHeaders() });
     if(!res.ok) throw new Error(await res.text());
-    const rows = await res.json();
-    if(!rows.length){ box.innerHTML = '<div class="mgr-empty">No activity recorded yet.</div>'; return; }
-    box.innerHTML = `<table class="adm-table">
-      <tr><th>When</th><th>User</th><th>Action</th><th>Form</th></tr>
-      ${rows.map(r=>`<tr>
-        <td>${new Date(r.created_at).toLocaleString('en-US')}</td>
-        <td>${(r.user_email||'').replace(/</g,'&lt;')}</td>
-        <td>${r.action}${r.detail ? ' — ' + String(r.detail).replace(/</g,'&lt;') : ''}</td>
-        <td>${r.form_id || ''}</td>
-      </tr>`).join('')}
-    </table>`;
+    activityLogRows = await res.json();
+
+    const actions = [...new Set(activityLogRows.map(r => r.action))].sort();
+    const actionSel = document.getElementById('admLogActionFilter');
+    actionSel.innerHTML = '<option value="">All actions</option>' + actions.map(a => `<option value="${a}">${a}</option>`).join('');
+
+    const modules = [...new Set(activityLogRows.map(r => r.form_type).filter(Boolean))].sort();
+    const modSel = document.getElementById('admLogModuleFilter');
+    modSel.innerHTML = '<option value="">All modules</option>' + modules.map(m => `<option value="${m}">${m}</option>`).join('');
+
+    renderActivityLog();
   }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">'+sbError(e)+'</div>'; }
 }
+
+function renderActivityLog(){
+  const box = document.getElementById('admLog');
+  const search = (document.getElementById('admLogSearch').value || '').toLowerCase();
+  const actionFilter = document.getElementById('admLogActionFilter').value;
+  const moduleFilter = document.getElementById('admLogModuleFilter').value;
+
+  let rows = activityLogRows;
+  if(actionFilter) rows = rows.filter(r => r.action === actionFilter);
+  if(moduleFilter) rows = rows.filter(r => r.form_type === moduleFilter);
+  if(search){
+    rows = rows.filter(r =>
+      (r.user_email||'').toLowerCase().includes(search) ||
+      (r.detail||'').toLowerCase().includes(search) ||
+      (r.form_id||'').toLowerCase().includes(search)
+    );
+  }
+
+  if(!rows.length){ box.innerHTML = '<div class="mgr-empty">No matching activity.</div>'; return; }
+
+  box.innerHTML = `<table class="adm-table">
+    <tr><th>When</th><th>User</th><th>Module</th><th>Action</th><th>Detail</th><th>Form ID</th></tr>
+    ${rows.map(r=>{
+      const color = activityActionColor(r.action);
+      return `<tr>
+        <td title="${new Date(r.created_at).toLocaleString('en-US')}">${relativeTime(r.created_at)}</td>
+        <td>${(r.user_email||'').replace(/</g,'&lt;')}</td>
+        <td>${(r.form_type||'—').replace(/</g,'&lt;')}</td>
+        <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${r.action}</span></td>
+        <td>${r.detail ? String(r.detail).replace(/</g,'&lt;') : ''}</td>
+        <td style="font-family:'IBM Plex Mono',monospace;">${r.form_id || ''}</td>
+      </tr>`;
+    }).join('')}
+  </table>`;
+}
+
 
 /* ---- Export CSV ---- */
 function csvCell(v){
