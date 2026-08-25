@@ -2140,6 +2140,15 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </div>
   </div>
 
+  <div id="kpiDeptPicker">
+    <div class="section-header"><div class="num">★</div><div class="title">Choose a Department</div></div>
+    <div class="home-grid" id="kpiDeptCards" style="margin:0 14px;"></div>
+  </div>
+
+  <div id="kpiFormBody" class="hidden-tab">
+  <div class="table-actions no-print" style="margin:14px 14px 0;">
+    <button class="btn-small" onclick="backToKpiDeptPicker()">← Back to Departments</button>
+  </div>
   <div class="section-header"><div class="num">1</div><div class="title" data-label-key="kpi.sec.info">Employee Information</div></div>
   <div class="kpi-info-grid">
     <div><label data-label-key="kpi.lbl.department">Department</label><input type="text" class="kpi-department" value="Data Entry" list="staffDeptList"></div>
@@ -2171,6 +2180,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div class="section-header"><div class="num">3</div><div class="title" data-label-key="kpi.sec.notes">Supervisor Notes</div></div>
   <div style="padding:0 14px 18px;">
     <textarea class="kpi-notes" placeholder="Notes, strengths, areas for improvement…" style="width:100%;min-height:90px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;resize:vertical;"></textarea>
+  </div>
   </div>
 </div>
 
@@ -6346,6 +6356,7 @@ function switchTab(tab){
   document.querySelector('.toolbar').style.display = (tab === 'home' || isEmployee()) ? 'none' : 'flex';
   if(tab === 'staff') loadEmployees();
   if(tab === 'att') loadAttendanceTab();
+  if(tab === 'kpi') showKpiDeptPicker();
   if(tab === 'sop') document.querySelectorAll('#sopList textarea').forEach(autoGrow);
   applyViewerLock();
   updatePdfColsButton();
@@ -6480,6 +6491,70 @@ function saveKpiTaskEdit(){
   tr.querySelector('.kpi-accuracy').value = document.getElementById('kpiTaskEditAccuracy').value;
   calcKpi();
   closeKpiTaskEdit();
+}
+
+const KPI_DEPT_COLORS = ['#2f6fed','#0c8a4a','#b8720e','#7c5cd4','#0e7c86','#c0392b','#8e44ad','#16a085'];
+
+async function showKpiDeptPicker(){
+  document.getElementById('kpiDeptPicker').classList.remove('hidden-tab');
+  document.getElementById('kpiFormBody').classList.add('hidden-tab');
+  const cardsBox = document.getElementById('kpiDeptCards');
+  cardsBox.innerHTML = '<div class="mgr-empty">Loading…</div>';
+  if(!backendReady()){ cardsBox.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?select=department`, { headers: sbHeaders() });
+    const rows = res.ok ? await res.json() : [];
+    let depts = [...new Set(rows.map(r => r.department).filter(Boolean))].sort();
+    if(!depts.length) depts = KPI_DEFS.map(k => k.department).filter(Boolean);
+    depts = [...new Set(depts)];
+    if(!depts.length){
+      cardsBox.innerHTML = '<div class="mgr-empty">No departments found yet.</div>' +
+        `<div class="home-card" style="border:2px dashed var(--line);box-shadow:none;display:flex;align-items:center;justify-content:center;min-height:160px;cursor:pointer;margin-top:10px;" onclick="addNewKpiDepartment()">
+          <div style="text-align:center;color:var(--forest);">
+            <div style="font-size:1.8rem;">+</div>
+            <div style="font-weight:700;font-size:.9rem;">Add Department</div>
+          </div>
+        </div>`;
+      return;
+    }
+    cardsBox.innerHTML = depts.map((d,idx) => {
+      const color = KPI_DEPT_COLORS[idx % KPI_DEPT_COLORS.length];
+      return `
+      <div class="home-card" style="--accent:${color};--i:${idx};" onclick="pickKpiDepartment('${d.replace(/'/g,"\\'")}')">
+        <div class="card-top">
+          <div class="ic" style="background:${color}1a;color:${color};">🏢</div>
+          <div>
+            <div class="nm">${d.replace(/</g,'&lt;')}</div>
+            <div class="dsc">KPI evaluations for this department</div>
+          </div>
+        </div>
+        <button class="go-btn" style="background:${color};" onclick="event.stopPropagation(); pickKpiDepartment('${d.replace(/'/g,"\\'")}')">Go to Department →</button>
+      </div>`;
+    }).join('') + `
+      <div class="home-card" style="border:2px dashed var(--line);box-shadow:none;display:flex;align-items:center;justify-content:center;min-height:160px;cursor:pointer;" onclick="addNewKpiDepartment()">
+        <div style="text-align:center;color:var(--forest);">
+          <div style="font-size:1.8rem;">+</div>
+          <div style="font-weight:700;font-size:.9rem;">Add Department</div>
+        </div>
+      </div>`;
+  }catch(e){ cardsBox.innerHTML = '<div class="mgr-empty">'+sbError(e)+'</div>'; }
+}
+
+function addNewKpiDepartment(){
+  const name = prompt('New department name');
+  if(!name || !name.trim()) return;
+  pickKpiDepartment(name.trim());
+}
+
+function pickKpiDepartment(dept){
+  document.getElementById('kpiDeptPicker').classList.add('hidden-tab');
+  document.getElementById('kpiFormBody').classList.remove('hidden-tab');
+  newFormKPI();
+  document.querySelector('.kpi-department').value = dept;
+}
+
+function backToKpiDeptPicker(){
+  showKpiDeptPicker();
 }
 
 function renderKpiRows(){
