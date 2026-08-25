@@ -1883,6 +1883,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div class="mgr-search">
         <input type="text" id="mgrSearch" placeholder="Search by Form ID or company name…" oninput="renderManagerList()">
+        <select id="mgrDeptFilter" onchange="renderManagerList()" style="display:none;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+          <option value="">All departments</option>
+        </select>
         <button class="mgr-btn" style="background:#888;color:#fff;" onclick="closeManager()">Cancel</button>
         <button class="mgr-btn open-b" onclick="loadFormsList()">Refresh</button>
         <button class="mgr-btn open-b" id="mgrExcelExportBtn" style="display:none;" onclick="exportFormsToExcel()">⬇ Export to Excel</button>
@@ -2139,7 +2142,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
   <div class="section-header"><div class="num">1</div><div class="title" data-label-key="kpi.sec.info">Employee Information</div></div>
   <div class="kpi-info-grid">
-    <div><label data-label-key="kpi.lbl.department">Department</label><input type="text" class="kpi-department" value="Data Entry"></div>
+    <div><label data-label-key="kpi.lbl.department">Department</label><input type="text" class="kpi-department" value="Data Entry" list="staffDeptList"></div>
     <div><label data-label-key="kpi.lbl.month">Month</label><input type="month" class="kpi-month"></div>
     <div><label data-label-key="kpi.lbl.supervisor">Supervisor</label><input type="text" class="kpi-supervisor" placeholder="Supervisor name"></div>
   </div>
@@ -2275,6 +2278,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div class="section-header"><div class="num">★</div><div class="title" data-label-key="staff.sec.employees">Employees</div></div>
   <div class="staff-tools no-print">
     <input type="text" id="empSearch" placeholder="Search by name, department or ID…" oninput="renderEmployees()">
+    <select id="empDeptFilter" onchange="renderEmployees()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+      <option value="">All departments</option>
+    </select>
     <button class="btn-small" onclick="addEmployee()">+ Add Employee</button>
     <button class="btn-small" onclick="loadEmployees()">Refresh</button>
     <button class="btn-small cd-btn" onclick="openCardDesigner()">🎨 Design Card</button>
@@ -2448,6 +2454,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
         <label style="font-size:.8rem;font-weight:700;">Month<input type="month" id="kpiCompareMonth" onchange="loadKpiCompare()" style="margin-inline-start:6px;"></label>
+        <select id="kpiCompareDeptFilter" onchange="loadKpiCompare()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+          <option value="">All departments</option>
+        </select>
       </div>
       <div id="kpiCompareResults"><div class="mgr-empty">Pick a month to compare.</div></div>
     </div>
@@ -2893,6 +2902,7 @@ function applySession(){
   loadCompanyNamesList();
   loadEmployeeNamesList();
   loadCfSectionList();
+  loadStaffDeptListOnly();
   document.body.classList.toggle('super-admin-mode', isSuperAdmin());
   document.querySelector('.toolbar').style.display = (activeTab === 'home' || isEmployee()) ? 'none' : 'flex';
 }
@@ -3292,12 +3302,24 @@ async function loadFormsList(){
   try{
     const extraFilter = (activeTab && activeTab.startsWith('custom:'))
       ? `&section_id=eq.${encodeURIComponent(activeTab.slice(7))}` : '';
+    const selectFields = activeTab === 'kpi' ? 'id,company_name,stage,updated_at,data' : 'id,company_name,stage,updated_at';
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/${activeTable()}?select=id,company_name,stage,updated_at&deleted_at=is.null${extraFilter}&order=updated_at.desc`,
+      `${SUPABASE_URL}/rest/v1/${activeTable()}?select=${selectFields}&deleted_at=is.null${extraFilter}&order=updated_at.desc`,
       { headers: sbHeaders() }
     );
     if(!res.ok) throw new Error(await res.text());
     window._forms = await res.json();
+
+    const deptFilterSel = document.getElementById('mgrDeptFilter');
+    if(activeTab === 'kpi'){
+      const depts = [...new Set(window._forms.map(f => f.data && f.data.department).filter(Boolean))].sort();
+      deptFilterSel.innerHTML = '<option value="">All departments</option>' + depts.map(d => `<option value="${d.replace(/"/g,'&quot;')}">${d.replace(/</g,'&lt;')}</option>`).join('');
+      deptFilterSel.style.display = '';
+    }else{
+      deptFilterSel.style.display = 'none';
+      deptFilterSel.value = '';
+    }
+
     renderManagerList();
   }catch(e){
     console.error(e);
@@ -3309,6 +3331,10 @@ function renderManagerList(){
   const list = document.getElementById('mgrList');
   const q = (document.getElementById('mgrSearch').value || '').toLowerCase().trim();
   let forms = window._forms || [];
+  if(activeTab === 'kpi'){
+    const deptFilter = document.getElementById('mgrDeptFilter').value;
+    if(deptFilter) forms = forms.filter(f => f.data && f.data.department === deptFilter);
+  }
   if(q){
     forms = forms.filter(f =>
       (f.id||'').toLowerCase().includes(q) ||
@@ -3934,6 +3960,18 @@ async function loadAttendanceDashboard(){
   }catch(e){ /* dashboard is a nice-to-have */ }
 }
 
+async function loadStaffDeptListOnly(){
+  if(!backendReady()) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?select=department`, { headers: sbHeaders() });
+    if(!res.ok) return;
+    const rows = await res.json();
+    const depts = [...new Set(rows.map(e => e.department).filter(Boolean))];
+    const deptList = document.getElementById('staffDeptList');
+    if(deptList) deptList.innerHTML = depts.map(d => `<option value="${d.replace(/"/g,'&quot;')}">`).join('');
+  }catch(e){ /* nice-to-have, fail silently */ }
+}
+
 async function loadEmployees(){
   if(!backendReady()) return;
   try{
@@ -3944,13 +3982,21 @@ async function loadEmployees(){
     const depts = [...new Set(employees.map(e => e.department).filter(Boolean))];
     const deptList = document.getElementById('staffDeptList');
     if(deptList) deptList.innerHTML = depts.map(d => `<option value="${d.replace(/"/g,'&quot;')}">`).join('');
+    const deptFilterSel = document.getElementById('empDeptFilter');
+    if(deptFilterSel){
+      const current = deptFilterSel.value;
+      deptFilterSel.innerHTML = '<option value="">All departments</option>' + depts.map(d => `<option value="${d.replace(/"/g,'&quot;')}">${d.replace(/</g,'&lt;')}</option>`).join('');
+      deptFilterSel.value = current;
+    }
     renderEmployees();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 function renderEmployees(){
   const q = (document.getElementById('empSearch').value || '').toLowerCase().trim();
+  const deptFilter = document.getElementById('empDeptFilter').value;
   let list = employees;
+  if(deptFilter) list = list.filter(e => e.department === deptFilter);
   if(q){
     list = list.filter(e =>
       (e.full_name||'').toLowerCase().includes(q) ||
@@ -4747,9 +4793,10 @@ function refreshTabVisibility(){
   document.getElementById('tabSop').style.display   = canViewTab('sop')   ? '' : 'none';
   document.getElementById('tabStaff').style.display = canViewTab('staff') ? 'block' : 'none';
   document.getElementById('tabKpi').style.display = canViewTab('kpi') ? '' : 'none';
+  document.getElementById('tabAtt').style.display = canViewTab('att') ? '' : 'none';
   document.getElementById('globalSearchTabBtn').style.display = isEmployee() ? 'none' : '';
   if(!canViewTab(activeTab)){
-    const firstOk = ['home','inv','cf','sop','staff','kpi'].find(canViewTab);
+    const firstOk = ['home','inv','cf','sop','staff','kpi','att'].find(canViewTab);
     if(firstOk) switchTab(firstOk);
   }
   applyViewerLock();
@@ -4968,7 +5015,15 @@ async function loadRolePermissions(){
     if(!res.ok) return;
     const rows = await res.json();
     if(rows.length && rows[0].matrix && Object.keys(rows[0].matrix).length){
-      rolePermissions = rows[0].matrix;
+      const matrix = rows[0].matrix;
+      // Any tab added to the app after this matrix was last saved (like 'att')
+      // won't exist in the stored data. Default it to view-only for every role
+      // so new features show up instead of silently disappearing.
+      Object.keys(matrix).forEach(role => {
+        if(!matrix[role].view) matrix[role].view = [];
+        if(!matrix[role].view.includes('att')) matrix[role].view.push('att');
+      });
+      rolePermissions = matrix;
       refreshTabVisibility();
     }
   }catch(e){ /* keep defaults */ }
@@ -6801,6 +6856,19 @@ async function loadKpiCompare(){
     let forms = await res.json();
     forms = forms.filter(f => f.data && f.data.month === month);
     if(allowedNames) forms = forms.filter(f => allowedNames.has(f.company_name));
+
+    // Populate the department dropdown from whatever departments show up this month.
+    const deptSel = document.getElementById('kpiCompareDeptFilter');
+    const depts = [...new Set(forms.map(f => f.data && f.data.department).filter(Boolean))].sort();
+    const currentDeptChoice = deptSel.value;
+    deptSel.innerHTML = '<option value="">All departments</option>' + depts.map(d => `<option value="${d.replace(/"/g,'&quot;')}">${d.replace(/</g,'&lt;')}</option>`).join('');
+    deptSel.value = depts.includes(currentDeptChoice) ? currentDeptChoice : '';
+
+    const deptFilter = deptSel.value;
+    if(deptFilter){
+      forms = forms.filter(f => f.data && f.data.department === deptFilter);
+      scopeNote = `Showing the ${deptFilter} department only.`;
+    }
 
     if(!forms.length){ box.innerHTML = `<div class="mgr-empty">No KPI evaluations found for ${month}.</div>`; return; }
 
