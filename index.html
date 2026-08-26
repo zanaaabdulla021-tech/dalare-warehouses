@@ -6824,11 +6824,16 @@ async function showKpiDeptPicker(){
   cardsBox.innerHTML = '<div class="mgr-empty">Loading…</div>';
   if(!backendReady()){ cardsBox.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?select=department`, { headers: sbHeaders() });
-    const rows = res.ok ? await res.json() : [];
-    let depts = [...new Set(rows.map(r => r.department).filter(Boolean))].sort();
-    if(!depts.length) depts = KPI_DEFS.map(k => k.department).filter(Boolean);
-    depts = [...new Set(depts)];
+    const [empRes, formsRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/employees?select=department`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?select=data&deleted_at=is.null`, { headers: sbHeaders() })
+    ]);
+    const empRows = empRes.ok ? await empRes.json() : [];
+    const formRows = formsRes.ok ? await formsRes.json() : [];
+    const empDepts = empRows.map(r => r.department).filter(Boolean);
+    const formDepts = formRows.map(r => r.data && r.data.department).filter(Boolean);
+    const defDepts = KPI_DEFS.map(k => k.department).filter(Boolean);
+    let depts = [...new Set([...empDepts, ...formDepts, ...defDepts])].sort();
     const canManage = isSuperAdmin() || session.role === 'admin';
     if(!depts.length){
       cardsBox.innerHTML = '<div class="mgr-empty">No departments found yet.</div>' +
