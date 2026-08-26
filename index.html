@@ -51,13 +51,20 @@
     --sage:#f7f0dc;
     --line:#e6d494;
   }
-  .sheet[data-status="pending"]{
-    --forest:#1a1a1a;
-    --forest-deep:#000000;
-    --sage:#f0f0f0;
-    --line:#d5d5d5;
-  }
   /* KPI manual color buttons only recolor the top banner, not the whole form. */
+  #kpiForm[data-status="rejected"] .title-block,
+  #kpiForm[data-status="rejected"] .subtitle-bar{
+    background:#dc2626 !important;
+  }
+  #kpiForm[data-status="rejected"] .subtitle-bar{
+    background:#7f1d1d !important;
+  }
+  #kpiForm[data-status="warning"] .title-block{
+    background:#eab308 !important;
+  }
+  #kpiForm[data-status="warning"] .subtitle-bar{
+    background:#854d0e !important;
+  }
   #kpiForm[data-status] .section-header{
     background:linear-gradient(120deg, #229949 0%, #0c3a1b 100%) !important;
   }
@@ -67,6 +74,12 @@
   #kpiForm[data-status] .kpi-stat,
   #kpiForm[data-status] .company-banner{
     background:#eaf3ee !important;
+  }
+  .sheet[data-status="pending"]{
+    --forest:#1a1a1a;
+    --forest-deep:#000000;
+    --sage:#f0f0f0;
+    --line:#d5d5d5;
   }
   *{box-sizing:border-box;}
   body{
@@ -2561,10 +2574,12 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </div>
     <div class="mgr-body">
       <div class="sb-fields">
+        <label id="kpiTaskEditNameRow" style="display:none;">Task Name<input type="text" id="kpiTaskEditName"></label>
         <label>Accuracy %<input type="number" min="0" max="100" id="kpiTaskEditAccuracy" placeholder="100"></label>
       </div>
       <div class="table-actions" style="margin-top:14px;">
         <button class="btn-small" onclick="saveKpiTaskEdit()">💾 Save</button>
+        <button id="kpiTaskEditDeleteBtn" class="btn-small remove" style="display:none;" onclick="deleteKpiTask()">🗑️ Delete Task</button>
       </div>
     </div>
   </div>
@@ -6798,21 +6813,67 @@ function openKpiTaskEdit(taskId){
   if(!tr) return;
   kpiTaskEditId = taskId;
   const def = KPI_DEFS.find(k => k.id === taskId);
+  const canManage = isSuperAdmin() || session.role === 'admin';
   document.getElementById('kpiTaskEditTitle').textContent = def ? def.label : 'Task';
   document.getElementById('kpiTaskEditAccuracy').value = tr.querySelector('.kpi-accuracy').value;
+  const nameRow = document.getElementById('kpiTaskEditNameRow');
+  nameRow.style.display = canManage ? '' : 'none';
+  document.getElementById('kpiTaskEditName').value = def ? def.label : '';
+  document.getElementById('kpiTaskEditDeleteBtn').style.display = canManage ? '' : 'none';
   document.getElementById('kpiTaskEditOverlay').classList.add('open');
 }
 function closeKpiTaskEdit(){
   document.getElementById('kpiTaskEditOverlay').classList.remove('open');
   kpiTaskEditId = null;
 }
-function saveKpiTaskEdit(){
+async function saveKpiTaskEdit(){
   if(!kpiTaskEditId) return;
   const tr = document.querySelector(`#kpiGroupsWrap tr[data-task-id="${kpiTaskEditId}"]`);
   if(!tr){ closeKpiTaskEdit(); return; }
   tr.querySelector('.kpi-accuracy').value = document.getElementById('kpiTaskEditAccuracy').value;
   calcKpi();
+
+  const canManage = isSuperAdmin() || session.role === 'admin';
+  if(canManage){
+    const newName = document.getElementById('kpiTaskEditName').value.trim();
+    const def = KPI_DEFS.find(k => k.id === kpiTaskEditId);
+    if(def && newName && newName !== def.label){
+      if(!backendReady()){ flash('Backend not configured.', true); closeKpiTaskEdit(); return; }
+      try{
+        const newDefs = KPI_DEFS.map(k => k.id === kpiTaskEditId ? { ...k, label: newName } : k);
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+          method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+          body: JSON.stringify({ id:'default', kpi_defs: newDefs, updated_by: session.email, updated_at: new Date().toISOString() })
+        });
+        if(!res.ok) throw new Error(await res.text());
+        KPI_DEFS = newDefs;
+        renderKpiRows();
+        flash('Task renamed ✓');
+      }catch(e){ console.error(e); flash(sbError(e), true); }
+    }
+  }
   closeKpiTaskEdit();
+}
+
+async function deleteKpiTask(){
+  if(!kpiTaskEditId) return;
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can delete a task.', true); return; }
+  const def = KPI_DEFS.find(k => k.id === kpiTaskEditId);
+  if(!def) return;
+  if(!confirm(`Delete the task "${def.label}"? This cannot be undone.`)) return;
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const newDefs = KPI_DEFS.filter(k => k.id !== kpiTaskEditId);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({ id:'default', kpi_defs: newDefs, updated_by: session.email, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    KPI_DEFS = newDefs;
+    renderKpiRows();
+    flash('Task deleted');
+    closeKpiTaskEdit();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 const KPI_DEPT_COLORS = ['#2f6fed','#0c8a4a','#b8720e','#7c5cd4','#0e7c86','#c0392b','#8e44ad','#16a085'];
@@ -6927,6 +6988,34 @@ function backToKpiDeptPicker(){
   showKpiDeptPicker();
 }
 
+async function deleteKpiSection(groupId){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can delete a section.', true); return; }
+  const g = KPI_GROUPS.find(x => x.id === groupId);
+  if(!g) return;
+  const taskCount = KPI_DEFS.filter(k => (k.group || 'data-entry') === groupId).length;
+  if(!confirm(`Delete the "${g.label}" section? This also removes its ${taskCount} task(s) from the KPI Scorecard. This cannot be undone.`)) return;
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+
+  try{
+    const newGroups = KPI_GROUPS.filter(x => x.id !== groupId);
+    const newDefs = KPI_DEFS.filter(k => (k.group || 'data-entry') !== groupId);
+    const newGroupWeights = { ...KPI_GROUP_WEIGHTS };
+    delete newGroupWeights[groupId];
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({ id:'default', kpi_groups: newGroups, kpi_defs: newDefs, kpi_group_weights: newGroupWeights, updated_by: session.email, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+
+    KPI_GROUPS = newGroups;
+    KPI_DEFS = newDefs;
+    KPI_GROUP_WEIGHTS = newGroupWeights;
+    renderKpiRows();
+    flash(`Section "${g.label}" deleted`);
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
 async function addNewKpiSection(){
   if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can add a new section.', true); return; }
   const name = prompt('New section name (e.g. "Punctuality", "Communication")');
@@ -6994,7 +7083,7 @@ function renderKpiRows(){
     if(!groupDefs.length) return '';
     const weightSum = groupDefs.reduce((s,k) => s + (parseFloat(k.weight)||0), 0);
     return `
-      <div class="section-header" style="margin-top:18px;"><div class="num">${g.icon}</div><div class="title">${g.label} <span style="opacity:.75;font-weight:600;">(${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : '—'}% of total)</span></div></div>
+      <div class="section-header" style="margin-top:18px;justify-content:space-between;"><div style="display:flex;align-items:center;gap:10px;"><div class="num">${g.icon}</div><div class="title">${g.label} <span style="opacity:.75;font-weight:600;">(${KPI_GROUP_WEIGHTS[g.id] !== undefined ? KPI_GROUP_WEIGHTS[g.id] : '—'}% of total)</span></div></div>${showAll ? `<span class="no-print" onclick="deleteKpiSection('${g.id}')" title="Delete this section" style="cursor:pointer;background:rgba(255,255,255,.22);width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">🗑️</span>` : ''}</div>
       <div class="price-table-wrap">
         <table class="pricelist kpi-table">
           <thead>
