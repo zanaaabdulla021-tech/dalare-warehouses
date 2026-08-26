@@ -6935,7 +6935,8 @@ async function showKpiDeptPicker(){
       const escaped = d.replace(/'/g,"\\'");
       return `
       <div class="home-card" style="--accent:${color};--i:${idx};position:relative;" onclick="pickKpiDepartment('${escaped}')">
-        ${canManage ? `<span class="kpi-edit-icon" style="position:absolute;top:10px;right:12px;font-size:1rem;" onclick="event.stopPropagation(); renameKpiDepartment('${escaped}')" title="Rename department">✎</span>` : ''}
+        ${canManage ? `<span class="kpi-edit-icon" style="position:absolute;top:10px;right:36px;font-size:1rem;" onclick="event.stopPropagation(); renameKpiDepartment('${escaped}')" title="Rename department">✎</span>
+        <span class="kpi-edit-icon" style="position:absolute;top:10px;right:12px;font-size:1rem;" onclick="event.stopPropagation(); deleteKpiDepartment('${escaped}')" title="Delete department">🗑️</span>` : ''}
         <div class="card-top">
           <div class="ic" style="background:${color}1a;color:${color};">🏢</div>
           <div>
@@ -6953,6 +6954,45 @@ async function showKpiDeptPicker(){
         </div>
       </div>` : '');
   }catch(e){ cardsBox.innerHTML = '<div class="mgr-empty">'+sbError(e)+'</div>'; }
+}
+
+async function deleteKpiDepartment(name){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can delete a department.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+
+  try{
+    const [empRes, formsRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/employees?department=eq.${encodeURIComponent(name)}&select=id`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?select=id,data&deleted_at=is.null`, { headers: sbHeaders() })
+    ]);
+    const empRows = empRes.ok ? await empRes.json() : [];
+    const formRows = formsRes.ok ? await formsRes.json() : [];
+    const matchingForms = formRows.filter(f => f.data && f.data.department === name);
+
+    const msg = `Delete the "${name}" department?\n\n`
+      + `- ${empRows.length} employee(s) will have their department cleared.\n`
+      + `- ${matchingForms.length} past KPI evaluation(s) reference it (their records are kept, but the department field on them will be cleared too).\n\n`
+      + `This cannot be undone. Continue?`;
+    if(!confirm(msg)) return;
+
+    if(empRows.length){
+      const empRes2 = await fetch(`${SUPABASE_URL}/rest/v1/employees?department=eq.${encodeURIComponent(name)}`, {
+        method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+        body: JSON.stringify({ department: '' })
+      });
+      if(!empRes2.ok) throw new Error(await empRes2.text());
+    }
+    for(const f of matchingForms){
+      const updatedData = { ...f.data, department: '' };
+      await fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?id=eq.${encodeURIComponent(f.id)}`, {
+        method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+        body: JSON.stringify({ data: updatedData })
+      });
+    }
+
+    flash(`Department "${name}" deleted ✓`);
+    showKpiDeptPicker();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 async function renameKpiDepartment(oldName){
