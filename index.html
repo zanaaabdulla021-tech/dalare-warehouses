@@ -2274,7 +2274,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div class="price-table-wrap">
     <table class="pricelist" id="leaveTable">
       <thead>
-        <tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Pay</th><th></th></tr>
+        <tr><th>Employee</th><th>Type</th><th>Date</th><th>To / Time</th><th>Days</th><th>Reason</th><th>Status</th><th>Pay</th><th></th></tr>
       </thead>
       <tbody id="leaveBody"><tr><td colspan="9" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
     </table>
@@ -2533,9 +2533,17 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
             <option>Other</option>
           </select>
         </label>
+        <label style="display:flex;align-items:center;gap:8px;flex-direction:row;">
+          <input type="checkbox" id="leaveIsHourly" onchange="toggleLeaveHourlyMode()" style="width:auto;">
+          <span>Hourly leave (part of a single day)</span>
+        </label>
         <label>From<input type="date" id="leaveFrom" onchange="updateLeaveDaysCount()"></label>
-        <label>To<input type="date" id="leaveTo" onchange="updateLeaveDaysCount()"></label>
-        <label>Days<input type="number" id="leaveDays" min="1" readonly style="background:var(--sage);"></label>
+        <label id="leaveToRow">To<input type="date" id="leaveTo" onchange="updateLeaveDaysCount()"></label>
+        <div id="leaveHourlyRow" style="display:none;gap:10px;">
+          <label style="flex:1;">Start Time<input type="time" id="leaveStartTime"></label>
+          <label style="flex:1;">End Time<input type="time" id="leaveEndTime"></label>
+        </div>
+        <label id="leaveDaysRow">Days<input type="number" id="leaveDays" min="1" readonly style="background:var(--sage);"></label>
         <label>Reason<textarea id="leaveReason" style="width:100%;min-height:60px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
       </div>
       <div class="table-actions" style="margin-top:14px;">
@@ -4064,8 +4072,21 @@ async function deleteAttendanceRecord(id){
 // ===================== Leave Requests =====================
 let leaveRequestsCache = [];
 
+function toggleLeaveHourlyMode(){
+  const hourly = document.getElementById('leaveIsHourly').checked;
+  document.getElementById('leaveHourlyRow').style.display = hourly ? 'flex' : 'none';
+  document.getElementById('leaveToRow').style.display = hourly ? 'none' : '';
+  document.getElementById('leaveDaysRow').style.display = hourly ? 'none' : '';
+  if(hourly){
+    // For hourly leave, To = From (a single day) so days_count stays meaningful.
+    document.getElementById('leaveTo').value = document.getElementById('leaveFrom').value;
+  }
+}
+
 function updateLeaveDaysCount(){
+  const isHourly = document.getElementById('leaveIsHourly').checked;
   const from = document.getElementById('leaveFrom').value;
+  if(isHourly){ document.getElementById('leaveTo').value = from; return; }
   const to = document.getElementById('leaveTo').value;
   const daysInp = document.getElementById('leaveDays');
   if(!from || !to){ daysInp.value = ''; return; }
@@ -4077,10 +4098,14 @@ function updateLeaveDaysCount(){
 function openLeaveRequestForm(){
   document.getElementById('leaveEmployee').value = '';
   document.getElementById('leaveType').value = 'Annual';
+  document.getElementById('leaveIsHourly').checked = false;
   document.getElementById('leaveFrom').value = '';
   document.getElementById('leaveTo').value = '';
+  document.getElementById('leaveStartTime').value = '';
+  document.getElementById('leaveEndTime').value = '';
   document.getElementById('leaveDays').value = '';
   document.getElementById('leaveReason').value = '';
+  toggleLeaveHourlyMode();
   document.getElementById('leaveRequestOverlay').classList.add('open');
 }
 function closeLeaveRequestForm(){ document.getElementById('leaveRequestOverlay').classList.remove('open'); }
@@ -4088,14 +4113,23 @@ function closeLeaveRequestForm(){ document.getElementById('leaveRequestOverlay')
 async function submitLeaveRequest(){
   const employee = document.getElementById('leaveEmployee').value.trim();
   const type = document.getElementById('leaveType').value;
+  const isHourly = document.getElementById('leaveIsHourly').checked;
   const from = document.getElementById('leaveFrom').value;
-  const to = document.getElementById('leaveTo').value;
-  const days = parseInt(document.getElementById('leaveDays').value) || 0;
+  const startTime = document.getElementById('leaveStartTime').value;
+  const endTime = document.getElementById('leaveEndTime').value;
+  const to = isHourly ? from : document.getElementById('leaveTo').value;
+  const days = isHourly ? 0 : (parseInt(document.getElementById('leaveDays').value) || 0);
   const reason = document.getElementById('leaveReason').value.trim();
 
   if(!employee){ flash('Enter the employee name.', true); return; }
-  if(!from || !to){ flash('Pick both From and To dates.', true); return; }
-  if(days <= 0){ flash('To date must be on or after From date.', true); return; }
+  if(!from){ flash('Pick a date.', true); return; }
+  if(isHourly){
+    if(!startTime || !endTime){ flash('Pick both Start and End times.', true); return; }
+    if(endTime <= startTime){ flash('End time must be after Start time.', true); return; }
+  }else{
+    if(!to){ flash('Pick both From and To dates.', true); return; }
+    if(days <= 0){ flash('To date must be on or after From date.', true); return; }
+  }
   if(!backendReady()){ flash('Backend not configured.', true); return; }
 
   const id = 'leave-' + Date.now().toString(36);
@@ -4104,6 +4138,7 @@ async function submitLeaveRequest(){
       method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
       body: JSON.stringify({
         id, employee_name: employee, leave_type: type, start_date: from, end_date: to, days_count: days,
+        is_hourly: isHourly, start_time: isHourly ? startTime : null, end_time: isHourly ? endTime : null,
         reason: reason || null, status: 'pending', requested_by: session.email, requested_at: new Date().toISOString()
       })
     });
@@ -4144,10 +4179,10 @@ function renderLeaveRequests(){
       : (canManage ? `<button class="btn-small remove" onclick="deleteLeaveRequest('${r.id}')">×</button>` : '');
     return `<tr>
       <td>${(r.employee_name||'').replace(/</g,'&lt;')}</td>
-      <td>${r.leave_type||''}</td>
+      <td>${r.leave_type||''}${r.is_hourly ? ' <small style="opacity:.7;">(hourly)</small>' : ''}</td>
       <td>${r.start_date||''}</td>
-      <td>${r.end_date||''}</td>
-      <td>${r.days_count||''}</td>
+      <td>${r.is_hourly ? `${r.start_time||''}–${r.end_time||''}` : (r.end_date||'')}</td>
+      <td>${r.is_hourly ? '—' : (r.days_count||'')}</td>
       <td style="max-width:180px;">${r.reason ? String(r.reason).replace(/</g,'&lt;') : '—'}</td>
       <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${r.status}</span></td>
       <td>${payLabel}</td>
