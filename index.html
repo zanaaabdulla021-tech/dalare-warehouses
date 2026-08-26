@@ -2131,8 +2131,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
   <div class="company-banner">
     <span class="company-label" data-label-key="kpi.lbl.employee">Employee</span>
-    <input type="text" class="company-name-input kpi-employee" placeholder="Employee Name" list="employeeNamesList">
+    <input type="text" class="company-name-input kpi-employee" placeholder="Employee Name" list="employeeNamesList" oninput="renderKpiEmployeeInfoCard()">
   </div>
+  <div id="kpiEmployeeInfoCard"></div>
   <div class="form-meta-bar">
     <div class="form-id-box">
       <span class="lbl">Form ID</span>
@@ -3623,6 +3624,42 @@ async function deleteFormActive(id){
 
 /* =======================  STAFF DIRECTORY  ======================= */
 let employees = [];
+
+let kpiEmployeeInfoDebounce = null;
+function renderKpiEmployeeInfoCard(){
+  clearTimeout(kpiEmployeeInfoDebounce);
+  kpiEmployeeInfoDebounce = setTimeout(async () => {
+    const name = (document.querySelector('.kpi-employee').value || '').trim();
+    const box = document.getElementById('kpiEmployeeInfoCard');
+    if(!box) return;
+    if(!name){ box.innerHTML = ''; return; }
+
+    if(!employees.length && backendReady()){
+      try{
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/employees?select=*`, { headers: sbHeaders() });
+        if(res.ok) employees = await res.json();
+      }catch(e){ /* info card is a nice-to-have */ }
+    }
+
+    const match = employees.find(e => (e.full_name||'').trim().toLowerCase() === name.toLowerCase());
+    if(!match){ box.innerHTML = ''; return; }
+
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;background:var(--sage);border-radius:14px;padding:12px 16px;margin:0 14px 10px;">
+        ${match.photo ? `<img src="${match.photo}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;">` : `<div style="width:52px;height:52px;border-radius:50%;background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.2rem;flex-shrink:0;">${(match.full_name||'?').charAt(0).toUpperCase()}</div>`}
+        <div style="flex:1;min-width:150px;">
+          <div style="font-weight:800;font-size:.95rem;color:var(--forest-deep);">${(match.full_name||'').replace(/</g,'&lt;')}</div>
+          <div style="font-size:.78rem;color:#555;">${(match.job_title||'—').replace(/</g,'&lt;')}${match.department ? ' · ' + match.department.replace(/</g,'&lt;') : ''}</div>
+        </div>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:.75rem;color:#555;">
+          <div><small style="display:block;opacity:.7;">Employee ID</small><strong>${match.id || '—'}</strong></div>
+          <div><small style="display:block;opacity:.7;">Phone</small><strong>${match.phone || '—'}</strong></div>
+          <div><small style="display:block;opacity:.7;">Status</small><strong>${match.status || '—'}</strong></div>
+        </div>
+      </div>`;
+  }, 250);
+}
+
 
 
 /* =======================  CARD DESIGNER (admin only)  ======================= */
@@ -6519,8 +6556,10 @@ async function showKpiDeptPicker(){
     }
     cardsBox.innerHTML = depts.map((d,idx) => {
       const color = KPI_DEPT_COLORS[idx % KPI_DEPT_COLORS.length];
+      const escaped = d.replace(/'/g,"\\'");
       return `
-      <div class="home-card" style="--accent:${color};--i:${idx};" onclick="pickKpiDepartment('${d.replace(/'/g,"\\'")}')">
+      <div class="home-card" style="--accent:${color};--i:${idx};position:relative;" onclick="pickKpiDepartment('${escaped}')">
+        <span class="kpi-edit-icon" style="position:absolute;top:10px;right:12px;font-size:1rem;" onclick="event.stopPropagation(); renameKpiDepartment('${escaped}')" title="Rename department">✎</span>
         <div class="card-top">
           <div class="ic" style="background:${color}1a;color:${color};">🏢</div>
           <div>
@@ -6528,7 +6567,7 @@ async function showKpiDeptPicker(){
             <div class="dsc">KPI evaluations for this department</div>
           </div>
         </div>
-        <button class="go-btn" style="background:${color};" onclick="event.stopPropagation(); pickKpiDepartment('${d.replace(/'/g,"\\'")}')">Go to Department →</button>
+        <button class="go-btn" style="background:${color};" onclick="event.stopPropagation(); pickKpiDepartment('${escaped}')">Go to Department →</button>
       </div>`;
     }).join('') + `
       <div class="home-card" style="border:2px dashed var(--line);box-shadow:none;display:flex;align-items:center;justify-content:center;min-height:160px;cursor:pointer;" onclick="addNewKpiDepartment()">
@@ -6538,6 +6577,37 @@ async function showKpiDeptPicker(){
         </div>
       </div>`;
   }catch(e){ cardsBox.innerHTML = '<div class="mgr-empty">'+sbError(e)+'</div>'; }
+}
+
+async function renameKpiDepartment(oldName){
+  const newName = prompt(`Rename department "${oldName}" to:`, oldName);
+  if(!newName || !newName.trim() || newName.trim() === oldName) return;
+  const trimmed = newName.trim();
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  if(!confirm(`This will rename "${oldName}" to "${trimmed}" for every employee and KPI form using it. Continue?`)) return;
+
+  try{
+    const empRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?department=eq.${encodeURIComponent(oldName)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ department: trimmed })
+    });
+    if(!empRes.ok) throw new Error(await empRes.text());
+
+    const formsRes = await fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?select=id,data`, { headers: sbHeaders() });
+    if(formsRes.ok){
+      const forms = await formsRes.json();
+      const toUpdate = forms.filter(f => f.data && f.data.department === oldName);
+      for(const f of toUpdate){
+        const updatedData = { ...f.data, department: trimmed };
+        await fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?id=eq.${encodeURIComponent(f.id)}`, {
+          method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+          body: JSON.stringify({ data: updatedData })
+        });
+      }
+    }
+    flash(`Department renamed to "${trimmed}" ✓`);
+    showKpiDeptPicker();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 function addNewKpiDepartment(){
@@ -6728,6 +6798,7 @@ function restoreKpi(d){
   document.querySelector('.kpi-supervisor').value = d.supervisor || '';
   document.querySelector('.kpi-notes').value = d.notes || '';
   kpiManualStatus = d.manualStatusSet ? (d.manualStatus || null) : undefined;
+  renderKpiEmployeeInfoCard();
   const savedRows = d.rows || [];
   document.querySelectorAll('#kpiGroupsWrap tr[data-task-id]').forEach((tr, i) => {
     // Prefer matching by stable task id (safe across reordering); fall back to
