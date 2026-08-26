@@ -1216,6 +1216,13 @@
     border:1px dashed var(--line) !important;margin-top:4px;
   }
   .add-section-btn:hover:not(.active){background:var(--sage) !important;color:var(--forest-deep) !important;}
+  .settings-menu-item{
+    display:block;width:100%;text-align:left;background:none;border:none;
+    padding:11px 16px;font-size:.85rem;font-weight:700;color:#333;cursor:pointer;
+    font-family:"IBM Plex Sans",sans-serif;transition:background .12s ease;
+  }
+  .settings-menu-item:hover{background:var(--sage);color:var(--forest-deep);}
+  .settings-menu-item + .settings-menu-item{border-top:1px solid var(--line);}
   .custom-tab-btn{position:relative;}
 
   /* ---------- Desktop: pin the drawer open as a permanent sidebar ---------- */
@@ -1755,10 +1762,15 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button id="tabKpi" onclick="switchTab('kpi')">📊 KPI Evaluation</button>
     <button id="tabAtt" onclick="switchTab('att')">🕐 Attendance</button>
     <span id="customTabsSlot"></span>
-    <button id="addSectionBtn" class="add-section-btn" onclick="openSectionBuilder()" style="display:none;" title="Add a new section">+ Add Section</button>
-    <button id="reorderTabsBtn" class="add-section-btn" onclick="openTabOrderManager()" style="display:none;" title="Reorder tabs">🔀 Reorder Tabs</button>
-    <button id="siteTextBtn" class="add-section-btn" onclick="openSiteTextEditor()" style="display:none;" title="Edit site text">🎨 Edit Site Text</button>
-    <button id="changeLogoBtn" class="add-section-btn" onclick="document.getElementById('logoFileInput').click()" style="display:none;" title="Change logo">🖼️ Change Logo</button>
+    <div id="settingsMenuWrap" style="position:relative;display:none;">
+      <button id="settingsMenuBtn" class="add-section-btn" onclick="toggleSettingsMenu()" title="Settings" style="width:auto;">⚙️ Settings</button>
+      <div id="settingsMenuDropdown" style="display:none;position:fixed;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px -10px rgba(10,36,23,.3);min-width:200px;z-index:2500;overflow:hidden;">
+        <button class="settings-menu-item" onclick="closeSettingsMenu(); openSectionBuilder();">+ Add Section</button>
+        <button class="settings-menu-item" onclick="closeSettingsMenu(); openTabOrderManager();">🔀 Reorder Tabs</button>
+        <button class="settings-menu-item" onclick="closeSettingsMenu(); openSiteTextEditor();">🎨 Edit Site Text</button>
+        <button class="settings-menu-item" onclick="closeSettingsMenu(); document.getElementById('logoFileInput').click();">🖼️ Change Logo</button>
+      </div>
+    </div>
     <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
   </div>
 </div>
@@ -2968,7 +2980,6 @@ function applySession(){
   document.getElementById('adminBtn').style.display = isAdmin() ? 'inline-block' : 'none';
 
   refreshTabVisibility();
-  document.getElementById('addSectionBtn').style.display = isSuperAdmin() ? 'inline-flex' : 'none';
   document.querySelectorAll('.custom-tab-btn').forEach(btn=>{
     const sid = btn.id.replace('tab_custom_','');
     btn.style.display = canViewTab('custom:'+sid) ? '' : 'none';
@@ -4920,21 +4931,34 @@ function applyTabOrder(){
     const btn = tabIdButton(id);
     if(btn) bar.appendChild(btn);
   });
-  // keep the + and 🔀 controls at the very end, after all tabs
-  const addBtn = document.getElementById('addSectionBtn');
-  const reorderBtn = document.getElementById('reorderTabsBtn');
-  if(addBtn) bar.appendChild(addBtn);
-  if(reorderBtn) bar.appendChild(reorderBtn);
+  // keep the Settings menu at the very end, after all tabs
+  const settingsWrap = document.getElementById('settingsMenuWrap');
+  if(settingsWrap) bar.appendChild(settingsWrap);
 }
 
 function updateReorderTabsButton(){
-  const btn = document.getElementById('reorderTabsBtn');
-  if(btn) btn.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
-  const btn2 = document.getElementById('siteTextBtn');
-  if(btn2) btn2.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
-  const btn3 = document.getElementById('changeLogoBtn');
-  if(btn3) btn3.style.display = isSuperAdmin() ? 'inline-flex' : 'none';
+  const wrap = document.getElementById('settingsMenuWrap');
+  if(wrap) wrap.style.display = isSuperAdmin() ? '' : 'none';
 }
+
+function toggleSettingsMenu(){
+  const dd = document.getElementById('settingsMenuDropdown');
+  const willOpen = dd.style.display === 'none';
+  if(willOpen){
+    const btn = document.getElementById('settingsMenuBtn');
+    const rect = btn.getBoundingClientRect();
+    dd.style.top = (rect.bottom + 4) + 'px';
+    dd.style.left = Math.max(8, rect.right - 200) + 'px';
+  }
+  dd.style.display = willOpen ? 'block' : 'none';
+}
+function closeSettingsMenu(){
+  document.getElementById('settingsMenuDropdown').style.display = 'none';
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('settingsMenuWrap');
+  if(wrap && !wrap.contains(e.target)) closeSettingsMenu();
+});
 
 function openTabOrderManager(){
   if(!isSuperAdmin()){ flash('Only a super admin can reorder tabs.', true); return; }
