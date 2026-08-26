@@ -2261,6 +2261,25 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </table>
   </div>
 
+  <div class="section-header"><div class="num">3</div><div class="title">Leave Requests</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <select id="leaveStatusFilter" onchange="renderLeaveRequests()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+      <option value="">All statuses</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+    </select>
+    <button class="btn-small" onclick="openLeaveRequestForm()">+ Request Leave</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="leaveTable">
+      <thead>
+        <tr><th>Employee</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th><th>Pay</th><th></th></tr>
+      </thead>
+      <tbody id="leaveBody"><tr><td colspan="9" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
   <div class="adm-hint" style="margin-top:16px;">
     <strong>Biometric device integration:</strong> a real fingerprint device or attendance software can POST directly to this table via Supabase's REST API
     (<code>POST <span id="attApiUrlHint"></span>/rest/v1/attendance</code>) with the device's API key. See the setup notes below for the exact request shape.
@@ -2492,6 +2511,36 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         </select>
       </div>
       <div id="kpiCompareResults"><div class="mgr-empty">Pick a month to compare.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="leaveRequestOverlay">
+  <div class="mgr-panel" style="max-width:420px;">
+    <div class="mgr-head">
+      <h2>Request Leave</h2>
+      <button class="mgr-close" onclick="closeLeaveRequestForm()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="sb-fields">
+        <label>Employee<input type="text" id="leaveEmployee" list="employeeNamesList" placeholder="Employee name"></label>
+        <label>Leave Type
+          <select id="leaveType">
+            <option>Annual</option>
+            <option>Sick</option>
+            <option>Emergency</option>
+            <option>Unpaid</option>
+            <option>Other</option>
+          </select>
+        </label>
+        <label>From<input type="date" id="leaveFrom" onchange="updateLeaveDaysCount()"></label>
+        <label>To<input type="date" id="leaveTo" onchange="updateLeaveDaysCount()"></label>
+        <label>Days<input type="number" id="leaveDays" min="1" readonly style="background:var(--sage);"></label>
+        <label>Reason<textarea id="leaveReason" style="width:100%;min-height:60px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
+      </div>
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="btn-small" onclick="submitLeaveRequest()">📨 Submit Request</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3797,6 +3846,7 @@ async function loadAttendanceTab(){
   if(!dateInp.value) dateInp.value = new Date().toISOString().slice(0,10);
   await loadAttendanceRecords();
   await loadAttendanceDashboard();
+  await loadLeaveRequests();
 }
 
 async function loadShifts(){
@@ -4008,6 +4058,143 @@ async function deleteAttendanceRecord(id){
     if(!res.ok) throw new Error(await res.text());
     loadAttendanceRecords();
     loadAttendanceDashboard();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+// ===================== Leave Requests =====================
+let leaveRequestsCache = [];
+
+function updateLeaveDaysCount(){
+  const from = document.getElementById('leaveFrom').value;
+  const to = document.getElementById('leaveTo').value;
+  const daysInp = document.getElementById('leaveDays');
+  if(!from || !to){ daysInp.value = ''; return; }
+  const fromD = new Date(from), toD = new Date(to);
+  const diff = Math.round((toD - fromD) / 86400000) + 1;
+  daysInp.value = diff > 0 ? diff : '';
+}
+
+function openLeaveRequestForm(){
+  document.getElementById('leaveEmployee').value = '';
+  document.getElementById('leaveType').value = 'Annual';
+  document.getElementById('leaveFrom').value = '';
+  document.getElementById('leaveTo').value = '';
+  document.getElementById('leaveDays').value = '';
+  document.getElementById('leaveReason').value = '';
+  document.getElementById('leaveRequestOverlay').classList.add('open');
+}
+function closeLeaveRequestForm(){ document.getElementById('leaveRequestOverlay').classList.remove('open'); }
+
+async function submitLeaveRequest(){
+  const employee = document.getElementById('leaveEmployee').value.trim();
+  const type = document.getElementById('leaveType').value;
+  const from = document.getElementById('leaveFrom').value;
+  const to = document.getElementById('leaveTo').value;
+  const days = parseInt(document.getElementById('leaveDays').value) || 0;
+  const reason = document.getElementById('leaveReason').value.trim();
+
+  if(!employee){ flash('Enter the employee name.', true); return; }
+  if(!from || !to){ flash('Pick both From and To dates.', true); return; }
+  if(days <= 0){ flash('To date must be on or after From date.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+
+  const id = 'leave-' + Date.now().toString(36);
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/leave_requests`, {
+      method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({
+        id, employee_name: employee, leave_type: type, start_date: from, end_date: to, days_count: days,
+        reason: reason || null, status: 'pending', requested_by: session.email, requested_at: new Date().toISOString()
+      })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('request_leave', id, employee);
+    flash('Leave request submitted ✓');
+    closeLeaveRequestForm();
+    loadLeaveRequests();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function loadLeaveRequests(){
+  const body = document.getElementById('leaveBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/leave_requests?select=*&order=requested_at.desc`, { headers: sbHeaders() });
+    leaveRequestsCache = res.ok ? await res.json() : [];
+  }catch(e){ leaveRequestsCache = []; }
+  renderLeaveRequests();
+}
+
+function renderLeaveRequests(){
+  const body = document.getElementById('leaveBody');
+  const statusFilter = document.getElementById('leaveStatusFilter').value;
+  let rows = leaveRequestsCache;
+  if(statusFilter) rows = rows.filter(r => r.status === statusFilter);
+
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888;padding:14px;">No leave requests found.</td></tr>'; return; }
+
+  const statusColors = { pending:'#b9770e', approved:'#0f7a3d', rejected:'#a8462e' };
+  const canManage = isSuperAdmin() || session.role === 'admin';
+  body.innerHTML = rows.map(r => {
+    const color = statusColors[r.status] || '#555';
+    const payLabel = r.status !== 'approved' ? '—' : (r.paid_status === 'paid' ? '💰 Paid' : '🚫 Unpaid');
+    const actions = (canManage && r.status === 'pending')
+      ? `<button class="btn-small" onclick="approveLeaveRequest('${r.id}')">✓ Approve</button>
+         <button class="btn-small remove" onclick="rejectLeaveRequest('${r.id}')">✕ Reject</button>`
+      : (canManage ? `<button class="btn-small remove" onclick="deleteLeaveRequest('${r.id}')">×</button>` : '');
+    return `<tr>
+      <td>${(r.employee_name||'').replace(/</g,'&lt;')}</td>
+      <td>${r.leave_type||''}</td>
+      <td>${r.start_date||''}</td>
+      <td>${r.end_date||''}</td>
+      <td>${r.days_count||''}</td>
+      <td style="max-width:180px;">${r.reason ? String(r.reason).replace(/</g,'&lt;') : '—'}</td>
+      <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${r.status}</span></td>
+      <td>${payLabel}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function approveLeaveRequest(id){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can approve leave.', true); return; }
+  const paid = confirm('Approve this leave as PAID (no salary deduction)?\n\nOK = Paid leave\nCancel = Unpaid leave (salary deducted)');
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/leave_requests?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({
+        status: 'approved', paid_status: paid ? 'paid' : 'unpaid',
+        approved_by: session.email, approved_at: new Date().toISOString()
+      })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('approve_leave', id, paid ? 'paid' : 'unpaid');
+    flash(`Leave approved as ${paid ? 'Paid' : 'Unpaid'} ✓`);
+    loadLeaveRequests();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function rejectLeaveRequest(id){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can reject leave.', true); return; }
+  if(!confirm('Reject this leave request?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/leave_requests?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ status: 'rejected', approved_by: session.email, approved_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('reject_leave', id);
+    flash('Leave request rejected');
+    loadLeaveRequests();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function deleteLeaveRequest(id){
+  if(!confirm('Delete this leave request record?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/leave_requests?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    loadLeaveRequests();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
