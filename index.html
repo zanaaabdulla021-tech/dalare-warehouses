@@ -1741,7 +1741,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <span id="userEmail"></span>
   <span class="role-chip" id="userRole">staff</span>
   <span class="role-chip" id="viewerBadge" style="display:none;background:#f1ded8;color:#7a2418;">View Only</span>
-  <button onclick="doLogout()">Sign out</button>
+  <button onclick="doLogout()"><span data-i18n="nav.signout">Sign out</span></button>
 </div>
 
 <div class="toast" id="toast">
@@ -1759,12 +1759,10 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 </div>
 
 <div class="employee-screen" id="employeeScreen">
-  <div class="employee-card">
-    <div class="employee-icon">⏳</div>
-    <h2>No sections assigned yet</h2>
-    <p>Your account type (Employee) doesn't have any sections available right now.
-       A KPI check-in section for employees is planned — ask your manager if you
-       think this is a mistake.</p>
+  <div class="employee-card" style="max-width:720px;width:100%;text-align:start;">
+    <div id="employeeSelfServiceContent">
+      <div style="text-align:center;color:#888;padding:20px;">Loading your dashboard…</div>
+    </div>
   </div>
 </div>
 
@@ -1779,15 +1777,16 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="drawer-close" onclick="closeDrawer()">×</button>
   </div>
   <div class="tabbar">
-    <button id="tabHome" class="active" onclick="switchTab('home')">🏠 Home</button>
-    <button id="globalSearchTabBtn" onclick="openGlobalSearch()" style="display:none;">🔍 Search All Forms</button>
-    <button id="tabInv" onclick="switchTab('inv')">🧾 Invoice Verification</button>
-    <button id="tabCf" onclick="switchTab('cf')">💵 Cash Flow</button>
-    <button id="tabSop" onclick="switchTab('sop')">📋 SOP</button>
-    <button id="tabStaff" onclick="switchTab('staff')">🪪 Employees</button>
-    <button id="tabKpi" onclick="switchTab('kpi')">📊 KPI Evaluation</button>
-    <button id="tabAtt" onclick="switchTab('att')">🕐 Attendance</button>
+    <button id="tabHome" class="active" onclick="switchTab('home')">🏠 <span data-i18n="nav.home">Home</span></button>
+    <button id="globalSearchTabBtn" onclick="openGlobalSearch()" style="display:none;">🔍 <span data-i18n="nav.search">Search All Forms</span></button>
+    <button id="tabInv" onclick="switchTab('inv')">🧾 <span data-i18n="nav.inv">Invoice Verification</span></button>
+    <button id="tabCf" onclick="switchTab('cf')">💵 <span data-i18n="nav.cf">Cash Flow</span></button>
+    <button id="tabSop" onclick="switchTab('sop')">📋 <span data-i18n="nav.sop">SOP</span></button>
+    <button id="tabStaff" onclick="switchTab('staff')">🪪 <span data-i18n="nav.staff">Employees</span></button>
+    <button id="tabKpi" onclick="switchTab('kpi')">📊 <span data-i18n="nav.kpi">KPI Evaluation</span></button>
+    <button id="tabAtt" onclick="switchTab('att')">🕐 <span data-i18n="nav.att">Attendance</span></button>
     <span id="customTabsSlot"></span>
+    <button id="langToggleBtn" class="add-section-btn" onclick="toggleLanguage()" title="Switch language" style="width:auto;">🌐 EN</button>
     <div id="settingsMenuWrap" style="position:relative;display:none;">
       <button id="settingsMenuBtn" class="add-section-btn" onclick="toggleSettingsMenu()" title="Settings" style="width:auto;">⚙️ Settings</button>
       <div id="settingsMenuDropdown" style="display:none;position:fixed;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px -10px rgba(10,36,23,.3);min-width:200px;z-index:2500;overflow:hidden;">
@@ -1795,6 +1794,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <button class="settings-menu-item" onclick="closeSettingsMenu(); openTabOrderManager();">🔀 Reorder Tabs</button>
         <button class="settings-menu-item" onclick="closeSettingsMenu(); openSiteTextEditor();">🎨 Edit Site Text</button>
         <button class="settings-menu-item" onclick="closeSettingsMenu(); document.getElementById('logoFileInput').click();">🖼️ Change Logo</button>
+        <button class="settings-menu-item" onclick="closeSettingsMenu(); openAnnouncementEditor();">📢 Announcement</button>
       </div>
     </div>
     <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
@@ -1985,6 +1985,8 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="home-greeting" id="homeGreeting"></div>
     <div class="home-user" id="homeUserLine">Welcome</div>
   </div>
+  <div id="homeAnnouncementBanner"></div>
+  <div id="homeNotifBanner"></div>
   <div class="home-stats" id="homeStats"></div>
   <div class="home-grid" id="homeGrid"></div>
   <div class="home-activities" id="homeActivities" style="display:none;">
@@ -2239,7 +2241,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="btn-small" onclick="pullFromDailyLog()">🔄 Pull from Monthly Log</button>
     <button class="btn-small" onclick="openDailyLogViewer()">📋 View Monthly Log</button>
     <button class="btn-small" onclick="openKpiCompare()">📊 Compare Employees</button>
+    <button class="btn-small" onclick="openCompanyKpiOverview()">🏢 Company Overview</button>
     <button id="addKpiSectionBtn" class="btn-small" onclick="addNewKpiSection()">+ Add Section</button>
+    <button class="btn-small" onclick="openKpiVersionHistory()">🕐 History</button>
   </div>
   <div id="kpiGroupsWrap"></div>
 
@@ -2302,6 +2306,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <option value="missing_checkout">Missing Checkout</option>
     </select>
     <button id="addAttRecordBtn" class="btn-small" onclick="addBlankAttendanceRow()">+ Add Record</button>
+    <button class="btn-small" onclick="exportAttendanceExcel()">⬇ Export to Excel</button>
   </div>
   <div class="price-table-wrap">
     <table class="pricelist" id="attendanceTable">
@@ -2321,14 +2326,32 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <option value="rejected">Rejected</option>
     </select>
     <button class="btn-small" onclick="openLeaveRequestForm()">+ Request Leave</button>
+    <button id="bulkApproveLeaveBtn" class="btn-small" style="display:none;" onclick="bulkApproveLeave()">✓ Approve Selected</button>
+    <button class="btn-small" onclick="exportLeaveRequestsExcel()">⬇ Export to Excel</button>
   </div>
   <div class="price-table-wrap">
     <table class="pricelist" id="leaveTable">
       <thead>
-        <tr><th>Employee</th><th>Type</th><th>Date</th><th>To / Time</th><th>Days</th><th>Reason</th><th>Status</th><th>Pay</th><th></th></tr>
+        <tr><th><input type="checkbox" id="leaveSelectAll" onchange="toggleAllLeaveCheckboxes(this)"></th><th>Employee</th><th>Type</th><th>Date</th><th>To / Time</th><th>Days</th><th>Reason</th><th>Status</th><th>Pay</th><th></th></tr>
       </thead>
-      <tbody id="leaveBody"><tr><td colspan="9" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+      <tbody id="leaveBody"><tr><td colspan="10" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
     </table>
+  </div>
+
+  <div class="section-header"><div class="num">4</div><div class="title">Monthly Reports</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <label style="font-size:.8rem;font-weight:700;">Month<input type="month" id="attReportMonth" onchange="loadAttendanceReports()" style="margin-inline-start:6px;"></label>
+    <button class="btn-small" onclick="exportPayrollExcel()">⬇ Export Payroll Summary</button>
+    <button class="btn-small" onclick="openDeductionsManager()">💰 Deductions & Advances</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="payrollTable">
+      <thead>
+        <tr><th>Employee</th><th>Days Present</th><th>Total Hours</th><th>Overtime (hrs)</th><th>Late (times)</th><th>Absences</th><th>Paid Leave (days)</th><th>Unpaid Leave (days)</th><th>Base Salary</th><th>Adjustments</th><th>Net Pay</th></tr>
+      </thead>
+      <tbody id="payrollBody"><tr><td colspan="11" style="text-align:center;color:#888;padding:14px;">Pick a month to see the report.</td></tr></tbody>
+    </table>
+    <div class="adm-hint no-print" style="margin-top:8px;font-size:.72rem;">Net Pay assumes 26 working days/month, 8-hour day, 1.5× overtime rate. Set each employee's Base Salary in Staff Directory for this to calculate — otherwise it shows "—".</div>
   </div>
 
   <div class="adm-hint" style="margin-top:16px;">
@@ -2402,6 +2425,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
           <th data-label-key="staff.col.phone">Phone</th>
           <th data-label-key="staff.col.email">Login Email</th>
           <th data-label-key="staff.col.startdate">Start Date</th>
+          <th>Base Salary</th>
           <th style="width:150px;"></th>
         </tr>
       </thead>
@@ -2548,6 +2572,19 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 </div>
 
+<div class="mgr-overlay" id="companyKpiOverlay">
+  <div class="mgr-panel" style="max-width:640px;">
+    <div class="mgr-head">
+      <h2>Company KPI Overview</h2>
+      <button class="mgr-close" onclick="closeCompanyKpiOverview()">×</button>
+    </div>
+    <div class="mgr-body">
+      <label style="font-size:.8rem;font-weight:700;">Month<input type="month" id="companyKpiMonth" onchange="loadCompanyKpiOverview()" style="margin-inline-start:6px;"></label>
+      <div id="companyKpiContent" style="margin-top:14px;"><div class="mgr-empty">Pick a month.</div></div>
+    </div>
+  </div>
+</div>
+
 <div class="mgr-overlay" id="kpiCompareOverlay">
   <div class="mgr-panel" style="max-width:680px;">
     <div class="mgr-head">
@@ -2562,6 +2599,69 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         </select>
       </div>
       <div id="kpiCompareResults"><div class="mgr-empty">Pick a month to compare.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="deductionsOverlay">
+  <div class="mgr-panel" style="max-width:640px;">
+    <div class="mgr-head">
+      <h2>Deductions & Advances</h2>
+      <button class="mgr-close" onclick="closeDeductionsManager()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="sb-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <label>Employee<input type="text" id="dedEmployee" list="employeeNamesList"></label>
+        <label>Type
+          <select id="dedType">
+            <option value="deduction">Deduction (subtract from pay)</option>
+            <option value="advance">Advance (subtract from pay)</option>
+            <option value="bonus">Bonus (add to pay)</option>
+          </select>
+        </label>
+        <label>Amount<input type="number" min="0" id="dedAmount"></label>
+        <label>Month<input type="month" id="dedMonth"></label>
+        <label style="grid-column:span 2;">Note<input type="text" id="dedNote" placeholder="Reason (optional)"></label>
+      </div>
+      <div class="table-actions" style="margin-top:12px;">
+        <button class="btn-small" onclick="addDeduction()">+ Add</button>
+      </div>
+      <div class="price-table-wrap" style="margin-top:14px;">
+        <table class="adm-table">
+          <tr><th>Employee</th><th>Type</th><th>Amount</th><th>Month</th><th>Note</th><th></th></tr>
+          <tbody id="deductionsList"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="kpiHistoryOverlay">
+  <div class="mgr-panel" style="max-width:500px;">
+    <div class="mgr-head">
+      <h2>Version History</h2>
+      <button class="mgr-close" onclick="closeKpiVersionHistory()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div id="kpiHistoryList"><div class="mgr-empty">Loading…</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="announcementOverlay">
+  <div class="mgr-panel" style="max-width:420px;">
+    <div class="mgr-head">
+      <h2>Announcement</h2>
+      <button class="mgr-close" onclick="closeAnnouncementEditor()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="sb-fields">
+        <label>Message (leave blank to hide the banner)<textarea id="announcementText" style="width:100%;min-height:80px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
+        <label>Expires on (optional)<input type="date" id="announcementExpiry"></label>
+      </div>
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="btn-small" onclick="saveAnnouncement()">💾 Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3014,6 +3114,8 @@ function applySession(){
   });
 
   document.getElementById('employeeScreen').style.display = isEmployee() ? 'flex' : 'none';
+  applyLanguage();
+  if(isEmployee()) loadEmployeeSelfService();
 
   if(!isEmployee() && !canViewTab(activeTab)){
     const firstOk = ['home','inv','cf','sop','staff'].find(canViewTab);
@@ -3068,6 +3170,82 @@ function isSuperAdmin(){ return session.role === 'super_admin'; }
 function isAdmin(){ return session.role === 'admin' || session.role === 'super_admin'; }
 function isViewer(){ return session.role === 'viewer'; }
 function isEmployee(){ return session.role === 'employee'; }
+
+async function loadEmployeeSelfService(){
+  const box = document.getElementById('employeeSelfServiceContent');
+  if(!box) return;
+  if(!backendReady()){ box.innerHTML = '<div style="text-align:center;color:#888;padding:20px;">Backend not configured.</div>'; return; }
+  try{
+    const empRes = await fetch(`${SUPABASE_URL}/rest/v1/employees?email=eq.${encodeURIComponent(session.email)}&select=full_name,department,job_title,photo`, { headers: sbHeaders() });
+    const empRows = empRes.ok ? await empRes.json() : [];
+    if(!empRows.length){
+      box.innerHTML = `<div style="text-align:center;color:#888;padding:20px;">
+        <div class="employee-icon">⏳</div>
+        <h2>Your account isn't linked yet</h2>
+        <p>Ask your manager to add your login email to your profile in Staff Directory.</p>
+      </div>`;
+      return;
+    }
+    const me = empRows[0];
+    const name = me.full_name;
+
+    const [kpiRes, attRes, leaveRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?company_name=eq.${encodeURIComponent(name)}&select=data,updated_at&deleted_at=is.null&order=updated_at.desc&limit=1`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/attendance?employee_name=eq.${encodeURIComponent(name)}&select=*&order=date.desc&limit=10`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/leave_requests?employee_name=eq.${encodeURIComponent(name)}&select=*&order=requested_at.desc&limit=10`, { headers: sbHeaders() })
+    ]);
+    const kpiRows = kpiRes.ok ? await kpiRes.json() : [];
+    const attRows = attRes.ok ? await attRes.json() : [];
+    const leaveRows = leaveRes.ok ? await leaveRes.json() : [];
+
+    const latestKpi = kpiRows.length ? kpiRows[0] : null;
+    const kpiScore = latestKpi ? computeKpiScoreFromData(latestKpi.data || {}) : null;
+
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+        ${me.photo ? `<img src="${me.photo}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;">` : `<div style="width:56px;height:56px;border-radius:50%;background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.3rem;">${(name||'?').charAt(0).toUpperCase()}</div>`}
+        <div>
+          <div style="font-weight:800;font-size:1.15rem;color:var(--forest-deep);">${(name||'').replace(/</g,'&lt;')}</div>
+          <div style="color:#666;font-size:.85rem;">${(me.job_title||'').replace(/</g,'&lt;')}${me.department ? ' · ' + me.department.replace(/</g,'&lt;') : ''}</div>
+        </div>
+      </div>
+
+      <div class="section-header"><div class="num">★</div><div class="title">My Latest KPI Score</div></div>
+      ${latestKpi ? `
+        <div class="kpi-summary-grid" style="margin:10px 14px;">
+          <div class="kpi-stat"><small>Total Score</small><strong>${kpiScore.toFixed(1)}%</strong></div>
+          <div class="kpi-stat"><small>Month</small><strong>${latestKpi.data.month || '—'}</strong></div>
+          <div class="kpi-stat"><small>Last Updated</small><strong>${new Date(latestKpi.updated_at).toLocaleDateString('en-US')}</strong></div>
+        </div>` : `<div style="text-align:center;color:#888;padding:14px;">No KPI evaluations yet.</div>`}
+
+      <div class="section-header" style="margin-top:18px;"><div class="num">🕐</div><div class="title">My Recent Attendance</div></div>
+      <div class="price-table-wrap" style="margin:10px 14px;">
+        <table class="pricelist">
+          <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Status</th></tr></thead>
+          <tbody>${attRows.length ? attRows.map(r => `<tr>
+            <td>${r.date}</td>
+            <td>${r.check_in ? new Date(r.check_in).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+            <td>${r.check_out ? new Date(r.check_out).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—'}</td>
+            <td>${(r.status||'').replace('_',' ')}</td>
+          </tr>`).join('') : '<tr><td colspan="4" style="text-align:center;color:#888;">No attendance records yet.</td></tr>'}</tbody>
+        </table>
+      </div>
+
+      <div class="section-header" style="margin-top:18px;"><div class="num">📨</div><div class="title">My Leave Requests</div></div>
+      <div class="table-actions no-print" style="margin:10px 14px;">
+        <button class="btn-small" onclick="openLeaveRequestForm(); document.getElementById('leaveEmployee').value='${name.replace(/'/g,"\\'")}';">+ Request Leave</button>
+      </div>
+      <div class="price-table-wrap" style="margin:10px 14px;">
+        <table class="pricelist">
+          <thead><tr><th>Type</th><th>From</th><th>To</th><th>Status</th><th>Pay</th></tr></thead>
+          <tbody>${leaveRows.length ? leaveRows.map(r => `<tr>
+            <td>${r.leave_type||''}</td><td>${r.start_date||''}</td><td>${r.end_date||''}</td>
+            <td>${r.status||''}</td><td>${r.status!=='approved' ? '—' : (r.paid_status==='paid'?'Paid':'Unpaid')}</td>
+          </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#888;">No leave requests yet.</td></tr>'}</tbody>
+        </table>
+      </div>`;
+  }catch(e){ console.error(e); box.innerHTML = `<div style="text-align:center;color:#888;padding:20px;">${sbError(e)}</div>`; }
+}
 
 const MANAGEABLE_TABS = ['inv','cf','sop','staff','kpi','att'];
 let rolePermissions = {
@@ -3926,6 +4104,12 @@ async function loadAttendanceTab(){
   await loadAttendanceRecords();
   await loadAttendanceDashboard();
   await loadLeaveRequests();
+  const reportMonthInp = document.getElementById('attReportMonth');
+  if(!reportMonthInp.value){
+    const now = new Date();
+    reportMonthInp.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+  await loadAttendanceReports();
 }
 
 async function loadShifts(){
@@ -4079,7 +4263,10 @@ function renderAttendanceRecords(){
       <td><input type="time" value="${coTime}" data-f="check_out" ${canManage?'':'readonly'}></td>
       <td>${formatMinutes(r.working_minutes)}</td>
       <td>${r.late_minutes ? r.late_minutes + 'm' : '—'}</td>
-      <td>${r.overtime_minutes ? r.overtime_minutes + 'm' : '—'}</td>
+      <td>${r.overtime_minutes ? `${r.overtime_minutes}m ${
+        r.overtime_approved ? '<span style="color:#0f7a3d;font-weight:700;" title="Overtime approved">✓</span>'
+        : (canManage ? `<button class="btn-small" style="padding:2px 6px;font-size:.65rem;" onclick="approveOvertime('${r.id}')">Approve</button>` : '<span style="color:#b9770e;" title="Awaiting approval">⏳</span>')
+      }` : '—'}</td>
       <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${(r.status||'').replace('_',' ')}</span></td>
       <td>
         ${canManage ? `<select data-f="shift_id" style="width:90px;font-size:.72rem;">${shiftOpts}</select>
@@ -4152,6 +4339,19 @@ async function deleteAttendanceRecord(id){
     if(!res.ok) throw new Error(await res.text());
     loadAttendanceRecords();
     loadAttendanceDashboard();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function approveOvertime(id){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can approve overtime.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ overtime_approved: true, overtime_approved_by: session.email, overtime_approved_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    flash('Overtime approved ✓');
+    loadAttendanceRecords();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
@@ -4256,14 +4456,19 @@ function renderLeaveRequests(){
 
   const statusColors = { pending:'#b9770e', approved:'#0f7a3d', rejected:'#a8462e' };
   const canManage = isSuperAdmin() || session.role === 'admin';
+  const bulkBtn = document.getElementById('bulkApproveLeaveBtn');
+  const pendingCount = rows.filter(r => r.status === 'pending').length;
+  if(bulkBtn) bulkBtn.style.display = (canManage && pendingCount > 1) ? '' : 'none';
   body.innerHTML = rows.map(r => {
     const color = statusColors[r.status] || '#555';
     const payLabel = r.status !== 'approved' ? '—' : (r.paid_status === 'paid' ? '💰 Paid' : '🚫 Unpaid');
+    const checkbox = (canManage && r.status === 'pending') ? `<input type="checkbox" class="leave-row-check" value="${r.id}">` : '';
     const actions = (canManage && r.status === 'pending')
       ? `<button class="btn-small" onclick="approveLeaveRequest('${r.id}')">✓ Approve</button>
          <button class="btn-small remove" onclick="rejectLeaveRequest('${r.id}')">✕ Reject</button>`
       : (canManage ? `<button class="btn-small remove" onclick="deleteLeaveRequest('${r.id}')">×</button>` : '');
     return `<tr>
+      <td>${checkbox}</td>
       <td>${(r.employee_name||'').replace(/</g,'&lt;')}</td>
       <td>${r.leave_type||''}${r.is_hourly ? ' <small style="opacity:.7;">(hourly)</small>' : ''}</td>
       <td>${r.start_date||''}</td>
@@ -4317,6 +4522,230 @@ async function deleteLeaveRequest(id){
     if(!res.ok) throw new Error(await res.text());
     loadLeaveRequests();
   }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+function toggleAllLeaveCheckboxes(master){
+  document.querySelectorAll('.leave-row-check').forEach(cb => { cb.checked = master.checked; });
+}
+
+async function bulkApproveLeave(){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can approve leave.', true); return; }
+  const ids = Array.from(document.querySelectorAll('.leave-row-check:checked')).map(cb => cb.value);
+  if(!ids.length){ flash('Select at least one pending request first.', true); return; }
+  const paid = confirm(`Approve ${ids.length} selected request(s) as PAID (no salary deduction)?\n\nOK = Paid leave\nCancel = Unpaid leave (salary deducted)`);
+  try{
+    for(const id of ids){
+      await fetch(`${SUPABASE_URL}/rest/v1/leave_requests?id=eq.${encodeURIComponent(id)}`, {
+        method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+        body: JSON.stringify({ status:'approved', paid_status: paid ? 'paid' : 'unpaid', approved_by: session.email, approved_at: new Date().toISOString() })
+      });
+    }
+    logActivity('bulk_approve_leave', null, `${ids.length} requests, ${paid ? 'paid' : 'unpaid'}`);
+    flash(`${ids.length} request(s) approved as ${paid ? 'Paid' : 'Unpaid'} ✓`);
+    loadLeaveRequests();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function exportLeaveRequestsExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load. Check your connection and try again.', true); return; }
+  if(!leaveRequestsCache.length){ flash('Nothing to export.', true); return; }
+  const rows = leaveRequestsCache.map(r => ({
+    'Employee': r.employee_name || '', 'Type': r.leave_type || '', 'Hourly': r.is_hourly ? 'Yes' : 'No',
+    'From': r.start_date || '', 'To': r.end_date || '', 'Start Time': r.start_time || '', 'End Time': r.end_time || '',
+    'Days': r.days_count || '', 'Reason': r.reason || '', 'Status': r.status || '',
+    'Pay': r.paid_status || '', 'Requested By': r.requested_by || '', 'Requested At': r.requested_at || '',
+    'Approved By': r.approved_by || '', 'Approved At': r.approved_at || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Leave Requests');
+  XLSX.writeFile(wb, `leave-requests-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+async function exportAttendanceExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load. Check your connection and try again.', true); return; }
+  if(!attendanceCache.length){ flash('Nothing to export for this date. Pick a date with records, or export a wider range from Supabase directly.', true); return; }
+  const rows = attendanceCache.map(r => ({
+    'Employee': r.employee_name || '', 'Date': r.date || '',
+    'Check In': r.check_in ? new Date(r.check_in).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) : '',
+    'Check Out': r.check_out ? new Date(r.check_out).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) : '',
+    'Working Hours': formatMinutes(r.working_minutes), 'Late (min)': r.late_minutes || 0, 'Overtime (min)': r.overtime_minutes || 0,
+    'Status': r.status || ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Attendance');
+  XLSX.writeFile(wb, `attendance-${document.getElementById('attDateFilter').value || 'export'}.xlsx`);
+}
+
+let payrollReportCache = [];
+
+let deductionsCache = [];
+
+function openDeductionsManager(){
+  document.getElementById('deductionsOverlay').classList.add('open');
+  document.getElementById('dedMonth').value = document.getElementById('attReportMonth').value || '';
+  loadDeductions();
+}
+function closeDeductionsManager(){ document.getElementById('deductionsOverlay').classList.remove('open'); }
+
+async function loadDeductions(){
+  const box = document.getElementById('deductionsList');
+  if(!backendReady()){ box.innerHTML = '<tr><td colspan="6">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/payroll_adjustments?select=*&order=created_at.desc&limit=100`, { headers: sbHeaders() });
+    deductionsCache = res.ok ? await res.json() : [];
+    renderDeductions();
+  }catch(e){ box.innerHTML = '<tr><td colspan="6">'+sbError(e)+'</td></tr>'; }
+}
+function renderDeductions(){
+  const box = document.getElementById('deductionsList');
+  if(!deductionsCache.length){ box.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">No entries yet.</td></tr>'; return; }
+  box.innerHTML = deductionsCache.map(d => `
+    <tr>
+      <td>${(d.employee_name||'').replace(/</g,'&lt;')}</td>
+      <td>${d.type}</td>
+      <td>${(d.amount||0).toLocaleString()}</td>
+      <td>${d.month||''}</td>
+      <td>${d.note ? String(d.note).replace(/</g,'&lt;') : ''}</td>
+      <td><button class="btn-small remove" onclick="deleteDeduction('${d.id}')">×</button></td>
+    </tr>`).join('');
+}
+
+async function addDeduction(){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can add deductions.', true); return; }
+  const employee_name = document.getElementById('dedEmployee').value.trim();
+  const type = document.getElementById('dedType').value;
+  const amount = parseFloat(document.getElementById('dedAmount').value) || 0;
+  const month = document.getElementById('dedMonth').value;
+  const note = document.getElementById('dedNote').value.trim();
+  if(!employee_name || !amount || !month){ flash('Fill in employee, amount, and month.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/payroll_adjustments`, {
+      method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ id:'adj-'+Date.now().toString(36), employee_name, type, amount, month, note: note||null, created_by: session.email, created_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    flash('Added ✓');
+    document.getElementById('dedAmount').value = '';
+    document.getElementById('dedNote').value = '';
+    loadDeductions();
+    loadAttendanceReports();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function deleteDeduction(id){
+  if(!confirm('Delete this entry?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/payroll_adjustments?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    loadDeductions();
+    loadAttendanceReports();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function loadAttendanceReports(){
+  const body = document.getElementById('payrollBody');
+  const month = document.getElementById('attReportMonth').value;
+  if(!month){ body.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;padding:14px;">Pick a month to see the report.</td></tr>'; return; }
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  body.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr>';
+
+  try{
+    const [attRes, leaveRes, empRes, adjRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/attendance?select=*&date=gte.${month}-01&date=lte.${month}-31`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/leave_requests?select=*&status=eq.approved`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/employees?select=full_name,base_salary`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/payroll_adjustments?select=*&month=eq.${month}`, { headers: sbHeaders() })
+    ]);
+    const attRows = attRes.ok ? await attRes.json() : [];
+    const leaveRows = leaveRes.ok ? await leaveRes.json() : [];
+    const empRows = empRes.ok ? await empRes.json() : [];
+    const adjRows = adjRes.ok ? await adjRes.json() : [];
+    const salaryByName = {};
+    empRows.forEach(e => { if(e.full_name) salaryByName[e.full_name] = e.base_salary || 0; });
+    const adjByName = {};
+    adjRows.forEach(a => {
+      if(!adjByName[a.employee_name]) adjByName[a.employee_name] = { deduction:0, advance:0, bonus:0 };
+      adjByName[a.employee_name][a.type] = (adjByName[a.employee_name][a.type]||0) + (a.amount||0);
+    });
+
+    // Keep only leave that overlaps this month.
+    const monthStart = new Date(month + '-01');
+    const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth()+1, 0);
+    const monthLeave = leaveRows.filter(r => {
+      const s = new Date(r.start_date), e = new Date(r.end_date || r.start_date);
+      return s <= monthEnd && e >= monthStart;
+    });
+
+    const byEmployee = {};
+    const ensure = (name) => { if(!byEmployee[name]) byEmployee[name] = { present:0, minutes:0, overtimeMin:0, late:0, absent:0, paidDays:0, unpaidDays:0 }; return byEmployee[name]; };
+
+    attRows.forEach(r => {
+      const e = ensure(r.employee_name || '(unnamed)');
+      if(r.status === 'absent'){ e.absent++; return; }
+      e.present++;
+      e.minutes += r.working_minutes || 0;
+      e.overtimeMin += r.overtime_approved ? (r.overtime_minutes || 0) : 0;
+      if(r.status === 'late') e.late++;
+    });
+    monthLeave.forEach(r => {
+      const e = ensure(r.employee_name || '(unnamed)');
+      const days = r.is_hourly ? 0 : (r.days_count || 0);
+      if(r.paid_status === 'paid') e.paidDays += days; else e.unpaidDays += days;
+    });
+
+    // Standard payroll assumptions: 26 working days/month, 8-hour day, 1.5x overtime rate.
+    const WORK_DAYS = 26, WORK_HOURS = 8, OT_MULTIPLIER = 1.5;
+    payrollReportCache = Object.keys(byEmployee).sort().map(name => {
+      const base = salaryByName[name] || 0;
+      const dailyRate = base / WORK_DAYS;
+      const hourlyRate = dailyRate / WORK_HOURS;
+      const r = byEmployee[name];
+      const overtimeHrs = r.overtimeMin / 60;
+      const overtimePay = overtimeHrs * hourlyRate * OT_MULTIPLIER;
+      const unpaidDeduction = r.unpaidDays * dailyRate;
+      const adj = adjByName[name] || { deduction:0, advance:0, bonus:0 };
+      const manualAdjTotal = adj.bonus - adj.deduction - adj.advance;
+      const netPay = base ? Math.max(0, base - unpaidDeduction + overtimePay + manualAdjTotal) : null;
+      return { employee: name, ...r, baseSalary: base, overtimePay, unpaidDeduction, manualAdj: adj, manualAdjTotal, netPay };
+    });
+
+    if(!payrollReportCache.length){ body.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#888;padding:14px;">No attendance or leave data for ${month}.</td></tr>`; return; }
+
+    body.innerHTML = payrollReportCache.map(r => `
+      <tr>
+        <td>${r.employee.replace(/</g,'&lt;')}</td>
+        <td>${r.present}</td>
+        <td>${formatMinutes(r.minutes)}</td>
+        <td>${(r.overtimeMin/60).toFixed(1)}</td>
+        <td>${r.late}</td>
+        <td>${r.absent}</td>
+        <td>${r.paidDays}</td>
+        <td>${r.unpaidDays}</td>
+        <td>${r.baseSalary ? r.baseSalary.toLocaleString() : '—'}</td>
+        <td>${r.baseSalary ? ('-'+r.unpaidDeduction.toLocaleString(undefined,{maximumFractionDigits:0})+' / +'+r.overtimePay.toLocaleString(undefined,{maximumFractionDigits:0})+(r.manualAdjTotal ? ' / '+(r.manualAdjTotal>0?'+':'')+r.manualAdjTotal.toLocaleString(undefined,{maximumFractionDigits:0}) : '')) : '—'}</td>
+        <td style="font-weight:800;color:var(--forest-deep);">${r.netPay !== null ? r.netPay.toLocaleString(undefined,{maximumFractionDigits:0}) : '—'}</td>
+      </tr>`).join('');
+  }catch(e){ console.error(e); body.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+
+function exportPayrollExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load. Check your connection and try again.', true); return; }
+  if(!payrollReportCache.length){ flash('Nothing to export — pick a month with data first.', true); return; }
+  const month = document.getElementById('attReportMonth').value;
+  const rows = payrollReportCache.map(r => ({
+    'Employee': r.employee, 'Days Present': r.present, 'Total Hours': formatMinutes(r.minutes),
+    'Overtime (hrs)': (r.overtimeMin/60).toFixed(1), 'Late (times)': r.late, 'Absences': r.absent,
+    'Paid Leave (days)': r.paidDays, 'Unpaid Leave (days)': r.unpaidDays,
+    'Base Salary': r.baseSalary || '', 'Unpaid Deduction': r.baseSalary ? Math.round(r.unpaidDeduction) : '',
+    'Overtime Pay': r.baseSalary ? Math.round(r.overtimePay) : '', 'Net Pay': r.netPay !== null ? Math.round(r.netPay) : ''
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Payroll Summary');
+  XLSX.writeFile(wb, `payroll-summary-${month}.xlsx`);
 }
 
 async function loadAttendanceDashboard(){
@@ -4413,6 +4842,7 @@ function renderEmployees(){
     <td><input value="${(e.phone||'').replace(/"/g,'&quot;')}" data-f="phone"></td>
     <td><input type="email" value="${(e.email||'').replace(/"/g,'&quot;')}" data-f="email" placeholder="login@email.com"></td>
     <td><input value="${(e.start_date||'').replace(/"/g,'&quot;')}" data-f="start_date" placeholder="dd/mm/yyyy"></td>
+    <td><input type="number" min="0" value="${e.base_salary||''}" data-f="base_salary" placeholder="0" style="width:90px;"></td>
     <td><div class="emp-actions no-print">
       <button class="btn-save-emp" onclick="saveEmployee('${e.id}')">Save</button>
       <button class="btn-qr" onclick="openEmployeeProfile('${e.id}')" style="background:#1d4ed8;">Profile</button>
@@ -4438,7 +4868,7 @@ function handlePhotoUpload(evt, id){
 }
 
 function addEmployee(){
-  employees.unshift({ id: makeEmpId(), full_name:'', age:'', gender:'', job_title:'', department:'', phone:'', start_date:'', photo:'' });
+  employees.unshift({ id: makeEmpId(), full_name:'', age:'', gender:'', job_title:'', department:'', phone:'', start_date:'', base_salary:'', photo:'' });
   document.getElementById('empSearch').value = '';
   renderEmployees();
 }
@@ -4449,6 +4879,7 @@ function readEmpRow(id){
   const out = { id };
   tr.querySelectorAll('input[data-f], select[data-f]').forEach(i=>{ out[i.dataset.f] = i.value.trim(); });
   out.age = out.age === '' ? null : parseInt(out.age, 10) || null;
+  out.base_salary = out.base_salary === '' ? null : parseFloat(out.base_salary) || null;
   const existing = employees.find(e => e.id === id);
   out.photo = existing ? (existing.photo || '') : '';
   return out;
@@ -4988,6 +5419,35 @@ function applyTabOrder(){
 function updateReorderTabsButton(){
   const wrap = document.getElementById('settingsMenuWrap');
   if(wrap) wrap.style.display = isSuperAdmin() ? '' : 'none';
+}
+
+const I18N = {
+  en: {
+    'nav.home':'Home', 'nav.search':'Search All Forms', 'nav.inv':'Invoice Verification', 'nav.cf':'Cash Flow',
+    'nav.sop':'SOP', 'nav.staff':'Employees', 'nav.kpi':'KPI Evaluation', 'nav.att':'Attendance', 'nav.signout':'Sign out'
+  },
+  ku: {
+    'nav.home':'ماڵەوە', 'nav.search':'گەڕان بە هەموو فۆرمەکان', 'nav.inv':'پشکنینی وەصڵ', 'nav.cf':'گەشەی دارایی',
+    'nav.sop':'ڕێنمایی کار', 'nav.staff':'کارمەندان', 'nav.kpi':'هەڵسەنگاندنی KPI', 'nav.att':'ئامادەبوون', 'nav.signout':'چوونەدەرەوە'
+  }
+};
+let currentLang = localStorage.getItem('dalare_lang') || 'en';
+
+function applyLanguage(){
+  const dict = I18N[currentLang] || I18N.en;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    if(dict[key]) el.textContent = dict[key];
+  });
+  const btn = document.getElementById('langToggleBtn');
+  if(btn) btn.textContent = currentLang === 'en' ? '🌐 EN' : '🌐 کوردی';
+  document.documentElement.setAttribute('lang', currentLang === 'ku' ? 'ckb' : 'en');
+}
+
+function toggleLanguage(){
+  currentLang = currentLang === 'en' ? 'ku' : 'en';
+  localStorage.setItem('dalare_lang', currentLang);
+  applyLanguage();
 }
 
 function toggleSettingsMenu(){
@@ -6036,6 +6496,117 @@ async function loadCustomSections(){
   }catch(e){ console.error(e); }
 }
 
+async function loadHomeAnnouncement(){
+  const box = document.getElementById('homeAnnouncementBanner');
+  if(!box) return;
+  if(!backendReady()){ box.innerHTML = ''; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings?id=eq.default&select=announcement,announcement_expiry`, { headers: sbHeaders() });
+    const rows = res.ok ? await res.json() : [];
+    const text = rows.length ? rows[0].announcement : '';
+    const expiry = rows.length ? rows[0].announcement_expiry : null;
+    if(!text || (expiry && expiry < new Date().toISOString().slice(0,10))){ box.innerHTML = ''; return; }
+    box.innerHTML = `<div style="max-width:960px;margin:0 auto 10px;background:linear-gradient(120deg,#2f6fed,#1d4ed8);color:#fff;border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:10px;font-size:.85rem;font-weight:700;box-shadow:0 8px 22px -10px rgba(29,78,216,.5);">
+      <span style="font-size:1.05rem;">📢</span><span>${text.replace(/</g,'&lt;')}</span>
+    </div>`;
+  }catch(e){ box.innerHTML = ''; }
+}
+
+function openAnnouncementEditor(){
+  if(!isSuperAdmin()){ flash('Only a super admin can set the announcement.', true); return; }
+  document.getElementById('announcementText').value = window._currentAnnouncement || '';
+  document.getElementById('announcementExpiry').value = window._currentAnnouncementExpiry || '';
+  document.getElementById('announcementOverlay').classList.add('open');
+}
+function closeAnnouncementEditor(){ document.getElementById('announcementOverlay').classList.remove('open'); }
+
+async function openKpiVersionHistory(){
+  if(!kpiFormId){ flash('Save the form at least once before viewing history.', true); return; }
+  document.getElementById('kpiHistoryOverlay').classList.add('open');
+  const box = document.getElementById('kpiHistoryList');
+  box.innerHTML = '<div class="mgr-empty">Loading…</div>';
+  if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/form_versions?form_table=eq.kpi_forms&form_id=eq.${encodeURIComponent(kpiFormId)}&select=*&order=saved_at.desc&limit=20`, { headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    if(!rows.length){ box.innerHTML = '<div class="mgr-empty">No earlier versions saved yet — history starts recording from your next save.</div>'; return; }
+    box.innerHTML = `<table class="adm-table">
+      <tr><th>Saved</th><th>By</th><th>Score</th><th></th></tr>
+      ${rows.map((v,i) => {
+        const score = computeKpiScoreFromData(v.data || {});
+        return `<tr>
+          <td>${new Date(v.saved_at).toLocaleString('en-US')}</td>
+          <td>${(v.saved_by||'').replace(/</g,'&lt;')}</td>
+          <td>${score.toFixed(1)}%</td>
+          <td><button class="btn-small" onclick="restoreKpiVersion(${i})">↺ Restore</button></td>
+        </tr>`;
+      }).join('')}
+    </table>`;
+    window._kpiVersionRows = rows;
+  }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">'+sbError(e)+'</div>'; }
+}
+function closeKpiVersionHistory(){ document.getElementById('kpiHistoryOverlay').classList.remove('open'); }
+
+function restoreKpiVersion(index){
+  const v = window._kpiVersionRows[index];
+  if(!v) return;
+  if(!confirm(`Restore this version from ${new Date(v.saved_at).toLocaleString('en-US')}? Your current unsaved changes will be lost.`)) return;
+  restoreKpi(v.data);
+  closeKpiVersionHistory();
+  flash('Version restored — press Save to keep it.');
+}
+
+async function saveAnnouncement(){
+  const text = document.getElementById('announcementText').value.trim();
+  const expiry = document.getElementById('announcementExpiry').value || null;
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({ id:'default', announcement: text, announcement_expiry: expiry, updated_by: session.email, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    window._currentAnnouncement = text;
+    window._currentAnnouncementExpiry = expiry;
+    flash('Announcement saved ✓');
+    closeAnnouncementEditor();
+    loadHomeAnnouncement();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function loadHomeNotifications(){
+  const box = document.getElementById('homeNotifBanner');
+  if(!box) return;
+  if(!backendReady() || isEmployee() || !canViewTab('att')){ box.innerHTML = ''; return; }
+  try{
+    const today = new Date().toISOString().slice(0,10);
+    const [attRes, leaveRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/attendance?select=status&date=eq.${today}`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/leave_requests?select=id&status=eq.pending`, { headers: sbHeaders() })
+    ]);
+    const attRows = attRes.ok ? await attRes.json() : [];
+    const leaveRows = leaveRes.ok ? await leaveRes.json() : [];
+    const lateCount = attRows.filter(r => r.status === 'late').length;
+    const missingCount = attRows.filter(r => r.status === 'missing_checkout').length;
+    const pendingLeaveCount = leaveRows.length;
+
+    const items = [];
+    if(lateCount) items.push({ ic:'⏰', text:`${lateCount} employee${lateCount===1?'':'s'} late today`, action:`switchTab('att')` });
+    if(missingCount) items.push({ ic:'⚠️', text:`${missingCount} missing checkout${missingCount===1?'':'s'} today`, action:`switchTab('att')` });
+    if(pendingLeaveCount) items.push({ ic:'📨', text:`${pendingLeaveCount} leave request${pendingLeaveCount===1?'':'s'} awaiting approval`, action:`switchTab('att')` });
+
+    if(!items.length){ box.innerHTML = ''; return; }
+    box.innerHTML = `<div style="max-width:960px;margin:0 auto 18px;display:flex;flex-direction:column;gap:8px;">
+      ${items.map(it => `
+        <div onclick="${it.action}" style="cursor:pointer;background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 16px;display:flex;align-items:center;gap:10px;font-size:.85rem;font-weight:700;color:#233b2b;box-shadow:0 4px 14px -8px rgba(10,36,23,.15);">
+          <span style="font-size:1.05rem;">${it.ic}</span><span>${it.text}</span>
+          <span style="margin-inline-start:auto;opacity:.5;font-size:.78rem;">View →</span>
+        </div>`).join('')}
+    </div>`;
+  }catch(e){ box.innerHTML = ''; }
+}
+
 function renderHomeGrid(){
   const grid = document.getElementById('homeGrid');
   if(!grid) return;
@@ -6762,7 +7333,7 @@ function switchTab(tab){
     btn.classList.toggle('active', match);
     if(sheet) sheet.classList.toggle('hidden-tab', !match);
   });
-  if(tab === 'home') renderHomeGrid();
+  if(tab === 'home'){ renderHomeGrid(); loadHomeNotifications(); loadHomeAnnouncement(); }
   document.querySelector('.toolbar').style.display = (tab === 'home' || isEmployee()) ? 'none' : 'flex';
   if(tab === 'staff') loadEmployees();
   if(tab === 'att') loadAttendanceTab();
@@ -7514,6 +8085,66 @@ function closeKpiCompare(){
   document.getElementById('kpiCompareOverlay').classList.remove('open');
 }
 
+function openCompanyKpiOverview(){
+  document.getElementById('companyKpiOverlay').classList.add('open');
+  const monthInp = document.getElementById('companyKpiMonth');
+  if(!monthInp.value){
+    const now = new Date();
+    monthInp.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+  loadCompanyKpiOverview();
+}
+function closeCompanyKpiOverview(){ document.getElementById('companyKpiOverlay').classList.remove('open'); }
+
+async function loadCompanyKpiOverview(){
+  const box = document.getElementById('companyKpiContent');
+  const month = document.getElementById('companyKpiMonth').value;
+  if(!month){ box.innerHTML = '<div class="mgr-empty">Pick a month.</div>'; return; }
+  box.innerHTML = '<div class="mgr-empty">Loading…</div>';
+  if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_forms?select=*&deleted_at=is.null`, { headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    const forms = (await res.json()).filter(f => f.data && f.data.month === month);
+    if(!forms.length){ box.innerHTML = `<div class="mgr-empty">No KPI evaluations found for ${month}.</div>`; return; }
+
+    const scored = forms.map(f => ({ employee: f.company_name || '(unnamed)', department: f.data.department || '—', score: computeKpiScoreFromData(f.data || {}) }));
+    const avgScore = scored.reduce((s,r) => s+r.score, 0) / scored.length;
+    const sorted = [...scored].sort((a,b) => b.score - a.score);
+    const top3 = sorted.slice(0,3);
+    const topNames = new Set(top3.map(r => r.employee));
+    const bottom3 = [...sorted].reverse().filter(r => !topNames.has(r.employee)).slice(0,3);
+
+    const byDept = {};
+    scored.forEach(r => { if(!byDept[r.department]) byDept[r.department] = []; byDept[r.department].push(r.score); });
+    const deptAverages = Object.keys(byDept).sort().map(d => ({ dept: d, avg: byDept[d].reduce((s,v)=>s+v,0)/byDept[d].length, count: byDept[d].length }));
+
+    box.innerHTML = `
+      <div class="kpi-summary-grid" style="margin-bottom:16px;">
+        <div class="kpi-stat"><small>Company Average</small><strong>${avgScore.toFixed(1)}%</strong></div>
+        <div class="kpi-stat"><small>Employees Evaluated</small><strong>${scored.length}</strong></div>
+        <div class="kpi-stat"><small>Departments</small><strong>${deptAverages.length}</strong></div>
+      </div>
+
+      <div style="font-weight:800;color:var(--forest-deep);margin-bottom:6px;">By Department</div>
+      <table class="adm-table" style="margin-bottom:16px;">
+        <tr><th>Department</th><th>Avg Score</th><th>Employees</th></tr>
+        ${deptAverages.map(d => `<tr><td>${d.dept.replace(/</g,'&lt;')}</td><td>${d.avg.toFixed(1)}%</td><td>${d.count}</td></tr>`).join('')}
+      </table>
+
+      <div style="font-weight:800;color:var(--forest-deep);margin-bottom:6px;">🏆 Top Performers</div>
+      <table class="adm-table" style="margin-bottom:16px;">
+        ${top3.map((r,i) => `<tr><td>${i+1}</td><td>${r.employee.replace(/</g,'&lt;')}</td><td style="color:#0f7a3d;font-weight:700;">${r.score.toFixed(1)}%</td></tr>`).join('')}
+      </table>
+
+      <div style="font-weight:800;color:var(--forest-deep);margin-bottom:6px;">Needs Attention</div>
+      <table class="adm-table">
+        ${bottom3.length ? bottom3.map((r,i) => `<tr><td>${r.employee.replace(/</g,'&lt;')}</td><td style="color:#a8462e;font-weight:700;">${r.score.toFixed(1)}%</td></tr>`).join('')
+          : '<tr><td style="text-align:center;color:#888;">Not enough employees to show separately from Top Performers.</td></tr>'}
+      </table>`;
+  }catch(e){ console.error(e); box.innerHTML = '<div class="mgr-empty">'+sbError(e)+'</div>'; }
+}
+
 async function loadKpiCompare(){
   const box = document.getElementById('kpiCompareResults');
   const month = document.getElementById('kpiCompareMonth').value;
@@ -7653,6 +8284,12 @@ async function saveKPI(){
     updated_at: new Date().toISOString()
   };
   try{
+    if(oldData){
+      await fetch(`${SUPABASE_URL}/rest/v1/form_versions`, {
+        method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+        body: JSON.stringify({ form_table:'kpi_forms', form_id: kpiFormId, data: oldData, saved_by: session.email, saved_at: new Date().toISOString() })
+      }).catch(()=>{});
+    }
     const res = await fetch(`${SUPABASE_URL}/rest/v1/kpi_forms`, {
       method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
       body: JSON.stringify(payload)
