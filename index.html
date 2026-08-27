@@ -1785,6 +1785,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button id="tabStaff" onclick="switchTab('staff')">🪪 <span data-i18n="nav.staff">Employees</span></button>
     <button id="tabKpi" onclick="switchTab('kpi')">📊 <span data-i18n="nav.kpi">KPI Evaluation</span></button>
     <button id="tabAtt" onclick="switchTab('att')">🕐 <span data-i18n="nav.att">Attendance</span></button>
+    <button id="tabHr" onclick="switchTab('hr')">🗂️ <span data-i18n="nav.hr">HR Records</span></button>
     <span id="customTabsSlot"></span>
     <button id="langToggleBtn" class="add-section-btn" onclick="toggleLanguage()" title="Switch language" style="width:auto;">🌐 EN</button>
     <div id="settingsMenuWrap" style="position:relative;display:none;">
@@ -1795,6 +1796,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <button class="settings-menu-item" onclick="closeSettingsMenu(); openSiteTextEditor();">🎨 Edit Site Text</button>
         <button class="settings-menu-item" onclick="closeSettingsMenu(); document.getElementById('logoFileInput').click();">🖼️ Change Logo</button>
         <button class="settings-menu-item" onclick="closeSettingsMenu(); openAnnouncementEditor();">📢 Announcement</button>
+        <button class="settings-menu-item" onclick="closeSettingsMenu(); downloadFullBackup();">💾 Full Backup</button>
       </div>
     </div>
     <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
@@ -1802,20 +1804,20 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 </div>
 
 <div class="toolbar">
-  <button class="secondary" onclick="switchTab('home')" title="Back to Home">← Back</button>
+  <button class="secondary" onclick="switchTab('home')" title="Back to Home"><span data-i18n="tb.back">← Back</span></button>
   <span class="save-status" id="saveStatus"></span>
-  <button class="secondary" onclick="newForm()" data-label-key="toolbar.newform">+ New Form</button>
-  <button class="secondary" onclick="openManager()" data-label-key="toolbar.myforms">📁 My Forms</button>
-  <button class="secondary" id="adminBtn" onclick="openAdmin()">⚙️ Admin</button>
+  <button class="secondary" onclick="newForm()" data-label-key="toolbar.newform" data-i18n="tb.newform">+ New Form</button>
+  <button class="secondary" onclick="openManager()" data-label-key="toolbar.myforms" data-i18n="tb.myforms">📁 My Forms</button>
+  <button class="secondary" id="adminBtn" onclick="openAdmin()"><span data-i18n="tb.admin">⚙️ Admin</span></button>
   <button class="secondary" id="pdfColsBtn" onclick="openPrintColumnsDesigner()" style="display:none;">🖶 PDF Columns</button>
   <button class="secondary" id="colMgrBtn" onclick="openColumnManager()" style="display:none;">➕ Manage Columns</button>
-  <button class="secondary" onclick="resetForm()" data-label-key="toolbar.cleardata">🗑️ Clear Data</button>
+  <button class="secondary" onclick="resetForm()" data-label-key="toolbar.cleardata" data-i18n="tb.cleardata">🗑️ Clear Data</button>
   <select id="printOrientSelect" class="stage-select" style="flex:0 0 auto;" onchange="setPrintOrientation(this.value)" title="Page orientation for print/PDF">
     <option value="portrait">⬜ Portrait</option>
     <option value="landscape">▭ Landscape</option>
   </select>
-  <button onclick="saveForm()" data-label-key="toolbar.save">💾 Save</button>
-  <button onclick="printForm()" data-label-key="toolbar.print">🖨️ Print / Save as PDF</button>
+  <button onclick="saveForm()" data-label-key="toolbar.save" data-i18n="tb.save">💾 Save</button>
+  <button onclick="printForm()" data-label-key="toolbar.print" data-i18n="tb.print">🖨️ Print / Save as PDF</button>
 </div>
 
 <div class="mgr-overlay" id="admOverlay">
@@ -2272,7 +2274,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </header>
   <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span><span class="subtitle-edit" onclick="openFooterEditor()" title="Edit this text">✎</span></div>
 
-  <div class="section-header"><div class="num">★</div><div class="title">Today's Overview</div></div>
+  <div class="section-header"><div class="num">★</div><div class="title" data-i18n="att.overview">Today's Overview</div></div>
   <div class="kpi-summary-grid" id="attDashboard" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr));">
     <div class="kpi-stat"><small>Present Today</small><strong id="attPresentCount">0</strong></div>
     <div class="kpi-stat"><small>Absent Today</small><strong id="attAbsentCount">0</strong></div>
@@ -2281,7 +2283,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="kpi-stat"><small>Total Hours Today</small><strong id="attTotalHours">0h 0m</strong></div>
   </div>
 
-  <div class="section-header"><div class="num">1</div><div class="title">Shifts</div></div>
+  <div class="section-header"><div class="num">1</div><div class="title" data-i18n="att.shifts">Shifts</div></div>
   <div class="table-actions no-print">
     <button id="addShiftBtn" class="btn-small" onclick="addBlankShiftRow()">+ Add Shift</button>
   </div>
@@ -2294,7 +2296,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </table>
   </div>
 
-  <div class="section-header"><div class="num">2</div><div class="title">Attendance Records</div></div>
+  <div class="section-header"><div class="num">2</div><div class="title" data-i18n="att.records">Attendance Records</div></div>
   <div class="table-actions no-print" style="flex-wrap:wrap;">
     <input type="date" id="attDateFilter" onchange="loadAttendanceRecords()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
     <input type="text" id="attSearchFilter" placeholder="Search employee…" oninput="renderAttendanceRecords()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
@@ -2317,7 +2319,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </table>
   </div>
 
-  <div class="section-header"><div class="num">3</div><div class="title">Leave Requests</div></div>
+  <div class="section-header"><div class="num">3</div><div class="title" data-i18n="att.leave">Leave Requests</div></div>
   <div class="table-actions no-print" style="flex-wrap:wrap;">
     <select id="leaveStatusFilter" onchange="renderLeaveRequests()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
       <option value="">All statuses</option>
@@ -2338,7 +2340,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </table>
   </div>
 
-  <div class="section-header"><div class="num">4</div><div class="title">Monthly Reports</div></div>
+  <div class="section-header"><div class="num">4</div><div class="title" data-i18n="att.reports">Monthly Reports</div></div>
   <div class="table-actions no-print" style="flex-wrap:wrap;">
     <label style="font-size:.8rem;font-weight:700;">Month<input type="month" id="attReportMonth" onchange="loadAttendanceReports()" style="margin-inline-start:6px;"></label>
     <button class="btn-small" onclick="exportPayrollExcel()">⬇ Export Payroll Summary</button>
@@ -2357,6 +2359,94 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div class="adm-hint" style="margin-top:16px;">
     <strong>Biometric device integration:</strong> a real fingerprint device or attendance software can POST directly to this table via Supabase's REST API
     (<code>POST <span id="attApiUrlHint"></span>/rest/v1/attendance</code>) with the device's API key. See the setup notes below for the exact request shape.
+  </div>
+</div>
+
+<div class="sheet hidden-tab" id="hrForm">
+  <header class="title-block">
+    <div class="logo-badge"><img src="data:image/jpeg;base64,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" alt="Dalare"></div>
+    <div style="text-align:center;">
+      <h1>HR Records</h1>
+      <div class="sub">Assets, Expenses, Discipline &amp; Training</div>
+    </div>
+  </header>
+  <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
+
+  <div class="section-header"><div class="num">1</div><div class="title">Assets</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <button class="btn-small" onclick="addBlankAssetRow()">+ Add Asset</button>
+    <button class="btn-small" onclick="exportAssetsExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="assetsTable">
+      <thead><tr><th>Asset</th><th>Serial #</th><th>Assigned To</th><th>Assigned Date</th><th>Status</th><th></th></tr></thead>
+      <tbody id="assetsBody"><tr><td colspan="6" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-header" style="margin-top:18px;"><div class="num">2</div><div class="title">Expense Reimbursement</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <select id="expenseStatusFilter" onchange="renderExpenses()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+      <option value="">All statuses</option>
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+    </select>
+    <button class="btn-small" onclick="openExpenseForm()">+ Request Reimbursement</button>
+    <button class="btn-small" onclick="exportExpensesExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="expensesTable">
+      <thead><tr><th>Employee</th><th>Category</th><th>Amount</th><th>Date</th><th>Note</th><th>Status</th><th></th></tr></thead>
+      <tbody id="expensesBody"><tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-header" style="margin-top:18px;"><div class="num">3</div><div class="title">Disciplinary Records</div></div>
+  <div class="table-actions no-print">
+    <button class="btn-small" onclick="addBlankDisciplinaryRow()">+ Add Record</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="disciplinaryTable">
+      <thead><tr><th>Employee</th><th>Date</th><th>Type</th><th>Description</th><th>Issued By</th><th></th></tr></thead>
+      <tbody id="disciplinaryBody"><tr><td colspan="6" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-header" style="margin-top:18px;"><div class="num">4</div><div class="title">Training &amp; Certifications</div></div>
+  <div class="table-actions no-print">
+    <button class="btn-small" onclick="addBlankTrainingRow()">+ Add Certification</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="trainingTable">
+      <thead><tr><th>Employee</th><th>Certification</th><th>Issued</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+      <tbody id="trainingBody"><tr><td colspan="6" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="expenseFormOverlay">
+  <div class="mgr-panel" style="max-width:420px;">
+    <div class="mgr-head">
+      <h2>Request Reimbursement</h2>
+      <button class="mgr-close" onclick="closeExpenseForm()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="sb-fields">
+        <label>Employee<input type="text" id="expEmployee" list="employeeNamesList"></label>
+        <label>Category
+          <select id="expCategory">
+            <option>Travel</option><option>Supplies</option><option>Meals</option><option>Other</option>
+          </select>
+        </label>
+        <label>Amount<input type="number" min="0" id="expAmount"></label>
+        <label>Date<input type="date" id="expDate"></label>
+        <label>Note<textarea id="expNote" style="width:100%;min-height:60px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
+      </div>
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="btn-small" onclick="submitExpense()">📨 Submit</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -3262,11 +3352,11 @@ async function loadEmployeeSelfService(){
   }catch(e){ console.error(e); box.innerHTML = `<div style="text-align:center;color:#888;padding:20px;">${sbError(e)}</div>`; }
 }
 
-const MANAGEABLE_TABS = ['inv','cf','sop','staff','kpi','att'];
+const MANAGEABLE_TABS = ['inv','cf','sop','staff','kpi','att','hr'];
 let rolePermissions = {
-  admin:  { view:['inv','cf','sop','kpi','att'], edit:['inv','cf','sop','kpi','att'] },
+  admin:  { view:['inv','cf','sop','kpi','att','hr'], edit:['inv','cf','sop','kpi','att','hr'] },
   staff:  { view:['kpi','att'], edit:['kpi'] },
-  viewer: { view:['inv','cf','sop','kpi','att'], edit:[] },
+  viewer: { view:['inv','cf','sop','kpi','att','hr'], edit:[] },
 };
 
 let currentUserDepartment = null;
@@ -4790,6 +4880,307 @@ function printPayslip(){
   setTimeout(() => { w.print(); }, 300);
 }
 
+// ===================== HR Records: Assets, Expenses, Disciplinary, Training =====================
+let assetsCache = [], expensesCache = [], disciplinaryCache = [], trainingCache = [];
+
+async function loadHrRecordsTab(){
+  await Promise.all([loadAssets(), loadExpenses(), loadDisciplinary(), loadTraining()]);
+}
+
+// ---- Assets ----
+async function loadAssets(){
+  const body = document.getElementById('assetsBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/assets?select=*&order=assigned_date.desc`, { headers: sbHeaders() });
+    assetsCache = res.ok ? await res.json() : [];
+    renderAssets();
+  }catch(e){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderAssets(){
+  const body = document.getElementById('assetsBody');
+  const canManage = isSuperAdmin() || session.role === 'admin';
+  if(!assetsCache.length){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:14px;">No assets recorded yet.</td></tr>'; return; }
+  body.innerHTML = assetsCache.map(a => `
+    <tr data-asset-id="${a.id}">
+      <td><input value="${(a.name||'').replace(/"/g,'&quot;')}" data-f="name" ${canManage?'':'readonly'}></td>
+      <td><input value="${(a.serial||'').replace(/"/g,'&quot;')}" data-f="serial" ${canManage?'':'readonly'}></td>
+      <td><input value="${(a.assigned_to||'').replace(/"/g,'&quot;')}" data-f="assigned_to" list="employeeNamesList" ${canManage?'':'readonly'}></td>
+      <td><input type="date" value="${a.assigned_date||''}" data-f="assigned_date" ${canManage?'':'readonly'}></td>
+      <td><select data-f="status" ${canManage?'':'disabled'}>
+        <option ${a.status==='in_use'?'selected':''} value="in_use">In Use</option>
+        <option ${a.status==='returned'?'selected':''} value="returned">Returned</option>
+        <option ${a.status==='lost'?'selected':''} value="lost">Lost/Damaged</option>
+      </select></td>
+      <td>${canManage ? `<button class="btn-small" onclick="saveAssetRow('${a.id}')">Save</button>
+        <button class="btn-small remove" onclick="deleteAsset('${a.id}')">×</button>` : ''}</td>
+    </tr>`).join('');
+}
+function addBlankAssetRow(){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can manage assets.', true); return; }
+  const tempId = 'new-' + Date.now().toString(36);
+  assetsCache.unshift({ id: tempId, name:'', serial:'', assigned_to:'', assigned_date: new Date().toISOString().slice(0,10), status:'in_use' });
+  renderAssets();
+}
+async function saveAssetRow(id){
+  const tr = document.querySelector(`#assetsBody tr[data-asset-id="${id}"]`);
+  if(!tr) return;
+  const name = tr.querySelector('[data-f="name"]').value.trim();
+  const serial = tr.querySelector('[data-f="serial"]').value.trim();
+  const assigned_to = tr.querySelector('[data-f="assigned_to"]').value.trim();
+  const assigned_date = tr.querySelector('[data-f="assigned_date"]').value;
+  const status = tr.querySelector('[data-f="status"]').value;
+  if(!name){ flash('Enter an asset name.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  const realId = id.startsWith('new-') ? 'asset-'+Date.now().toString(36) : id;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/assets`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({ id: realId, name, serial, assigned_to, assigned_date, status })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    flash('Saved ✓');
+    loadAssets();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteAsset(id){
+  if(!confirm('Delete this asset record?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/assets?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    loadAssets();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+function exportAssetsExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
+  if(!assetsCache.length){ flash('Nothing to export.', true); return; }
+  const rows = assetsCache.map(a => ({ 'Asset': a.name, 'Serial #': a.serial, 'Assigned To': a.assigned_to, 'Assigned Date': a.assigned_date, 'Status': a.status }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Assets');
+  XLSX.writeFile(wb, `assets-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ---- Expense Reimbursement ----
+function openExpenseForm(){
+  document.getElementById('expEmployee').value = '';
+  document.getElementById('expCategory').value = 'Travel';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('expNote').value = '';
+  document.getElementById('expenseFormOverlay').classList.add('open');
+}
+function closeExpenseForm(){ document.getElementById('expenseFormOverlay').classList.remove('open'); }
+async function submitExpense(){
+  const employee_name = document.getElementById('expEmployee').value.trim();
+  const category = document.getElementById('expCategory').value;
+  const amount = parseFloat(document.getElementById('expAmount').value) || 0;
+  const date = document.getElementById('expDate').value;
+  const note = document.getElementById('expNote').value.trim();
+  if(!employee_name || !amount || !date){ flash('Fill in employee, amount, and date.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses`, {
+      method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ id:'exp-'+Date.now().toString(36), employee_name, category, amount, date, note: note||null, status:'pending', requested_by: session.email, requested_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('request_expense', null, employee_name);
+    flash('Reimbursement request submitted ✓');
+    closeExpenseForm();
+    loadExpenses();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function loadExpenses(){
+  const body = document.getElementById('expensesBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses?select=*&order=requested_at.desc&limit=100`, { headers: sbHeaders() });
+    expensesCache = res.ok ? await res.json() : [];
+    renderExpenses();
+  }catch(e){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderExpenses(){
+  const body = document.getElementById('expensesBody');
+  const statusFilter = document.getElementById('expenseStatusFilter').value;
+  let rows = expensesCache;
+  if(statusFilter) rows = rows.filter(r => r.status === statusFilter);
+  const canManage = isSuperAdmin() || session.role === 'admin';
+  const statusColors = { pending:'#b9770e', approved:'#0f7a3d', rejected:'#a8462e' };
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">No expense requests found.</td></tr>'; return; }
+  body.innerHTML = rows.map(r => {
+    const color = statusColors[r.status]||'#555';
+    const actions = (canManage && r.status === 'pending')
+      ? `<button class="btn-small" onclick="approveExpense('${r.id}')">✓</button><button class="btn-small remove" onclick="rejectExpense('${r.id}')">✕</button>`
+      : (canManage ? `<button class="btn-small remove" onclick="deleteExpense('${r.id}')">×</button>` : '');
+    return `<tr>
+      <td>${(r.employee_name||'').replace(/</g,'&lt;')}</td><td>${r.category||''}</td><td>${(r.amount||0).toLocaleString()}</td>
+      <td>${r.date||''}</td><td style="max-width:160px;">${r.note?String(r.note).replace(/</g,'&lt;'):'—'}</td>
+      <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${r.status}</span></td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+async function approveExpense(id){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can approve.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ status:'approved', approved_by: session.email, approved_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    flash('Approved ✓'); loadExpenses();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function rejectExpense(id){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can reject.', true); return; }
+  if(!confirm('Reject this reimbursement request?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ status:'rejected', approved_by: session.email, approved_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    flash('Rejected'); loadExpenses();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteExpense(id){
+  if(!confirm('Delete this record?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    loadExpenses();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+function exportExpensesExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
+  if(!expensesCache.length){ flash('Nothing to export.', true); return; }
+  const rows = expensesCache.map(r => ({ 'Employee': r.employee_name, 'Category': r.category, 'Amount': r.amount, 'Date': r.date, 'Note': r.note||'', 'Status': r.status }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
+  XLSX.writeFile(wb, `expenses-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ---- Disciplinary Records ----
+async function loadDisciplinary(){
+  const body = document.getElementById('disciplinaryBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/disciplinary_records?select=*&order=date.desc`, { headers: sbHeaders() });
+    disciplinaryCache = res.ok ? await res.json() : [];
+    renderDisciplinary();
+  }catch(e){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderDisciplinary(){
+  const body = document.getElementById('disciplinaryBody');
+  const canManage = isSuperAdmin() || session.role === 'admin';
+  if(!disciplinaryCache.length){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:14px;">No records yet.</td></tr>'; return; }
+  body.innerHTML = disciplinaryCache.map(d => `
+    <tr>
+      <td>${(d.employee_name||'').replace(/</g,'&lt;')}</td>
+      <td>${d.date||''}</td>
+      <td>${d.type||''}</td>
+      <td style="max-width:220px;">${(d.description||'').replace(/</g,'&lt;')}</td>
+      <td>${(d.issued_by||'').replace(/</g,'&lt;')}</td>
+      <td>${canManage ? `<button class="btn-small remove" onclick="deleteDisciplinary('${d.id}')">×</button>` : ''}</td>
+    </tr>`).join('');
+}
+function addBlankDisciplinaryRow(){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can add disciplinary records.', true); return; }
+  const employee_name = prompt('Employee name');
+  if(!employee_name || !employee_name.trim()) return;
+  const type = prompt('Type (e.g. Verbal Warning, Written Warning, Suspension)', 'Verbal Warning');
+  if(!type) return;
+  const description = prompt('Description');
+  if(description === null) return;
+  saveDisciplinaryRecord({ employee_name: employee_name.trim(), type, description });
+}
+async function saveDisciplinaryRecord({ employee_name, type, description }){
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/disciplinary_records`, {
+      method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ id:'disc-'+Date.now().toString(36), employee_name, type, description: description||null, date: new Date().toISOString().slice(0,10), issued_by: session.email })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('add_disciplinary', null, employee_name);
+    flash('Record added ✓');
+    loadDisciplinary();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteDisciplinary(id){
+  if(!confirm('Delete this record?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/disciplinary_records?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    loadDisciplinary();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+// ---- Training & Certifications ----
+async function loadTraining(){
+  const body = document.getElementById('trainingBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/trainings?select=*&order=expiry_date.asc`, { headers: sbHeaders() });
+    trainingCache = res.ok ? await res.json() : [];
+    renderTraining();
+  }catch(e){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderTraining(){
+  const body = document.getElementById('trainingBody');
+  const canManage = isSuperAdmin() || session.role === 'admin';
+  if(!trainingCache.length){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:14px;">No certifications recorded yet.</td></tr>'; return; }
+  const today = new Date().toISOString().slice(0,10);
+  const in30 = new Date(Date.now() + 30*86400000).toISOString().slice(0,10);
+  body.innerHTML = trainingCache.map(t => {
+    let statusLabel = 'Valid', color = '#0f7a3d';
+    if(t.expiry_date && t.expiry_date < today){ statusLabel = 'Expired'; color = '#a8462e'; }
+    else if(t.expiry_date && t.expiry_date <= in30){ statusLabel = 'Expiring Soon'; color = '#b9770e'; }
+    return `<tr>
+      <td>${(t.employee_name||'').replace(/</g,'&lt;')}</td>
+      <td>${(t.certification||'').replace(/</g,'&lt;')}</td>
+      <td>${t.issued_date||''}</td>
+      <td>${t.expiry_date||'—'}</td>
+      <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${statusLabel}</span></td>
+      <td>${canManage ? `<button class="btn-small remove" onclick="deleteTraining('${t.id}')">×</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+function addBlankTrainingRow(){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can add certifications.', true); return; }
+  const employee_name = prompt('Employee name');
+  if(!employee_name || !employee_name.trim()) return;
+  const certification = prompt('Certification name');
+  if(!certification || !certification.trim()) return;
+  const issued_date = prompt('Issued date (YYYY-MM-DD)', new Date().toISOString().slice(0,10));
+  if(issued_date === null) return;
+  const expiry_date = prompt('Expiry date (YYYY-MM-DD, leave blank if none)', '');
+  if(expiry_date === null) return;
+  saveTrainingRecord({ employee_name: employee_name.trim(), certification: certification.trim(), issued_date, expiry_date: expiry_date || null });
+}
+async function saveTrainingRecord({ employee_name, certification, issued_date, expiry_date }){
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/trainings`, {
+      method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ id:'train-'+Date.now().toString(36), employee_name, certification, issued_date, expiry_date })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    flash('Certification added ✓');
+    loadTraining();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteTraining(id){
+  if(!confirm('Delete this certification record?')) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/trainings?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
+    if(!res.ok) throw new Error(await res.text());
+    loadTraining();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
 function exportPayrollExcel(){
   if(typeof XLSX === 'undefined'){ flash('Excel library failed to load. Check your connection and try again.', true); return; }
   if(!payrollReportCache.length){ flash('Nothing to export — pick a month with data first.', true); return; }
@@ -5483,11 +5874,19 @@ function updateReorderTabsButton(){
 const I18N = {
   en: {
     'nav.home':'Home', 'nav.search':'Search All Forms', 'nav.inv':'Invoice Verification', 'nav.cf':'Cash Flow',
-    'nav.sop':'SOP', 'nav.staff':'Employees', 'nav.kpi':'KPI Evaluation', 'nav.att':'Attendance', 'nav.signout':'Sign out'
+    'nav.sop':'SOP', 'nav.staff':'Employees', 'nav.kpi':'KPI Evaluation', 'nav.att':'Attendance', 'nav.signout':'Sign out',
+    'tb.back':'← Back', 'tb.newform':'+ New Form', 'tb.myforms':'📁 My Forms', 'tb.admin':'⚙️ Admin',
+    'tb.cleardata':'🗑️ Clear Data', 'tb.save':'💾 Save', 'tb.print':'🖨️ Print / Save as PDF',
+    'att.overview':"Today's Overview", 'att.shifts':'Shifts', 'att.records':'Attendance Records',
+    'att.leave':'Leave Requests', 'att.reports':'Monthly Reports'
   },
   ku: {
     'nav.home':'ماڵەوە', 'nav.search':'گەڕان بە هەموو فۆرمەکان', 'nav.inv':'پشکنینی وەصڵ', 'nav.cf':'گەشەی دارایی',
-    'nav.sop':'ڕێنمایی کار', 'nav.staff':'کارمەندان', 'nav.kpi':'هەڵسەنگاندنی KPI', 'nav.att':'ئامادەبوون', 'nav.signout':'چوونەدەرەوە'
+    'nav.sop':'ڕێنمایی کار', 'nav.staff':'کارمەندان', 'nav.kpi':'هەڵسەنگاندنی KPI', 'nav.att':'ئامادەبوون', 'nav.signout':'چوونەدەرەوە',
+    'tb.back':'← گەڕانەوە', 'tb.newform':'+ فۆرمی نوێ', 'tb.myforms':'📁 فۆرمەکانم', 'tb.admin':'⚙️ بەڕێوەبردن',
+    'tb.cleardata':'🗑️ سڕینەوەی داتا', 'tb.save':'💾 پاشەکەوتکردن', 'tb.print':'🖨️ چاپکردن / وەک PDF',
+    'att.overview':'تێڕوانینی ئەمڕۆ', 'att.shifts':'گۆڕەکان', 'att.records':'تۆمارەکانی ئامادەبوون',
+    'att.leave':'داواکاری مۆڵەت', 'att.reports':'ڕاپۆرتی مانگانە'
   }
 };
 let currentLang = localStorage.getItem('dalare_lang') || 'en';
@@ -5495,6 +5894,10 @@ let currentLang = localStorage.getItem('dalare_lang') || 'en';
 function applyLanguage(){
   const dict = I18N[currentLang] || I18N.en;
   document.querySelectorAll('[data-i18n]').forEach(el => {
+    // In English mode, elements that also carry an admin-customizable
+    // data-label-key are left to applySiteLabels() so a manager's custom
+    // wording isn't silently overwritten by our built-in English default.
+    if(currentLang === 'en' && el.dataset.labelKey) return;
     const key = el.dataset.i18n;
     if(dict[key]) el.textContent = dict[key];
   });
@@ -5710,9 +6113,10 @@ function refreshTabVisibility(){
   document.getElementById('tabStaff').style.display = canViewTab('staff') ? 'block' : 'none';
   document.getElementById('tabKpi').style.display = canViewTab('kpi') ? '' : 'none';
   document.getElementById('tabAtt').style.display = canViewTab('att') ? '' : 'none';
+  document.getElementById('tabHr').style.display = canViewTab('hr') ? '' : 'none';
   document.getElementById('globalSearchTabBtn').style.display = isEmployee() ? 'none' : '';
   if(!canViewTab(activeTab)){
-    const firstOk = ['home','inv','cf','sop','staff','kpi','att'].find(canViewTab);
+    const firstOk = ['home','inv','cf','sop','staff','kpi','att','hr'].find(canViewTab);
     if(firstOk) switchTab(firstOk);
   }
   applyViewerLock();
@@ -5938,6 +6342,7 @@ async function loadRolePermissions(){
       Object.keys(matrix).forEach(role => {
         if(!matrix[role].view) matrix[role].view = [];
         if(!matrix[role].view.includes('att')) matrix[role].view.push('att');
+        if(!matrix[role].view.includes('hr')) matrix[role].view.push('hr');
       });
       rolePermissions = matrix;
       refreshTabVisibility();
@@ -6614,6 +7019,34 @@ function restoreKpiVersion(index){
   restoreKpi(v.data);
   closeKpiVersionHistory();
   flash('Version restored — press Save to keep it.');
+}
+
+async function downloadFullBackup(){
+  if(!isSuperAdmin()){ flash('Only a super admin can download a full backup.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  flash('Preparing backup — this may take a moment…');
+  const tables = [
+    'forms','cashflow_forms','sop_forms','kpi_forms','employees','activity_log',
+    'attendance','shifts','leave_requests','payroll_adjustments','form_versions',
+    'assets','expenses','disciplinary_records','trainings','site_settings',
+    'role_permissions','card_layout','print_columns','extra_columns','tab_order','custom_sections'
+  ];
+  const backup = { generated_at: new Date().toISOString(), generated_by: session.email, tables: {} };
+  try{
+    await Promise.all(tables.map(async (t) => {
+      try{
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${t}?select=*`, { headers: sbHeaders() });
+        backup.tables[t] = res.ok ? await res.json() : [];
+      }catch(e){ backup.tables[t] = []; }
+    }));
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `dalare-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    logActivity('full_backup', null, `${tables.length} tables`);
+    flash('Backup downloaded ✓');
+  }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 async function saveAnnouncement(){
@@ -7378,6 +7811,7 @@ function switchTab(tab){
   document.getElementById('staffForm').classList.toggle('hidden-tab', tab !== 'staff');
   document.getElementById('kpiForm').classList.toggle('hidden-tab', tab !== 'kpi');
   document.getElementById('attForm').classList.toggle('hidden-tab', tab !== 'att');
+  document.getElementById('hrForm').classList.toggle('hidden-tab', tab !== 'hr');
   document.getElementById('tabHome').classList.toggle('active', tab === 'home');
   document.getElementById('tabInv').classList.toggle('active', tab === 'inv');
   document.getElementById('tabCf').classList.toggle('active', tab === 'cf');
@@ -7385,6 +7819,7 @@ function switchTab(tab){
   document.getElementById('tabStaff').classList.toggle('active', tab === 'staff');
   document.getElementById('tabKpi').classList.toggle('active', tab === 'kpi');
   document.getElementById('tabAtt').classList.toggle('active', tab === 'att');
+  document.getElementById('tabHr').classList.toggle('active', tab === 'hr');
   document.querySelectorAll('.custom-tab-btn').forEach(btn=>{
     const sid = btn.id.replace('tab_custom_','');
     const sheet = document.getElementById('customForm_' + sid);
@@ -7396,6 +7831,7 @@ function switchTab(tab){
   document.querySelector('.toolbar').style.display = (tab === 'home' || isEmployee()) ? 'none' : 'flex';
   if(tab === 'staff') loadEmployees();
   if(tab === 'att') loadAttendanceTab();
+  if(tab === 'hr') loadHrRecordsTab();
   if(tab === 'kpi') showKpiDeptPicker();
   if(tab === 'sop') document.querySelectorAll('#sopList textarea').forEach(autoGrow);
   applyViewerLock();
