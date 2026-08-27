@@ -2347,9 +2347,9 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div class="price-table-wrap">
     <table class="pricelist" id="payrollTable">
       <thead>
-        <tr><th>Employee</th><th>Days Present</th><th>Total Hours</th><th>Overtime (hrs)</th><th>Late (times)</th><th>Absences</th><th>Paid Leave (days)</th><th>Unpaid Leave (days)</th><th>Base Salary</th><th>Adjustments</th><th>Net Pay</th></tr>
+        <tr><th>Employee</th><th>Days Present</th><th>Total Hours</th><th>Overtime (hrs)</th><th>Late (times)</th><th>Absences</th><th>Paid Leave (days)</th><th>Unpaid Leave (days)</th><th>Base Salary</th><th>Adjustments</th><th>Net Pay</th><th></th></tr>
       </thead>
-      <tbody id="payrollBody"><tr><td colspan="11" style="text-align:center;color:#888;padding:14px;">Pick a month to see the report.</td></tr></tbody>
+      <tbody id="payrollBody"><tr><td colspan="12" style="text-align:center;color:#888;padding:14px;">Pick a month to see the report.</td></tr></tbody>
     </table>
     <div class="adm-hint no-print" style="margin-top:8px;font-size:.72rem;">Net Pay assumes 26 working days/month, 8-hour day, 1.5× overtime rate. Set each employee's Base Salary in Staff Directory for this to calculate — otherwise it shows "—".</div>
   </div>
@@ -2599,6 +2599,21 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         </select>
       </div>
       <div id="kpiCompareResults"><div class="mgr-empty">Pick a month to compare.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="payslipOverlay">
+  <div class="mgr-panel" style="max-width:480px;">
+    <div class="mgr-head">
+      <h2>Payslip</h2>
+      <button class="mgr-close" onclick="closePayslip()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div id="payslipContent"></div>
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="btn-small" onclick="printPayslip()">🖨️ Print / Save as PDF</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4648,9 +4663,9 @@ async function deleteDeduction(id){
 async function loadAttendanceReports(){
   const body = document.getElementById('payrollBody');
   const month = document.getElementById('attReportMonth').value;
-  if(!month){ body.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;padding:14px;">Pick a month to see the report.</td></tr>'; return; }
-  if(!backendReady()){ body.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
-  body.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr>';
+  if(!month){ body.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#888;padding:14px;">Pick a month to see the report.</td></tr>'; return; }
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  body.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr>';
 
   try{
     const [attRes, leaveRes, empRes, adjRes] = await Promise.all([
@@ -4712,7 +4727,7 @@ async function loadAttendanceReports(){
       return { employee: name, ...r, baseSalary: base, overtimePay, unpaidDeduction, manualAdj: adj, manualAdjTotal, netPay };
     });
 
-    if(!payrollReportCache.length){ body.innerHTML = `<tr><td colspan="11" style="text-align:center;color:#888;padding:14px;">No attendance or leave data for ${month}.</td></tr>`; return; }
+    if(!payrollReportCache.length){ body.innerHTML = `<tr><td colspan="12" style="text-align:center;color:#888;padding:14px;">No attendance or leave data for ${month}.</td></tr>`; return; }
 
     body.innerHTML = payrollReportCache.map(r => `
       <tr>
@@ -4727,8 +4742,52 @@ async function loadAttendanceReports(){
         <td>${r.baseSalary ? r.baseSalary.toLocaleString() : '—'}</td>
         <td>${r.baseSalary ? ('-'+r.unpaidDeduction.toLocaleString(undefined,{maximumFractionDigits:0})+' / +'+r.overtimePay.toLocaleString(undefined,{maximumFractionDigits:0})+(r.manualAdjTotal ? ' / '+(r.manualAdjTotal>0?'+':'')+r.manualAdjTotal.toLocaleString(undefined,{maximumFractionDigits:0}) : '')) : '—'}</td>
         <td style="font-weight:800;color:var(--forest-deep);">${r.netPay !== null ? r.netPay.toLocaleString(undefined,{maximumFractionDigits:0}) : '—'}</td>
+        <td class="no-print"><button class="btn-small" onclick="openPayslip('${r.employee.replace(/'/g,"\\'")}')">📄 Payslip</button></td>
       </tr>`).join('');
-  }catch(e){ console.error(e); body.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+  }catch(e){ console.error(e); body.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+
+function openPayslip(employeeName){
+  const r = payrollReportCache.find(x => x.employee === employeeName);
+  if(!r){ flash('Payroll data not found for this employee.', true); return; }
+  const month = document.getElementById('attReportMonth').value;
+  const box = document.getElementById('payslipContent');
+  const adj = r.manualAdj || { deduction:0, advance:0, bonus:0 };
+  const fmt = (n) => (n||0).toLocaleString(undefined,{maximumFractionDigits:0});
+
+  box.innerHTML = `
+    <div id="payslipPrintArea" style="border:1px solid var(--line);border-radius:12px;padding:20px;font-family:'IBM Plex Sans',sans-serif;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;border-bottom:2px solid var(--forest);padding-bottom:12px;">
+        <div style="font-weight:800;font-size:1.1rem;color:var(--forest-deep);">DALARE WAREHOUSE</div>
+      </div>
+      <div style="font-weight:800;font-size:1rem;margin-bottom:4px;">Payslip — ${month}</div>
+      <div style="color:#555;margin-bottom:14px;">${r.employee}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+        <tr><td style="padding:5px 0;">Base Salary</td><td style="text-align:end;font-weight:700;">${fmt(r.baseSalary)}</td></tr>
+        <tr><td style="padding:5px 0;">Days Present</td><td style="text-align:end;">${r.present}</td></tr>
+        <tr><td style="padding:5px 0;">Unpaid Leave Deduction</td><td style="text-align:end;color:#a8462e;">-${fmt(r.unpaidDeduction)}</td></tr>
+        <tr><td style="padding:5px 0;">Overtime Pay (${(r.overtimeMin/60).toFixed(1)} hrs)</td><td style="text-align:end;color:#0f7a3d;">+${fmt(r.overtimePay)}</td></tr>
+        ${adj.bonus ? `<tr><td style="padding:5px 0;">Bonus</td><td style="text-align:end;color:#0f7a3d;">+${fmt(adj.bonus)}</td></tr>` : ''}
+        ${adj.deduction ? `<tr><td style="padding:5px 0;">Deduction</td><td style="text-align:end;color:#a8462e;">-${fmt(adj.deduction)}</td></tr>` : ''}
+        ${adj.advance ? `<tr><td style="padding:5px 0;">Advance</td><td style="text-align:end;color:#a8462e;">-${fmt(adj.advance)}</td></tr>` : ''}
+        <tr><td colspan="2" style="border-top:2px solid var(--forest);padding-top:8px;"></td></tr>
+        <tr><td style="padding:5px 0;font-weight:800;">Net Pay</td><td style="text-align:end;font-weight:800;font-size:1.1rem;color:var(--forest-deep);">${r.netPay !== null ? fmt(r.netPay) : '—'} IQD</td></tr>
+      </table>
+      <div style="margin-top:16px;font-size:.7rem;color:#888;">Generated ${new Date().toLocaleDateString('en-US')} · Assumes 26 working days/month, 8-hour day, 1.5× overtime rate.</div>
+    </div>`;
+  document.getElementById('payslipOverlay').classList.add('open');
+}
+function closePayslip(){ document.getElementById('payslipOverlay').classList.remove('open'); }
+
+function printPayslip(){
+  const content = document.getElementById('payslipPrintArea').outerHTML;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Payslip</title>
+    <style>body{font-family:'IBM Plex Sans',Arial,sans-serif;padding:20px;} @media print{body{padding:0;}}</style>
+    </head><body>${content}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); }, 300);
 }
 
 function exportPayrollExcel(){
