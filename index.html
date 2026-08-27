@@ -340,14 +340,35 @@
     align-self:center;margin-inline-end:6px;
   }
   .toast{
-    position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-12px);
-    background:#173b2c;color:#fff;padding:11px 20px;border-radius:10px;
-    font-size:.86rem;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.35);
-    z-index:5000;opacity:0;pointer-events:none;transition:opacity .22s cubic-bezier(.2,.8,.3,1), transform .22s cubic-bezier(.2,.8,.3,1);
-    max-width:90vw;text-align:center;
+    position:fixed;top:18px;left:50%;transform:translateX(-50%) translateY(-20px) scale(.94);
+    background:#fff;color:#1a2e22;padding:14px 16px;border-radius:16px;
+    font-size:.85rem;font-weight:600;box-shadow:0 20px 45px -14px rgba(10,36,23,.35), 0 2px 8px rgba(10,36,23,.08);
+    z-index:5000;opacity:0;pointer-events:none;
+    transition:opacity .32s cubic-bezier(.34,1.56,.64,1), transform .32s cubic-bezier(.34,1.56,.64,1);
+    max-width:min(92vw, 420px);text-align:start;
+    display:flex;align-items:flex-start;gap:11px;
+    border:1px solid rgba(10,36,23,.06);
+    overflow:hidden;
   }
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-  .toast.err{background:#7a2418;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1);pointer-events:auto;}
+  .toast .toast-ic{
+    flex-shrink:0;font-size:.85rem;line-height:1;width:24px;height:24px;border-radius:50%;
+    background:var(--forest);color:#fff;display:flex;align-items:center;justify-content:center;
+    margin-top:1px;
+  }
+  .toast.err .toast-ic{background:#c0392b;}
+  .toast .toast-msg{flex:1;line-height:1.45;word-break:break-word;padding-top:2px;color:#233b2b;}
+  .toast .toast-close{
+    flex-shrink:0;cursor:pointer;opacity:.35;font-size:1rem;line-height:1;padding:2px;
+    transition:opacity .12s ease;color:#233b2b;margin-top:2px;
+  }
+  .toast .toast-close:hover{opacity:.8;}
+  .toast .toast-bar{
+    position:absolute;left:0;bottom:0;height:3px;background:var(--forest);
+    animation:toastCountdown linear forwards;transform-origin:left;
+  }
+  .toast.err .toast-bar{background:#c0392b;}
+  @keyframes toastCountdown{from{transform:scaleX(1);}to{transform:scaleX(0);}}
   .employee-screen{
     display:none;min-height:70vh;align-items:center;justify-content:center;padding:24px;
   }
@@ -1723,7 +1744,12 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <button onclick="doLogout()">Sign out</button>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast">
+  <span class="toast-ic" id="toastIcon">✓</span>
+  <span class="toast-msg" id="toastMsg"></span>
+  <span class="toast-close" onclick="dismissToast()">✕</span>
+  <span class="toast-bar" id="toastBar"></span>
+</div>
 <div id="updateBanner" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9999;
      background:var(--forest-deep);color:#fff;padding:10px 16px;align-items:center;
      justify-content:center;gap:12px;font-size:.82rem;font-weight:700;box-shadow:0 -2px 10px rgba(0,0,0,.2);">
@@ -2253,7 +2279,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
   <div class="section-header"><div class="num">1</div><div class="title">Shifts</div></div>
   <div class="table-actions no-print">
-    <button id="addShiftBtn" class="btn-small" onclick="openShiftEditor()">+ Add Shift</button>
+    <button id="addShiftBtn" class="btn-small" onclick="addBlankShiftRow()">+ Add Shift</button>
   </div>
   <div class="price-table-wrap">
     <table class="pricelist" id="shiftsTable">
@@ -2275,7 +2301,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <option value="absent">Absent</option>
       <option value="missing_checkout">Missing Checkout</option>
     </select>
-    <button id="addAttRecordBtn" class="btn-small" onclick="openAttendanceEditor()">+ Add Record</button>
+    <button id="addAttRecordBtn" class="btn-small" onclick="addBlankAttendanceRow()">+ Add Record</button>
   </div>
   <div class="price-table-wrap">
     <table class="pricelist" id="attendanceTable">
@@ -2885,6 +2911,8 @@ function sbError(e){
     return 'Bad Supabase URL — remove any trailing "/" from SUPABASE_URL.';
   if(msg.includes('PGRST205') || msg.includes('Could not find the table'))
     return 'Table missing — run the SQL from the setup guide in Supabase.';
+  if(msg.includes('PGRST204') || msg.includes('Could not find the'))
+    return 'A database update is needed — run the latest SQL migration in Supabase, then try again.';
   if(msg.includes('JWT') || msg.includes('apikey') || msg.includes('401'))
     return 'Bad API key — re-copy the anon public key.';
   if(msg.includes('Failed to fetch'))
@@ -3141,12 +3169,24 @@ function flash(msg, isError){
   clearTimeout(flash._t);
   flash._t = setTimeout(()=>{ el.textContent = ''; }, 4000);
 
+  const duration = isError ? 6000 : 3500;
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastIcon').textContent = isError ? '✕' : '✓';
   t.classList.toggle('err', !!isError);
   t.classList.add('show');
+
+  const bar = document.getElementById('toastBar');
+  bar.style.animation = 'none';
+  bar.offsetWidth; // force reflow so the animation restarts cleanly
+  bar.style.animation = `toastCountdown ${duration}ms linear forwards`;
+
   clearTimeout(flash._tt);
-  flash._tt = setTimeout(()=>{ t.classList.remove('show'); }, isError ? 6000 : 3500);
+  flash._tt = setTimeout(()=>{ t.classList.remove('show'); }, duration);
+}
+function dismissToast(){
+  clearTimeout(flash._tt);
+  document.getElementById('toast').classList.remove('show');
 }
 
 /* ---------- Form ID ---------- */
@@ -3903,37 +3943,47 @@ function renderShifts(){
   if(!shiftsCache.length){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:10px;">No shifts yet.</td></tr>'; return; }
   const canManage = isSuperAdmin() || session.role === 'admin';
   body.innerHTML = shiftsCache.map(s => `
-    <tr>
-      <td>${(s.name||'').replace(/</g,'&lt;')}</td>
-      <td>${s.start_time||''}</td>
-      <td>${s.end_time||''}</td>
-      <td>${s.grace_minutes||0}</td>
-      <td>${s.break_minutes||0}</td>
-      <td>${s.overtime_enabled ? 'Yes' : 'No'}</td>
+    <tr data-shift-id="${s.id}">
+      <td><input value="${(s.name||'').replace(/"/g,'&quot;')}" data-f="name" ${canManage?'':'readonly'}></td>
+      <td><input type="time" value="${s.start_time||''}" data-f="start_time" ${canManage?'':'readonly'}></td>
+      <td><input type="time" value="${s.end_time||''}" data-f="end_time" ${canManage?'':'readonly'}></td>
+      <td><input type="number" min="0" value="${s.grace_minutes||0}" data-f="grace_minutes" style="width:60px;" ${canManage?'':'readonly'}></td>
+      <td><input type="number" min="0" value="${s.break_minutes||0}" data-f="break_minutes" style="width:60px;" ${canManage?'':'readonly'}></td>
       <td>
-        ${canManage ? `<button class="btn-small" onclick="openShiftEditor('${s.id}')">Edit</button>
+        <select data-f="overtime_enabled" ${canManage?'':'disabled'}>
+          <option value="true" ${s.overtime_enabled?'selected':''}>Yes</option>
+          <option value="false" ${!s.overtime_enabled?'selected':''}>No</option>
+        </select>
+      </td>
+      <td>
+        ${canManage ? `<button class="btn-small" onclick="saveShiftRow('${s.id}')">Save</button>
         <button class="btn-small remove" onclick="deleteShift('${s.id}')">×</button>` : ''}
       </td>
     </tr>`).join('');
 }
 
-let shiftEditId = null;
-function openShiftEditor(id){
+function saveShiftRow(id){
+  const tr = document.querySelector(`#shiftsBody tr[data-shift-id="${id}"]`);
+  if(!tr) return;
+  const name = tr.querySelector('[data-f="name"]').value.trim();
+  const start_time = tr.querySelector('[data-f="start_time"]').value;
+  const end_time = tr.querySelector('[data-f="end_time"]').value;
+  const grace_minutes = parseInt(tr.querySelector('[data-f="grace_minutes"]').value) || 0;
+  const break_minutes = parseInt(tr.querySelector('[data-f="break_minutes"]').value) || 0;
+  const overtime_enabled = tr.querySelector('[data-f="overtime_enabled"]').value === 'true';
+  if(!name){ flash('Enter a shift name.', true); return; }
+  if(!start_time || !end_time){ flash('Enter both start and end time.', true); return; }
+  const isNew = id.startsWith('new-');
+  saveShift({ id: isNew ? null : id, name, start_time, end_time, grace_minutes, break_minutes, overtime_enabled });
+}
+
+function addBlankShiftRow(){
   if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can manage shifts.', true); return; }
-  shiftEditId = id || null;
-  const s = id ? shiftsCache.find(x => x.id === id) : null;
-  const name = prompt('Shift name', s ? s.name : '');
-  if(name === null) return;
-  const start = prompt('Start time (HH:MM, 24h)', s ? s.start_time : '08:00');
-  if(start === null) return;
-  const end = prompt('End time (HH:MM, 24h)', s ? s.end_time : '16:00');
-  if(end === null) return;
-  const grace = prompt('Grace period (minutes)', s ? s.grace_minutes : '10');
-  if(grace === null) return;
-  const brk = prompt('Break time (minutes)', s ? s.break_minutes : '60');
-  if(brk === null) return;
-  const overtimeEnabled = confirm('Enable overtime tracking for this shift? OK = Yes, Cancel = No');
-  saveShift({ id, name, start_time: start, end_time: end, grace_minutes: parseInt(grace)||0, break_minutes: parseInt(brk)||0, overtime_enabled: overtimeEnabled });
+  const tempId = 'new-' + Date.now().toString(36);
+  shiftsCache.unshift({ id: tempId, name:'', start_time:'08:00', end_time:'16:00', grace_minutes:10, break_minutes:60, overtime_enabled:true, _isNew:true });
+  renderShifts();
+  const nameInput = document.querySelector(`#shiftsBody tr[data-shift-id="${tempId}"] [data-f="name"]`);
+  if(nameInput) nameInput.focus();
 }
 
 async function saveShift(shift){
@@ -4018,19 +4068,22 @@ function renderAttendanceRecords(){
   const canManage = isSuperAdmin() || session.role === 'admin';
   body.innerHTML = rows.map(r => {
     const color = statusColors[r.status] || '#555';
-    const ci = r.check_in ? new Date(r.check_in).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) : '—';
-    const co = r.check_out ? new Date(r.check_out).toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) : '—';
-    return `<tr>
-      <td>${(r.employee_name||'').replace(/</g,'&lt;')}</td>
+    const ciTime = r.check_in ? new Date(r.check_in).toISOString().slice(11,16) : '';
+    const coTime = r.check_out ? new Date(r.check_out).toISOString().slice(11,16) : '';
+    const shiftOpts = `<option value="">No shift</option>` + shiftsCache.map(s =>
+      `<option value="${s.id}" ${s.id === r.shift_id ? 'selected' : ''}>${s.name.replace(/</g,'&lt;')}</option>`).join('');
+    return `<tr data-att-id="${r.id}" data-att-date="${r.date}">
+      <td><input value="${(r.employee_name||'').replace(/"/g,'&quot;')}" data-f="employee_name" ${canManage?'':'readonly'} list="employeeNamesList"></td>
       <td>${r.date}</td>
-      <td>${ci}</td>
-      <td>${co}</td>
+      <td><input type="time" value="${ciTime}" data-f="check_in" ${canManage?'':'readonly'}></td>
+      <td><input type="time" value="${coTime}" data-f="check_out" ${canManage?'':'readonly'}></td>
       <td>${formatMinutes(r.working_minutes)}</td>
       <td>${r.late_minutes ? r.late_minutes + 'm' : '—'}</td>
       <td>${r.overtime_minutes ? r.overtime_minutes + 'm' : '—'}</td>
       <td><span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${(r.status||'').replace('_',' ')}</span></td>
       <td>
-        ${canManage ? `<button class="btn-small" onclick="openAttendanceEditor('${r.id}')">Edit</button>
+        ${canManage ? `<select data-f="shift_id" style="width:90px;font-size:.72rem;">${shiftOpts}</select>
+        <button class="btn-small" onclick="saveAttendanceRow('${r.id}')">Save</button>
         <button class="btn-small remove" onclick="deleteAttendanceRecord('${r.id}')">×</button>` : ''}
       </td>
     </tr>`;
@@ -4038,31 +4091,27 @@ function renderAttendanceRecords(){
 }
 
 let attEditId = null;
-async function openAttendanceEditor(id){
+function addBlankAttendanceRow(){
   if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can manage attendance records.', true); return; }
-  attEditId = id || null;
-  const r = id ? attendanceCache.find(x => x.id === id) : null;
   const date = document.getElementById('attDateFilter').value || new Date().toISOString().slice(0,10);
+  const tempId = 'new-' + Date.now().toString(36);
+  attendanceCache.unshift({ id: tempId, employee_name:'', date, check_in:null, check_out:null, shift_id:null, status:'present', _isNew:true });
+  renderAttendanceRecords();
+  const nameInput = document.querySelector(`#attendanceBody tr[data-att-id="${tempId}"] [data-f="employee_name"]`);
+  if(nameInput) nameInput.focus();
+}
 
-  const empName = prompt('Employee name', r ? r.employee_name : '');
-  if(empName === null) return;
-  const recDate = prompt('Date (YYYY-MM-DD)', r ? r.date : date);
-  if(recDate === null) return;
-  const ciTime = prompt('Check In time (HH:MM, 24h) — leave blank if absent',
-    r && r.check_in ? new Date(r.check_in).toISOString().slice(11,16) : '');
-  if(ciTime === null) return;
-  const coTime = prompt('Check Out time (HH:MM, 24h) — leave blank if not checked out yet',
-    r && r.check_out ? new Date(r.check_out).toISOString().slice(11,16) : '');
-  if(coTime === null) return;
-
-  let shiftId = r ? r.shift_id : null;
-  if(shiftsCache.length){
-    const shiftNames = shiftsCache.map((s,i) => `${i+1}) ${s.name}`).join('\n');
-    const pick = prompt(`Shift for this employee (enter number, blank for none):\n${shiftNames}`, '');
-    if(pick && shiftsCache[parseInt(pick)-1]) shiftId = shiftsCache[parseInt(pick)-1].id;
-  }
-
-  saveAttendanceRecord({ id, employee_name: empName, date: recDate, checkIn: ciTime, checkOut: coTime, shiftId });
+function saveAttendanceRow(id){
+  const tr = document.querySelector(`#attendanceBody tr[data-att-id="${id}"]`);
+  if(!tr) return;
+  const employee_name = tr.querySelector('[data-f="employee_name"]').value.trim();
+  const checkIn = tr.querySelector('[data-f="check_in"]').value;
+  const checkOut = tr.querySelector('[data-f="check_out"]').value;
+  const shiftId = tr.querySelector('[data-f="shift_id"]').value || null;
+  const date = tr.dataset.attDate;
+  if(!employee_name){ flash('Enter the employee name.', true); return; }
+  const isNew = id.startsWith('new-');
+  saveAttendanceRecord({ id: isNew ? null : id, employee_name, date, checkIn, checkOut, shiftId });
 }
 
 async function saveAttendanceRecord({ id, employee_name, date, checkIn, checkOut, shiftId }){
