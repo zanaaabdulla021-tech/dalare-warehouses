@@ -1768,6 +1768,16 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 
 <div class="userbar" id="userBar" style="display:none;">
   <button class="hamburger-btn" onclick="openDrawer()" title="Menu">☰</button>
+  <div id="notifBellWrap" style="position:relative;">
+    <button onclick="toggleNotifPanel()" title="Notifications" style="position:relative;">🔔<span id="notifUnreadBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#a8462e;color:#fff;border-radius:999px;font-size:.62rem;font-weight:800;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;">0</span></button>
+    <div id="notifPanel" style="display:none;position:fixed;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px -10px rgba(10,36,23,.3);width:320px;max-height:420px;overflow-y:auto;z-index:2500;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--line);">
+        <strong style="font-size:.85rem;">Notifications</strong>
+        <button onclick="markAllNotifsRead()" style="background:none;border:none;color:var(--forest);font-size:.72rem;font-weight:700;cursor:pointer;padding:0;">Mark all read</button>
+      </div>
+      <div id="notifPanelList"><div style="padding:16px;text-align:center;color:#888;font-size:.8rem;">Loading…</div></div>
+    </div>
+  </div>
   <span id="userEmail"></span>
   <span class="role-chip" id="userRole">staff</span>
   <span class="role-chip" id="viewerBadge" style="display:none;background:#f1ded8;color:#7a2418;">View Only</span>
@@ -3375,6 +3385,7 @@ function applySession(){
   if(isEmployee()) loadEmployeeSelfService();
   if(document.getElementById('stageActionBar')) renderStageActions('forms', currentFormId, 'inv');
   if(document.getElementById('cfStageActionBar')) renderStageActions('cashflow_forms', cfFormId, 'cf');
+  loadNotifications();
 
   if(!isEmployee() && !canViewTab(activeTab)){
     const firstOk = ['home','inv','cf','sop','staff'].find(canViewTab);
@@ -4643,7 +4654,7 @@ async function loadAttendanceRecords(){
   if(!date){ body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888;padding:14px;">Pick a date to view records.</td></tr>'; return; }
   if(!backendReady()){ body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?select=*&date=eq.${date}&order=employee_name.asc`, { headers: sbHeaders() });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?select=*&deleted_at=is.null&date=eq.${date}&order=employee_name.asc`, { headers: sbHeaders() });
     attendanceCache = res.ok ? await res.json() : [];
   }catch(e){ attendanceCache = []; }
   renderAttendanceRecords();
@@ -4742,15 +4753,23 @@ async function saveAttendanceRecord({ id, employee_name, date, checkIn, checkOut
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
-async function deleteAttendanceRecord(id){
-  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can delete attendance records.', true); return; }
-  if(!confirm('Delete this attendance record?')) return;
+async function softDelete(table, id, reloadFn){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can delete records.', true); return; }
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ deleted_at: new Date().toISOString(), deleted_by: session.email })
+    });
     if(!res.ok) throw new Error(await res.text());
-    loadAttendanceRecords();
-    loadAttendanceDashboard();
+    logActivity('soft_delete', id, table);
+    flash('Moved to Trash ✓');
+    if(reloadFn) reloadFn();
   }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function deleteAttendanceRecord(id){
+  if(!confirm('Move this attendance record to Trash?')) return;
+  await softDelete('attendance', id, () => { loadAttendanceRecords(); loadAttendanceDashboard(); });
 }
 
 async function approveOvertime(id){
@@ -4841,6 +4860,8 @@ async function submitLeaveRequest(){
     });
     if(!res.ok) throw new Error(await res.text());
     logActivity('request_leave', id, employee);
+    createNotification({ recipientRole:'admin', title:'New leave request', message:`${employee} requested ${type} leave`, linkTab:'att' });
+    createNotification({ recipientRole:'manager', title:'New leave request', message:`${employee} requested ${type} leave`, linkTab:'att' });
     flash('Leave request submitted ✓');
     closeLeaveRequestForm();
     loadLeaveRequests();
@@ -4851,7 +4872,7 @@ async function loadLeaveRequests(){
   const body = document.getElementById('leaveBody');
   if(!backendReady()){ body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/leave_requests?select=*&order=requested_at.desc`, { headers: sbHeaders() });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/leave_requests?select=*&deleted_at=is.null&order=requested_at.desc`, { headers: sbHeaders() });
     leaveRequestsCache = res.ok ? await res.json() : [];
   }catch(e){ leaveRequestsCache = []; }
   renderLeaveRequests();
@@ -4906,6 +4927,8 @@ async function approveLeaveRequest(id){
     });
     if(!res.ok) throw new Error(await res.text());
     logActivity('approve_leave', id, paid ? 'paid' : 'unpaid');
+    const req = leaveRequestsCache.find(r => r.id === id);
+    if(req && req.requested_by) createNotification({ userEmail: req.requested_by, title:'Leave request approved', message:`Your leave was approved (${paid?'paid':'unpaid'}).`, linkTab:'att' });
     flash(`Leave approved as ${paid ? 'Paid' : 'Unpaid'} ✓`);
     loadLeaveRequests();
   }catch(e){ console.error(e); flash(sbError(e), true); }
@@ -4921,18 +4944,16 @@ async function rejectLeaveRequest(id){
     });
     if(!res.ok) throw new Error(await res.text());
     logActivity('reject_leave', id);
+    const req = leaveRequestsCache.find(r => r.id === id);
+    if(req && req.requested_by) createNotification({ userEmail: req.requested_by, title:'Leave request rejected', message:'Your leave request was rejected.', linkTab:'att' });
     flash('Leave request rejected');
     loadLeaveRequests();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 async function deleteLeaveRequest(id){
-  if(!confirm('Delete this leave request record?')) return;
-  try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/leave_requests?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
-    if(!res.ok) throw new Error(await res.text());
-    loadLeaveRequests();
-  }catch(e){ console.error(e); flash(sbError(e), true); }
+  if(!confirm('Move this leave request to Trash?')) return;
+  await softDelete('leave_requests', id, loadLeaveRequests);
 }
 
 function toggleAllLeaveCheckboxes(master){
@@ -5066,7 +5087,7 @@ async function loadAttendanceReports(){
 
   try{
     const [attRes, leaveRes, empRes, adjRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/attendance?select=*&date=gte.${month}-01&date=lte.${month}-31`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/attendance?select=*&deleted_at=is.null&date=gte.${month}-01&date=lte.${month}-31`, { headers: sbHeaders() }),
       fetch(`${SUPABASE_URL}/rest/v1/leave_requests?select=*&status=eq.approved`, { headers: sbHeaders() }),
       fetch(`${SUPABASE_URL}/rest/v1/employees?select=full_name,base_salary`, { headers: sbHeaders() }),
       fetch(`${SUPABASE_URL}/rest/v1/payroll_adjustments?select=*&month=eq.${month}`, { headers: sbHeaders() })
@@ -5199,7 +5220,7 @@ async function loadAssets(){
   const body = document.getElementById('assetsBody');
   if(!backendReady()){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/assets?select=*&order=assigned_date.desc`, { headers: sbHeaders() });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/assets?select=*&deleted_at=is.null&order=assigned_date.desc`, { headers: sbHeaders() });
     assetsCache = res.ok ? await res.json() : [];
     renderAssets();
   }catch(e){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
@@ -5251,12 +5272,8 @@ async function saveAssetRow(id){
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 async function deleteAsset(id){
-  if(!confirm('Delete this asset record?')) return;
-  try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/assets?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
-    if(!res.ok) throw new Error(await res.text());
-    loadAssets();
-  }catch(e){ console.error(e); flash(sbError(e), true); }
+  if(!confirm('Move this asset record to Trash?')) return;
+  await softDelete('assets', id, loadAssets);
 }
 function exportAssetsExcel(){
   if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
@@ -5303,7 +5320,7 @@ async function loadExpenses(){
   const body = document.getElementById('expensesBody');
   if(!backendReady()){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses?select=*&order=requested_at.desc&limit=100`, { headers: sbHeaders() });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses?select=*&deleted_at=is.null&order=requested_at.desc&limit=100`, { headers: sbHeaders() });
     expensesCache = res.ok ? await res.json() : [];
     renderExpenses();
   }catch(e){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
@@ -5353,12 +5370,8 @@ async function rejectExpense(id){
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 async function deleteExpense(id){
-  if(!confirm('Delete this record?')) return;
-  try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
-    if(!res.ok) throw new Error(await res.text());
-    loadExpenses();
-  }catch(e){ console.error(e); flash(sbError(e), true); }
+  if(!confirm('Move this record to Trash?')) return;
+  await softDelete('expenses', id, loadExpenses);
 }
 function exportExpensesExcel(){
   if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
@@ -5375,7 +5388,7 @@ async function loadDisciplinary(){
   const body = document.getElementById('disciplinaryBody');
   if(!backendReady()){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/disciplinary_records?select=*&order=date.desc`, { headers: sbHeaders() });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/disciplinary_records?select=*&deleted_at=is.null&order=date.desc`, { headers: sbHeaders() });
     disciplinaryCache = res.ok ? await res.json() : [];
     renderDisciplinary();
   }catch(e){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
@@ -5418,12 +5431,8 @@ async function saveDisciplinaryRecord({ employee_name, type, description }){
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 async function deleteDisciplinary(id){
-  if(!confirm('Delete this record?')) return;
-  try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/disciplinary_records?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
-    if(!res.ok) throw new Error(await res.text());
-    loadDisciplinary();
-  }catch(e){ console.error(e); flash(sbError(e), true); }
+  if(!confirm('Move this record to Trash?')) return;
+  await softDelete('disciplinary_records', id, loadDisciplinary);
 }
 
 // ---- Training & Certifications ----
@@ -5431,7 +5440,7 @@ async function loadTraining(){
   const body = document.getElementById('trainingBody');
   if(!backendReady()){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/trainings?select=*&order=expiry_date.asc`, { headers: sbHeaders() });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/trainings?select=*&deleted_at=is.null&order=expiry_date.asc`, { headers: sbHeaders() });
     trainingCache = res.ok ? await res.json() : [];
     renderTraining();
   }catch(e){ body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
@@ -5481,12 +5490,8 @@ async function saveTrainingRecord({ employee_name, certification, issued_date, e
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 async function deleteTraining(id){
-  if(!confirm('Delete this certification record?')) return;
-  try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/trainings?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
-    if(!res.ok) throw new Error(await res.text());
-    loadTraining();
-  }catch(e){ console.error(e); flash(sbError(e), true); }
+  if(!confirm('Move this certification record to Trash?')) return;
+  await softDelete('trainings', id, loadTraining);
 }
 
 function exportPayrollExcel(){
@@ -5545,7 +5550,7 @@ async function loadAttendanceDashboard(){
   const today = new Date().toISOString().slice(0,10);
   try{
     const [attRes, empRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/attendance?select=*&date=eq.${today}`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/attendance?select=*&deleted_at=is.null&date=eq.${today}`, { headers: sbHeaders() }),
       fetch(`${SUPABASE_URL}/rest/v1/employees?select=id&status=eq.Active`, { headers: sbHeaders() }).catch(()=>null)
     ]);
     const todayRecords = attRes.ok ? await attRes.json() : [];
@@ -6566,11 +6571,17 @@ function openGlobalSearchResult(type, id){
 
 /* =======================  TRASH / RECOVER  ======================= */
 const TRASH_TABLES = [
-  { table:'forms',               label:'Invoice',   icon:'🧾' },
-  { table:'cashflow_forms',      label:'Cash Flow',  icon:'💵' },
-  { table:'sop_forms',           label:'SOP',        icon:'📋' },
-  { table:'kpi_forms',           label:'KPI',        icon:'📊' },
-  { table:'custom_section_forms',label:'Custom',     icon:'📁' },
+  { table:'forms',               label:'Invoice',   icon:'🧾', displayField:'company_name' },
+  { table:'cashflow_forms',      label:'Cash Flow',  icon:'💵', displayField:'company_name' },
+  { table:'sop_forms',           label:'SOP',        icon:'📋', displayField:'company_name' },
+  { table:'kpi_forms',           label:'KPI',        icon:'📊', displayField:'company_name' },
+  { table:'custom_section_forms',label:'Custom',     icon:'📁', displayField:'company_name' },
+  { table:'attendance',          label:'Attendance', icon:'🕐', displayField:'employee_name' },
+  { table:'leave_requests',      label:'Leave Request', icon:'📨', displayField:'employee_name' },
+  { table:'assets',              label:'Asset',      icon:'🗂️', displayField:'name' },
+  { table:'expenses',            label:'Expense',    icon:'💰', displayField:'employee_name' },
+  { table:'disciplinary_records',label:'Disciplinary', icon:'⚠️', displayField:'employee_name' },
+  { table:'trainings',           label:'Training',   icon:'🎓', displayField:'certification' },
 ];
 
 let trashItemsCache = [];
@@ -6589,9 +6600,9 @@ async function loadTrashItems(){
   if(!backendReady()){ box.innerHTML = '<div class="mgr-empty">Backend not configured.</div>'; return; }
   try{
     const calls = TRASH_TABLES.map(t =>
-      fetch(`${SUPABASE_URL}/rest/v1/${t.table}?select=id,company_name,deleted_at${t.table==='custom_section_forms' ? ',section_id' : ''}&deleted_at=not.is.null&order=deleted_at.desc&limit=100`, { headers: sbHeaders() })
+      fetch(`${SUPABASE_URL}/rest/v1/${t.table}?select=id,${t.displayField},deleted_at${t.table==='custom_section_forms' ? ',section_id' : ''}&deleted_at=not.is.null&order=deleted_at.desc&limit=100`, { headers: sbHeaders() })
         .then(r => r.ok ? r.json() : [])
-        .then(rows => rows.map(r => ({ ...r, table:t.table, label: t.table === 'custom_section_forms' ? ((customSections[r.section_id]||{}).name || 'Custom') : t.label, icon:t.icon })))
+        .then(rows => rows.map(r => ({ ...r, displayName: r[t.displayField], table:t.table, label: t.table === 'custom_section_forms' ? ((customSections[r.section_id]||{}).name || 'Custom') : t.label, icon:t.icon })))
         .catch(() => [])
     );
     trashItemsCache = (await Promise.all(calls)).flat().sort((a,b) => new Date(b.deleted_at) - new Date(a.deleted_at));
@@ -6615,7 +6626,7 @@ function renderTrashItems(){
   box.innerHTML = items.map(r => `
     <div class="ep-kpi-row" style="cursor:default;">
       <div>
-        <div style="font-weight:700;font-size:.82rem;">${r.icon} ${(r.company_name || '(unnamed)').replace(/</g,'&lt;')}</div>
+        <div style="font-weight:700;font-size:.82rem;">${r.icon} ${(r.displayName || '(unnamed)').replace(/</g,'&lt;')}</div>
         <div style="font-size:.72rem;color:#777;">${r.label} \u00b7 ${r.id.replace(/</g,'&lt;')} \u00b7 deleted ${timeAgo(r.deleted_at)}</div>
       </div>
       <div style="display:flex;gap:6px;">
@@ -7847,6 +7858,97 @@ async function logActivity(action, formId, detail){
       })
     });
   }catch(e){ /* logging must never block the user */ }
+}
+
+// ===================== Phase 11: Notifications =====================
+// A notification targets either a specific person (userEmail) or every
+// person with a given role (recipientRole) — never both.
+async function createNotification({ userEmail, recipientRole, title, message, linkTab }){
+  if(!backendReady()) return;
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+      method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({
+        user_email: userEmail || null, recipient_role: recipientRole || null,
+        title, message: message || null, link_tab: linkTab || null,
+        is_read: false, created_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ /* notifications must never block the user's action */ }
+}
+
+let notifCache = [];
+
+async function loadNotifications(){
+  const badge = document.getElementById('notifUnreadBadge');
+  if(!backendReady() || !session.email){ if(badge) badge.style.display = 'none'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/notifications?or=(user_email.eq.${encodeURIComponent(session.email)},recipient_role.eq.${session.role})&select=*&order=created_at.desc&limit=30`, { headers: sbHeaders() });
+    notifCache = res.ok ? await res.json() : [];
+    const unread = notifCache.filter(n => !n.is_read).length;
+    if(badge){
+      badge.textContent = unread > 9 ? '9+' : String(unread);
+      badge.style.display = unread > 0 ? 'flex' : 'none';
+    }
+    renderNotifPanel();
+  }catch(e){ /* keep quiet — notifications are non-critical */ }
+}
+
+function renderNotifPanel(){
+  const box = document.getElementById('notifPanelList');
+  if(!box) return;
+  if(!notifCache.length){ box.innerHTML = '<div style="padding:16px;text-align:center;color:#888;font-size:.8rem;">No notifications yet.</div>'; return; }
+  box.innerHTML = notifCache.map(n => `
+    <div onclick="openNotification(${n.id})" style="padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer;background:${n.is_read?'#fff':'var(--sage)'};">
+      <div style="font-weight:700;font-size:.8rem;color:#233b2b;">${(n.title||'').replace(/</g,'&lt;')}</div>
+      ${n.message ? `<div style="font-size:.74rem;color:#666;margin-top:2px;">${String(n.message).replace(/</g,'&lt;')}</div>` : ''}
+      <div style="font-size:.68rem;color:#999;margin-top:3px;">${timeAgo(n.created_at)}</div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel(){
+  const panel = document.getElementById('notifPanel');
+  const willOpen = panel.style.display === 'none';
+  if(willOpen){
+    const btn = document.getElementById('notifBellWrap');
+    const rect = btn.getBoundingClientRect();
+    panel.style.top = (rect.bottom + 6) + 'px';
+    panel.style.left = Math.max(8, rect.left) + 'px';
+    loadNotifications();
+  }
+  panel.style.display = willOpen ? 'block' : 'none';
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('notifBellWrap');
+  const panel = document.getElementById('notifPanel');
+  if(wrap && panel && panel.style.display !== 'none' && !wrap.contains(e.target)) panel.style.display = 'none';
+});
+
+async function openNotification(id){
+  const n = notifCache.find(x => x.id === id);
+  if(!n) return;
+  if(!n.is_read){
+    try{
+      await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`, {
+        method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}), body: JSON.stringify({ is_read: true })
+      });
+      n.is_read = true;
+      loadNotifications();
+    }catch(e){}
+  }
+  document.getElementById('notifPanel').style.display = 'none';
+  if(n.link_tab && canViewTab(n.link_tab)) switchTab(n.link_tab);
+}
+
+async function markAllNotifsRead(){
+  const unreadIds = notifCache.filter(n => !n.is_read).map(n => n.id);
+  if(!unreadIds.length) return;
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=in.(${unreadIds.join(',')})`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}), body: JSON.stringify({ is_read: true })
+    });
+    loadNotifications();
+  }catch(e){ flash(sbError(e), true); }
 }
 
 let activityLogRows = [];
