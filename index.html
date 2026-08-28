@@ -268,6 +268,7 @@
   .stage-review{color:#9a6b00;background:#fdf3e0;}
   .stage-approval{color:#6b21a8;background:#f3e9fb;}
   .stage-completed{color:#1a7a3d;background:#e5f4ea;}
+  .stage-rejected{color:#a8462e;background:#f8e6e1;}
   .stage-select{
     border:1px solid var(--line);border-radius:6px;
     padding:5px 8px;font-size:.76rem;font-weight:600;
@@ -1459,11 +1460,11 @@
   .cd-group{margin-bottom:18px;}
   .cd-group h3{margin:0 0 8px;font-size:.85rem;color:#000;font-weight:800;}
   .site-text-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-  .perm-table{width:100%;border-collapse:collapse;min-width:520px;}
-  .perm-table th{background:var(--forest-deep);color:#fff;padding:8px 10px;font-size:.76rem;text-align:left;}
-  .perm-table td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:top;}
-  .perm-tab-label{font-weight:800;font-size:.82rem;color:#000;white-space:nowrap;}
-  .perm-cell{display:flex;flex-direction:column;gap:3px;}
+  .perm-table{width:100%;border-collapse:collapse;min-width:640px;}
+  .perm-table th{background:var(--forest-deep);color:#fff;padding:8px 10px;font-size:.76rem;text-align:center;}
+  .perm-table td{border-bottom:1px solid var(--line);padding:8px 10px;vertical-align:middle;}
+  .perm-tab-label{font-weight:800;font-size:.82rem;color:#000;white-space:nowrap;text-align:left;}
+  .perm-cell{text-align:center;}
   .perm-cell label{display:flex;align-items:center;gap:5px;font-size:.76rem;color:#444;cursor:pointer;white-space:nowrap;}
   .site-text-row label{flex:0 0 150px;font-size:.74rem;color:#666;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .site-text-row input{flex:1;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;min-width:0;}
@@ -1734,6 +1735,35 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button id="authBtn" onclick="doLogin()" data-label-key="login.button">Sign in</button>
     <div class="auth-err" id="authErr"></div>
   </div>
+
+  <div class="auth-card" id="pinCard" style="display:none;">
+    <h2>Security PIN</h2>
+    <p class="sub">Enter your super admin security PIN to continue.</p>
+    <label for="authPin">PIN</label>
+    <input type="password" id="authPin" inputmode="numeric" autocomplete="off" maxlength="12"
+           onkeydown="if(event.key==='Enter') submitSuperAdminPin()">
+    <button onclick="submitSuperAdminPin()">Continue</button>
+    <button class="secondary" style="margin-top:8px;" onclick="cancelPinStep()">← Back to sign in</button>
+    <div class="auth-err" id="pinErr"></div>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="pinSetupOverlay">
+  <div class="mgr-panel" style="max-width:380px;">
+    <div class="mgr-head">
+      <h2>Security PIN</h2>
+      <button class="mgr-close" onclick="closePinSetup()">×</button>
+    </div>
+    <div class="mgr-body">
+      <p style="font-size:.82rem;color:#555;margin-bottom:10px;">Set or change the PIN required after password sign-in for every super admin account. Leave blank and save to turn this off.</p>
+      <div class="sb-fields">
+        <label>New PIN (4–12 digits)<input type="password" id="newPinInput" inputmode="numeric" maxlength="12"></label>
+      </div>
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="btn-small" onclick="saveSuperAdminPin()">💾 Save</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="userbar" id="userBar" style="display:none;">
@@ -1797,6 +1827,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <button class="settings-menu-item" onclick="closeSettingsMenu(); document.getElementById('logoFileInput').click();">🖼️ Change Logo</button>
         <button class="settings-menu-item" onclick="closeSettingsMenu(); openAnnouncementEditor();">📢 Announcement</button>
         <button class="settings-menu-item" onclick="closeSettingsMenu(); downloadFullBackup();">💾 Full Backup</button>
+        <button class="settings-menu-item" onclick="closeSettingsMenu(); openPinSetup();">🔐 Security PIN</button>
       </div>
     </div>
     <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
@@ -1990,6 +2021,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div id="homeAnnouncementBanner"></div>
   <div id="homeNotifBanner"></div>
   <div class="home-stats" id="homeStats"></div>
+  <div id="homeTrendChart" style="max-width:960px;margin:0 auto 18px;"></div>
   <div class="home-grid" id="homeGrid"></div>
   <div class="home-activities" id="homeActivities" style="display:none;">
     <div class="activities-head">Recent Activity</div>
@@ -2024,14 +2056,13 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <span class="stage-badge stage-entry" id="stageBadge">Data Entry</span>
-      <select class="stage-select no-print" id="stageSelect" onchange="setStage(this.value)">
-        <option value="entry">Stage 1 — Data Entry</option>
-        <option value="review">Stage 2 — Under Review</option>
-        <option value="approval">Stage 3 — Final Approval</option>
-        <option value="completed">Completed</option>
-      </select>
     </div>
   </div>
+
+  <div class="table-actions no-print" id="stageActionBar" style="flex-wrap:wrap;"></div>
+
+  <div class="section-header" style="margin-top:10px;"><div class="num">📜</div><div class="title">Approval History</div></div>
+  <div id="approvalHistoryBox" style="margin:0 14px 14px;"></div>
 
   <!-- Section 2: Black List -->
   <div class="section-header"><div class="num">1</div><div class="title" data-label-key="inv.sec.blacklist">Black List</div></div>
@@ -2165,7 +2196,15 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <span class="lbl">Form ID</span>
       <span class="val" id="cfFormIdDisplay">—</span>
     </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="stage-badge stage-entry" id="cfStageBadge">Data Entry</span>
+    </div>
   </div>
+
+  <div class="table-actions no-print" id="cfStageActionBar" style="flex-wrap:wrap;"></div>
+
+  <div class="section-header" style="margin-top:10px;"><div class="num">📜</div><div class="title">Approval History</div></div>
+  <div id="cfApprovalHistoryBox" style="margin:0 14px 14px;"></div>
 
   <!-- Section 1: Cash Flow Table -->
   <div class="section-header"><div class="num">1</div><div class="title" data-label-key="cf.sec.title">Cash Flow</div></div>
@@ -2308,6 +2347,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <option value="missing_checkout">Missing Checkout</option>
     </select>
     <button id="addAttRecordBtn" class="btn-small" onclick="addBlankAttendanceRow()">+ Add Record</button>
+    <button id="markAbsentBtn" class="btn-small" onclick="markAbsentees()">🚫 Mark Absentees</button>
     <button class="btn-small" onclick="exportAttendanceExcel()">⬇ Export to Excel</button>
   </div>
   <div class="price-table-wrap">
@@ -2367,7 +2407,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="logo-badge"><img src="data:image/jpeg;base64,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" alt="Dalare"></div>
     <div style="text-align:center;">
       <h1>HR Records</h1>
-      <div class="sub">Assets, Expenses, Discipline &amp; Training</div>
+      <div class="sub">Assets, Expenses &amp; Records</div>
     </div>
   </header>
   <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
@@ -2422,6 +2462,25 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       <thead><tr><th>Employee</th><th>Certification</th><th>Issued</th><th>Expires</th><th>Status</th><th></th></tr></thead>
       <tbody id="trainingBody"><tr><td colspan="6" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
     </table>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="stageCommentOverlay">
+  <div class="mgr-panel" style="max-width:420px;">
+    <div class="mgr-head">
+      <h2 id="stageCommentTitle">Confirm Action</h2>
+      <button class="mgr-close" onclick="closeStageComment()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="sb-fields">
+        <label>Comment <span id="stageCommentRequired" style="color:#a8462e;display:none;">(required)</span>
+          <textarea id="stageCommentInput" style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea>
+        </label>
+      </div>
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="btn-small" onclick="confirmStageTransition()">✓ Confirm</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2906,31 +2965,33 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
 </div>
 
 <div class="mgr-overlay" id="permOverlay">
-  <div class="mgr-panel" style="max-width:700px;">
+  <div class="mgr-panel" style="max-width:760px;">
     <div class="mgr-head">
       <h2 data-label-key="modal.perms.title">Manage Role Permissions</h2>
       <button class="mgr-close" onclick="closePermissionsManager()">×</button>
     </div>
     <div class="mgr-body">
       <div class="adm-hint" data-label-key="modal.perms.hint">
-        Choose which sections each role can view or edit. Super admin always has full
-        access. Editing a section requires viewing it too, so Edit auto-enables View.
+        Choose a role, then set View / Create / Edit / Delete / Approve / Reject / Export / Print
+        per module. Super admin always has full access everywhere. Editing, deleting, approving,
+        or exporting a module requires View too — those turn View on automatically.
       </div>
+      <label style="display:block;margin:14px 0 10px;font-size:.82rem;font-weight:700;">Role
+        <select id="permRoleSelect" onchange="renderPermissionGrid()" style="margin-inline-start:8px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.85rem;"></select>
+      </label>
       <div style="overflow-x:auto;">
-        <table class="perm-table">
+        <table class="perm-table" id="permGridTable">
           <thead>
             <tr>
-              <th></th>
-              <th>Admin</th>
-              <th>Staff</th>
-              <th>Viewer</th>
+              <th style="text-align:start;">Module</th>
+              <th>View</th><th>Create</th><th>Edit</th><th>Delete</th><th>Approve</th><th>Reject</th><th>Export</th><th>Print</th>
             </tr>
           </thead>
           <tbody id="permMatrixBody"></tbody>
         </table>
       </div>
       <div style="display:flex;gap:8px;margin-top:16px;">
-        <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveRolePermissions()">Save</button>
+        <button class="mgr-btn open-b" style="flex:1;padding:11px;" onclick="saveRolePermissions()">Save All Roles</button>
         <button class="mgr-btn del-b" onclick="closePermissionsManager()">Cancel</button>
       </div>
     </div>
@@ -3097,10 +3158,29 @@ const SUPABASE_URL = String(SUPABASE_URL_RAW)
 const RETENTION_DAYS = 30;
 
 const STAGES = {
-  entry:     { label: 'Data Entry',     cls: 'stage-entry' },
-  review:    { label: 'Under Review',   cls: 'stage-review' },
-  approval:  { label: 'Final Approval', cls: 'stage-approval' },
-  completed: { label: 'Completed',      cls: 'stage-completed' }
+  entry:               { label: 'Data Entry',          cls: 'stage-entry' },
+  review:              { label: 'Under Review',        cls: 'stage-review' },
+  manager_approval:    { label: 'Manager Approval',    cls: 'stage-approval' },
+  accounting_approval: { label: 'Accounting Approval', cls: 'stage-approval' },
+  completed:           { label: 'Completed',           cls: 'stage-completed' },
+  rejected:            { label: 'Rejected',            cls: 'stage-rejected' },
+  returned:            { label: 'Returned for Correction', cls: 'stage-review' },
+  cancelled:           { label: 'Cancelled',           cls: 'stage-rejected' }
+};
+// Valid forward transitions from each stage, and which permission type
+// is required to make that specific move.
+const STAGE_TRANSITIONS = {
+  entry:               [{ to:'review',              action:'Submit for Review',       perm:'edit'    }],
+  review:              [{ to:'manager_approval',     action:'Approve (Reviewer)',      perm:'approve' },
+                         { to:'returned',             action:'Return for Correction',   perm:'reject'  },
+                         { to:'rejected',             action:'Reject',                  perm:'reject'  }],
+  manager_approval:    [{ to:'accounting_approval',  action:'Approve (Manager)',        perm:'approve' },
+                         { to:'returned',             action:'Return for Correction',   perm:'reject'  },
+                         { to:'rejected',             action:'Reject',                  perm:'reject'  }],
+  accounting_approval: [{ to:'completed',            action:'Approve (Accounting)',     perm:'approve' },
+                         { to:'returned',             action:'Return for Correction',   perm:'reject'  },
+                         { to:'rejected',             action:'Reject',                  perm:'reject'  }],
+  returned:            [{ to:'entry',                action:'Resume Editing',           perm:'edit'    }],
 };
 
 let currentFormId = null;
@@ -3109,6 +3189,15 @@ let rowCount = 0;
 
 const backendReady = () =>
   SUPABASE_URL.startsWith('http') && SUPABASE_ANON_KEY.length > 20;
+
+function validateNonNegative(rows){
+  // rows: array of { value, label } — returns the first offending label, or null if all OK.
+  for(const r of rows){
+    const n = parseFloat(r.value);
+    if(!isNaN(n) && n < 0) return r.label;
+  }
+  return null;
+}
 
 function sbError(e){
   const msg = String(e && e.message || e);
@@ -3179,6 +3268,18 @@ async function doLogin(){
       session.email  = body.user && body.user.email;
       session.userId = body.user && body.user.id;
       await loadRole();
+
+      if(session.role === 'super_admin'){
+        const requiredPin = await fetchSuperAdminPin();
+        if(requiredPin){
+          document.getElementById('authPin').value = '';
+          document.getElementById('pinErr').textContent = '';
+          document.querySelector('.auth-card:not(#pinCard)').style.display = 'none';
+          document.getElementById('pinCard').style.display = '';
+          document.getElementById('authPin').focus();
+          return; // Wait for submitSuperAdminPin() to finish the login.
+        }
+      }
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       applySession();
     }catch(e){
@@ -3192,6 +3293,57 @@ async function doLogin(){
     console.error('doLogin failed unexpectedly:', outerErr);
     alert('Something went wrong signing in: ' + (outerErr.message || outerErr));
   }
+}
+
+async function fetchSuperAdminPin(){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings?id=eq.default&select=super_admin_pin`, { headers: sbHeaders() });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return rows.length ? (rows[0].super_admin_pin || null) : null;
+  }catch(e){ return null; }
+}
+
+async function submitSuperAdminPin(){
+  const pin = document.getElementById('authPin').value.trim();
+  const errEl = document.getElementById('pinErr');
+  if(!pin){ errEl.textContent = 'Enter your PIN.'; return; }
+  const requiredPin = await fetchSuperAdminPin();
+  if(pin !== requiredPin){ errEl.textContent = 'Incorrect PIN.'; return; }
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  applySession();
+}
+
+function cancelPinStep(){
+  session = { token:null, email:null, role:'staff', userId:null };
+  document.getElementById('pinCard').style.display = 'none';
+  document.querySelector('.auth-card:not(#pinCard)').style.display = '';
+  document.getElementById('authPass').value = '';
+}
+
+function openPinSetup(){
+  if(!isSuperAdmin()){ flash('Only a super admin can manage the security PIN.', true); return; }
+  document.getElementById('newPinInput').value = '';
+  document.getElementById('pinSetupOverlay').classList.add('open');
+}
+function closePinSetup(){ document.getElementById('pinSetupOverlay').classList.remove('open'); }
+
+async function saveSuperAdminPin(){
+  const pin = document.getElementById('newPinInput').value.trim();
+  if(pin && (pin.length < 4 || pin.length > 12 || !/^\d+$/.test(pin))){
+    flash('PIN must be 4–12 digits, or leave it blank to turn this off.', true);
+    return;
+  }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_settings`, {
+      method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
+      body: JSON.stringify({ id:'default', super_admin_pin: pin || null, updated_by: session.email, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    flash(pin ? 'Security PIN saved ✓' : 'Security PIN turned off');
+    closePinSetup();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
 }
 
 async function loadRole(){
@@ -3221,6 +3373,8 @@ function applySession(){
   document.getElementById('employeeScreen').style.display = isEmployee() ? 'flex' : 'none';
   applyLanguage();
   if(isEmployee()) loadEmployeeSelfService();
+  if(document.getElementById('stageActionBar')) renderStageActions('forms', currentFormId, 'inv');
+  if(document.getElementById('cfStageActionBar')) renderStageActions('cashflow_forms', cfFormId, 'cf');
 
   if(!isEmployee() && !canViewTab(activeTab)){
     const firstOk = ['home','inv','cf','sop','staff'].find(canViewTab);
@@ -3353,11 +3507,73 @@ async function loadEmployeeSelfService(){
 }
 
 const MANAGEABLE_TABS = ['inv','cf','sop','staff','kpi','att','hr'];
-let rolePermissions = {
-  admin:  { view:['inv','cf','sop','kpi','att','hr'], edit:['inv','cf','sop','kpi','att','hr'] },
-  staff:  { view:['kpi','att'], edit:['kpi'] },
-  viewer: { view:['inv','cf','sop','kpi','att','hr'], edit:[] },
+// ===================== Phase 3: Roles & Permissions =====================
+// Permission types tracked per module. "reject" mirrors "approve" in the
+// UI (whoever can approve a request can also reject it) but is tracked
+// separately in case a future workflow needs to split them.
+const PERMISSION_TYPES = ['view','create','edit','delete','approve','reject','export','print'];
+const ALL_ROLES = ['super_admin','admin','manager','reviewer','accountant','warehouse_staff','staff','viewer','employee'];
+const ROLE_LABELS = {
+  super_admin:'Super Admin', admin:'Admin', manager:'Manager', reviewer:'Reviewer',
+  accountant:'Accountant', warehouse_staff:'Warehouse Staff', staff:'Staff', viewer:'Viewer', employee:'Employee'
 };
+
+function emptyPerms(){ return { view:false, create:false, edit:false, delete:false, approve:false, reject:false, export:false, print:false }; }
+function viewOnlyPerms(){ return { ...emptyPerms(), view:true, print:true }; }
+function editPerms(){ return { ...emptyPerms(), view:true, create:true, edit:true, export:true, print:true }; }
+function approverPerms(){ return { ...emptyPerms(), view:true, approve:true, reject:true, export:true, print:true }; }
+function editApprovePerms(){ return { ...emptyPerms(), view:true, create:true, edit:true, approve:true, reject:true, export:true, print:true }; }
+
+// Sensible starting point for each role, per module (MANAGEABLE_TABS ids).
+// Super admin bypasses this entirely (see hasPermission below).
+function defaultPermissionMatrix(){
+  const modules = ['inv','cf','sop','staff','kpi','att','hr'];
+  const m = {};
+  ALL_ROLES.forEach(role => { m[role] = {}; });
+  modules.forEach(mod => {
+    m.admin[mod]           = editPerms();
+    m.manager[mod]         = approverPerms();
+    m.reviewer[mod]        = viewOnlyPerms();
+    m.accountant[mod]      = (mod === 'inv' || mod === 'cf') ? editApprovePerms() : viewOnlyPerms();
+    m.warehouse_staff[mod] = (mod === 'att') ? editPerms() : (mod === 'kpi' ? viewOnlyPerms() : emptyPerms());
+    m.staff[mod]           = (mod === 'kpi') ? editPerms() : (mod === 'att' ? viewOnlyPerms() : emptyPerms());
+    m.viewer[mod]          = viewOnlyPerms();
+    m.employee[mod]        = emptyPerms();
+  });
+  return m;
+}
+
+let permissionMatrix = defaultPermissionMatrix();
+
+// Converts the old { role: { view:[tabIds], edit:[tabIds] } } shape (still
+// possibly stored in the database from before Phase 3) into the new
+// per-module permission-type matrix, so nothing that worked before breaks.
+function migrateOldPermissionFormat(oldMatrix){
+  const modules = ['inv','cf','sop','staff','kpi','att','hr'];
+  const migrated = defaultPermissionMatrix();
+  Object.keys(oldMatrix || {}).forEach(role => {
+    if(!migrated[role]) migrated[role] = {};
+    const old = oldMatrix[role];
+    if(!old || !Array.isArray(old.view)) return;
+    modules.forEach(mod => {
+      const canView = old.view.includes(mod);
+      const canEdit = old.edit && old.edit.includes(mod);
+      if(canView || canEdit){
+        migrated[role][mod] = canEdit ? editPerms() : viewOnlyPerms();
+      }
+    });
+  });
+  return migrated;
+}
+
+function hasPermission(tab, permType){
+  if(isSuperAdmin()) return true;
+  if(tab === 'home') return permType === 'view';
+  if(tab && tab.startsWith('custom:')) return permType === 'view' ? ['admin','staff','viewer'].includes(session.role) : (permType === 'edit' && ['admin','staff'].includes(session.role));
+  const rolePerm = permissionMatrix[session.role];
+  if(!rolePerm || !rolePerm[tab]) return false;
+  return !!rolePerm[tab][permType];
+}
 
 let currentUserDepartment = null;
 async function loadCurrentUserDepartment(){
@@ -3377,26 +3593,19 @@ async function loadCurrentUserDepartment(){
 
 function canViewTab(tab){
   if(tab === 'home') return true;
-  if(isSuperAdmin()) return true;
-  if(tab && tab.startsWith('custom:')) return ['admin','staff','viewer'].includes(session.role);
-  if(MANAGEABLE_TABS.includes(tab)){
-    const perm = rolePermissions[session.role];
-    if(!perm) return false;
-    return perm.view.includes(tab) || perm.edit.includes(tab);
-  }
-  return false;
+  return hasPermission(tab, 'view');
 }
 
 function canEditTab(tab){
-  if(isSuperAdmin()) return true;
-  if(tab && tab.startsWith('custom:')) return session.role === 'admin' || session.role === 'staff';
-  if(MANAGEABLE_TABS.includes(tab)){
-    const perm = rolePermissions[session.role];
-    if(!perm) return false;
-    return perm.edit.includes(tab);
-  }
-  return false;
+  return hasPermission(tab, 'edit');
 }
+
+function canCreateTab(tab){ return hasPermission(tab, 'create'); }
+function canDeleteTab(tab){ return hasPermission(tab, 'delete'); }
+function canApproveTab(tab){ return hasPermission(tab, 'approve'); }
+function canRejectTab(tab){ return hasPermission(tab, 'reject'); }
+function canExportTab(tab){ return hasPermission(tab, 'export'); }
+function canPrintTab(tab){ return hasPermission(tab, 'print'); }
 
 function applyViewerLock(){
   const editable = canEditTab(activeTab);
@@ -3489,10 +3698,95 @@ function setStage(stage){
   if(!STAGES[stage]) stage = 'entry';
   currentStage = stage;
   const badge = document.getElementById('stageBadge');
-  badge.textContent = STAGES[stage].label;
-  badge.className = 'stage-badge ' + STAGES[stage].cls;
-  const sel = document.getElementById('stageSelect');
-  if(sel) sel.value = stage;
+  if(badge){
+    badge.textContent = STAGES[stage].label;
+    badge.className = 'stage-badge ' + STAGES[stage].cls;
+  }
+  renderStageActions('forms', currentFormId, 'inv');
+  renderApprovalHistory('forms', currentFormId);
+}
+
+// Renders the buttons valid from the CURRENT stage, filtered to only the
+// ones this user's permissions on `tab` allow.
+function renderStageActions(formTable, formId, tab){
+  const bar = document.getElementById(formTable === 'forms' ? 'stageActionBar' : formTable === 'cashflow_forms' ? 'cfStageActionBar' : null);
+  if(!bar) return;
+  const transitions = STAGE_TRANSITIONS[currentStageFor(formTable)] || [];
+  const allowed = transitions.filter(t => hasPermission(tab, t.perm));
+  if(!formId || !allowed.length){ bar.innerHTML = ''; return; }
+  bar.innerHTML = allowed.map(t => `
+    <button class="btn-small" onclick="openStageTransition('${formTable}','${t.to}','${t.action.replace(/'/g,"\\'")}','${t.perm}')">${t.action}</button>
+  `).join('');
+}
+function currentStageFor(formTable){
+  if(formTable === 'forms') return currentStage;
+  if(formTable === 'cashflow_forms') return currentStageCF;
+  return 'entry';
+}
+
+let pendingStageTransition = null;
+function openStageTransition(formTable, toStage, actionLabel, permType){
+  const formId = formTable === 'forms' ? currentFormId : cfFormId;
+  if(!formId){ flash('Save the form once before changing its stage.', true); return; }
+  pendingStageTransition = { formTable, formId, toStage, actionLabel, fromStage: currentStageFor(formTable) };
+  document.getElementById('stageCommentTitle').textContent = actionLabel;
+  document.getElementById('stageCommentInput').value = '';
+  document.getElementById('stageCommentRequired').style.display = (toStage === 'rejected' || toStage === 'returned') ? '' : 'none';
+  document.getElementById('stageCommentOverlay').classList.add('open');
+}
+function closeStageComment(){
+  document.getElementById('stageCommentOverlay').classList.remove('open');
+  pendingStageTransition = null;
+}
+
+async function confirmStageTransition(){
+  if(!pendingStageTransition) return;
+  const { formTable, formId, toStage, actionLabel, fromStage } = pendingStageTransition;
+  const comment = document.getElementById('stageCommentInput').value.trim();
+  if((toStage === 'rejected' || toStage === 'returned') && !comment){
+    flash('A comment is required for this action.', true);
+    return;
+  }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${formTable}?id=eq.${encodeURIComponent(formId)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({ stage: toStage, updated_at: new Date().toISOString(), updated_by: session.email })
+    });
+    if(!res.ok) throw new Error(await res.text());
+
+    await fetch(`${SUPABASE_URL}/rest/v1/approval_history`, {
+      method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+      body: JSON.stringify({
+        form_table: formTable, form_id: formId,
+        previous_stage: fromStage, new_stage: toStage, action: actionLabel,
+        user_email: session.email, role: session.role, comment: comment || null,
+        created_at: new Date().toISOString()
+      })
+    });
+
+    if(formTable === 'forms') setStage(toStage); else setStageCF(toStage);
+    closeStageComment();
+    flash(`${actionLabel} ✓`);
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function renderApprovalHistory(formTable, formId){
+  const box = document.getElementById(formTable === 'forms' ? 'approvalHistoryBox' : formTable === 'cashflow_forms' ? 'cfApprovalHistoryBox' : null);
+  if(!box) return;
+  if(!formId || !backendReady()){ box.innerHTML = ''; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/approval_history?form_table=eq.${formTable}&form_id=eq.${encodeURIComponent(formId)}&select=*&order=created_at.asc`, { headers: sbHeaders() });
+    if(!res.ok){ box.innerHTML = ''; return; }
+    const rows = await res.json();
+    if(!rows.length){ box.innerHTML = '<div style="font-size:.78rem;color:#888;">No approval actions yet — this form is still in Data Entry.</div>'; return; }
+    box.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">${rows.map(r => `
+      <div style="border-left:3px solid var(--forest);padding:6px 12px;background:var(--sage);border-radius:0 8px 8px 0;">
+        <div style="font-weight:700;font-size:.8rem;">${r.action.replace(/</g,'&lt;')} — ${(STAGES[r.new_stage]||{}).label || r.new_stage}</div>
+        <div style="font-size:.72rem;color:#555;">${r.user_email} (${r.role}) · ${new Date(r.created_at).toLocaleString('en-US')}</div>
+        ${r.comment ? `<div style="font-size:.76rem;color:#333;margin-top:3px;font-style:italic;">"${String(r.comment).replace(/</g,'&lt;')}"</div>` : ''}
+      </div>`).join('')}</div>`;
+  }catch(e){ box.innerHTML = ''; }
 }
 
 /* ---------- Serialize / restore ---------- */
@@ -3641,6 +3935,16 @@ async function saveInv(){
   const newData = serializeForm();
   const oldData = await fetchExistingFormData('forms', currentFormId);
   const companyName = document.querySelector('.company-name-input').value || '(unnamed)';
+
+  const negFieldChecks = [];
+  (newData.rows || []).forEach((r, i) => {
+    negFieldChecks.push({ value: r.price, label: `Row ${i+1} Price` });
+    negFieldChecks.push({ value: r.bonus, label: `Row ${i+1} Bonus` });
+    negFieldChecks.push({ value: r.cashback, label: `Row ${i+1} Cash Back` });
+    negFieldChecks.push({ value: r.discount, label: `Row ${i+1} Discount` });
+  });
+  const negField = validateNonNegative(negFieldChecks);
+  if(negField){ flash(`${negField} can't be negative. Please fix it before saving.`, true); return; }
 
   const dupeInvoiceNos = findDuplicateInvoiceNumbers(newData);
   if(dupeInvoiceNos.length){
@@ -4203,6 +4507,8 @@ async function loadAttendanceTab(){
   if(addShiftBtn) addShiftBtn.style.display = canManage ? '' : 'none';
   const addAttRecordBtn = document.getElementById('addAttRecordBtn');
   if(addAttRecordBtn) addAttRecordBtn.style.display = canManage ? '' : 'none';
+  const markAbsentBtn = document.getElementById('markAbsentBtn');
+  if(markAbsentBtn) markAbsentBtn.style.display = canManage ? '' : 'none';
   await loadShifts();
   const dateInp = document.getElementById('attDateFilter');
   if(!dateInp.value) dateInp.value = new Date().toISOString().slice(0,10);
@@ -4725,6 +5031,7 @@ async function addDeduction(){
   const month = document.getElementById('dedMonth').value;
   const note = document.getElementById('dedNote').value.trim();
   if(!employee_name || !amount || !month){ flash('Fill in employee, amount, and month.', true); return; }
+  if(amount < 0){ flash('Amount can\'t be negative.', true); return; }
   if(!backendReady()){ flash('Backend not configured.', true); return; }
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/payroll_adjustments`, {
@@ -4978,6 +5285,7 @@ async function submitExpense(){
   const date = document.getElementById('expDate').value;
   const note = document.getElementById('expNote').value.trim();
   if(!employee_name || !amount || !date){ flash('Fill in employee, amount, and date.', true); return; }
+  if(amount < 0){ flash('Amount can\'t be negative.', true); return; }
   if(!backendReady()){ flash('Backend not configured.', true); return; }
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/expenses`, {
@@ -5198,6 +5506,40 @@ function exportPayrollExcel(){
   XLSX.writeFile(wb, `payroll-summary-${month}.xlsx`);
 }
 
+async function markAbsentees(){
+  if(!isSuperAdmin() && session.role !== 'admin'){ flash('Only a manager can mark absentees.', true); return; }
+  const date = document.getElementById('attDateFilter').value;
+  if(!date){ flash('Pick a date first.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  try{
+    const [empRes, attRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/employees?select=full_name&status=eq.Active`, { headers: sbHeaders() }),
+      fetch(`${SUPABASE_URL}/rest/v1/attendance?select=employee_name&date=eq.${date}`, { headers: sbHeaders() })
+    ]);
+    const empRows = empRes.ok ? await empRes.json() : [];
+    const attRows = attRes.ok ? await attRes.json() : [];
+    const recordedNames = new Set(attRows.map(r => r.employee_name));
+    const missing = empRows.filter(e => e.full_name && !recordedNames.has(e.full_name));
+
+    if(!missing.length){ flash('Every active employee already has a record for this date.'); return; }
+    if(!confirm(`Mark ${missing.length} employee(s) as absent for ${date}? (Anyone without a check-in today.)`)) return;
+
+    for(const e of missing){
+      await fetch(`${SUPABASE_URL}/rest/v1/attendance`, {
+        method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
+        body: JSON.stringify({
+          id: 'att-absent-'+date+'-'+e.full_name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
+          employee_name: e.full_name, date, status: 'absent', verification_method: 'manual', updated_at: new Date().toISOString()
+        })
+      });
+    }
+    logActivity('mark_absentees', null, `${missing.length} on ${date}`);
+    flash(`${missing.length} employee(s) marked absent ✓`);
+    loadAttendanceRecords();
+    loadAttendanceDashboard();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
 async function loadAttendanceDashboard(){
   if(!backendReady()) return;
   const today = new Date().toISOString().slice(0,10);
@@ -5339,6 +5681,7 @@ async function saveEmployee(id){
   const row = readEmpRow(id);
   if(!row) return;
   if(!row.full_name){ flash('Enter the employee name first.', true); return; }
+  if(row.base_salary !== null && row.base_salary < 0){ flash('Base Salary can\'t be negative.', true); return; }
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/employees`, {
       method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
@@ -6152,6 +6495,16 @@ async function performGlobalSearch(){
   if(canViewTab('sop'))  sources.push({ type:'sop',  table:'sop_forms',      label:'SOP',       icon:'📋' });
   if(canViewTab('kpi'))  sources.push({ type:'kpi',  table:'kpi_forms',      label:'KPI',       icon:'📊' });
 
+  const hrSources = [];
+  if(canViewTab('hr')){
+    hrSources.push(
+      { table:'assets', label:'Asset', icon:'🗂️', nameField:'assigned_to', titleField:'name' },
+      { table:'expenses', label:'Expense', icon:'💰', nameField:'employee_name', titleField:'category' },
+      { table:'disciplinary_records', label:'Disciplinary', icon:'⚠️', nameField:'employee_name', titleField:'type' },
+      { table:'trainings', label:'Training', icon:'🎓', nameField:'employee_name', titleField:'certification' }
+    );
+  }
+
   try{
     const calls = sources.map(s =>
       fetch(`${SUPABASE_URL}/rest/v1/${s.table}?select=id,company_name,updated_at&deleted_at=is.null&order=updated_at.desc&limit=100`, { headers: sbHeaders() })
@@ -6169,11 +6522,22 @@ async function performGlobalSearch(){
       })))
       .catch(() => []);
 
-    const results = (await Promise.all([...calls, customPromise])).flat();
+    const hrCalls = hrSources.map(s =>
+      fetch(`${SUPABASE_URL}/rest/v1/${s.table}?select=*&limit=100`, { headers: sbHeaders() })
+        .then(r => r.ok ? r.json() : [])
+        .then(rows => rows.map(r => ({
+          id: r.id, company_name: r[s.nameField] || '(unnamed)', updated_at: r.created_at || r.requested_at || r.assigned_date || new Date().toISOString(),
+          type: 'hr', table: s.table, label: s.label, icon: s.icon, detail: r[s.titleField] || ''
+        })))
+        .catch(() => [])
+    );
+
+    const results = (await Promise.all([...calls, customPromise, ...hrCalls])).flat();
     const qLower = q.toLowerCase();
     const filtered = results.filter(r =>
       (r.id || '').toLowerCase().includes(qLower) ||
-      (r.company_name || '').toLowerCase().includes(qLower)
+      (r.company_name || '').toLowerCase().includes(qLower) ||
+      (r.detail || '').toLowerCase().includes(qLower)
     ).sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 40);
 
     if(!filtered.length){ box.innerHTML = '<div class="mgr-empty">No matching forms found.</div>'; return; }
@@ -6182,7 +6546,7 @@ async function performGlobalSearch(){
       <div class="ep-kpi-row" onclick="openGlobalSearchResult('${r.type}','${r.id.replace(/'/g,"\\'")}')">
         <div>
           <div style="font-weight:700;font-size:.82rem;">${r.icon} ${(r.company_name || '(unnamed)').replace(/</g,'&lt;')}</div>
-          <div style="font-size:.72rem;color:#777;">${r.label} · ${r.id.replace(/</g,'&lt;')}</div>
+          <div style="font-size:.72rem;color:#777;">${r.label}${r.detail ? ' · ' + String(r.detail).replace(/</g,'&lt;') : ''}${r.type !== 'hr' ? ' · ' + r.id.replace(/</g,'&lt;') : ''}</div>
         </div>
         <div style="font-size:.7rem;color:#999;">${timeAgo(r.updated_at)}</div>
       </div>
@@ -6192,7 +6556,7 @@ async function performGlobalSearch(){
 
 function openGlobalSearchResult(type, id){
   closeGlobalSearch();
-  switchTab(type);
+  switchTab(type === 'hr' ? 'hr' : type);
   if(type === 'inv') openInv(id);
   else if(type === 'cf') openCF(id);
   else if(type === 'sop') openSOP(id);
@@ -6334,81 +6698,90 @@ async function loadRolePermissions(){
     const res = await fetch(`${SUPABASE_URL}/rest/v1/role_permissions?id=eq.default&select=*`, { headers: sbHeaders() });
     if(!res.ok) return;
     const rows = await res.json();
-    if(rows.length && rows[0].matrix && Object.keys(rows[0].matrix).length){
-      const matrix = rows[0].matrix;
-      // Any tab added to the app after this matrix was last saved (like 'att')
-      // won't exist in the stored data. Default it to view-only for every role
-      // so new features show up instead of silently disappearing.
-      Object.keys(matrix).forEach(role => {
-        if(!matrix[role].view) matrix[role].view = [];
-        if(!matrix[role].view.includes('att')) matrix[role].view.push('att');
-        if(!matrix[role].view.includes('hr')) matrix[role].view.push('hr');
+    if(!rows.length || !rows[0].matrix || !Object.keys(rows[0].matrix).length) return;
+    const stored = rows[0].matrix;
+    const firstRole = stored[Object.keys(stored)[0]];
+    const isOldFormat = firstRole && Array.isArray(firstRole.view);
+    permissionMatrix = isOldFormat ? migrateOldPermissionFormat(stored) : { ...defaultPermissionMatrix(), ...stored };
+    // Any module added to the app after this matrix was last saved won't
+    // exist in stored data yet — fill it in with a safe default instead of
+    // silently leaving the module invisible to that role.
+    const modules = ['inv','cf','sop','staff','kpi','att','hr'];
+    ALL_ROLES.forEach(role => {
+      if(!permissionMatrix[role]) permissionMatrix[role] = {};
+      modules.forEach(mod => {
+        if(!permissionMatrix[role][mod]) permissionMatrix[role][mod] = defaultPermissionMatrix()[role][mod];
       });
-      rolePermissions = matrix;
-      refreshTabVisibility();
-    }
+    });
+    refreshTabVisibility();
   }catch(e){ /* keep defaults */ }
 }
 
-const PERM_TAB_LABELS = { inv:'Invoice Verification', cf:'Cash Flow', sop:'SOP', staff:'Employees', kpi:'KPI Evaluation', att:'Attendance' };
+const PERM_TAB_LABELS = { inv:'Invoice Verification', cf:'Cash Flow', sop:'SOP', staff:'Employees', kpi:'KPI Evaluation', att:'Attendance', hr:'HR Records' };
+const CONFIGURABLE_ROLES = ['admin','manager','reviewer','accountant','warehouse_staff','staff','viewer'];
 
 function openPermissionsManager(){
   if(!isSuperAdmin()){ flash('Only a super admin can manage permissions.', true); return; }
-  const box = document.getElementById('permMatrixBody');
-  box.innerHTML = MANAGEABLE_TABS.map(tab => {
-    const roles = ['admin','staff','viewer'];
-    return `
-      <tr>
-        <td class="perm-tab-label">${PERM_TAB_LABELS[tab]}</td>
-        ${roles.map(role => {
-          const perm = rolePermissions[role] || {view:[],edit:[]};
-          const canView = perm.view.includes(tab) || perm.edit.includes(tab);
-          const canEdit = perm.edit.includes(tab);
-          return `
-            <td class="perm-cell">
-              <label><input type="checkbox" data-tab="${tab}" data-role="${role}" data-kind="view" ${canView?'checked':''} onchange="onPermViewToggle(this)"> View</label>
-              <label><input type="checkbox" data-tab="${tab}" data-role="${role}" data-kind="edit" ${canEdit?'checked':''} onchange="onPermEditToggle(this)"> Edit</label>
-            </td>
-          `;
-        }).join('')}
-      </tr>
-    `;
-  }).join('');
+  const roleSelect = document.getElementById('permRoleSelect');
+  roleSelect.innerHTML = CONFIGURABLE_ROLES.map(r => `<option value="${r}">${ROLE_LABELS[r]}</option>`).join('');
+  renderPermissionGrid();
   document.getElementById('permOverlay').classList.add('open');
 }
 function closePermissionsManager(){ document.getElementById('permOverlay').classList.remove('open'); }
 
-function onPermEditToggle(checkbox){
-  // Edit implies View — auto-check the matching View box so state never contradicts itself.
-  if(checkbox.checked){
-    const viewBox = document.querySelector(`input[data-tab="${checkbox.dataset.tab}"][data-role="${checkbox.dataset.role}"][data-kind="view"]`);
+function renderPermissionGrid(){
+  const role = document.getElementById('permRoleSelect').value;
+  const box = document.getElementById('permMatrixBody');
+  box.innerHTML = MANAGEABLE_TABS.map(tab => {
+    const perm = (permissionMatrix[role] && permissionMatrix[role][tab]) || emptyPerms();
+    return `
+      <tr>
+        <td class="perm-tab-label">${PERM_TAB_LABELS[tab] || tab}</td>
+        ${PERMISSION_TYPES.map(pt => `
+          <td class="perm-cell" style="text-align:center;">
+            <input type="checkbox" data-tab="${tab}" data-perm="${pt}" ${perm[pt] ? 'checked' : ''} onchange="onPermCellToggle(this)">
+          </td>`).join('')}
+      </tr>`;
+  }).join('');
+}
+
+function onPermCellToggle(checkbox){
+  const role = document.getElementById('permRoleSelect').value;
+  const tab = checkbox.dataset.tab;
+  const pt = checkbox.dataset.perm;
+  if(!permissionMatrix[role]) permissionMatrix[role] = {};
+  if(!permissionMatrix[role][tab]) permissionMatrix[role][tab] = emptyPerms();
+  permissionMatrix[role][tab][pt] = checkbox.checked;
+
+  // Create/Edit/Delete/Approve/Reject/Export all require View — turn it on
+  // automatically rather than leaving a contradictory state.
+  if(checkbox.checked && pt !== 'view'){
+    permissionMatrix[role][tab].view = true;
+    const viewBox = document.querySelector(`input[data-tab="${tab}"][data-perm="view"]`);
     if(viewBox) viewBox.checked = true;
   }
-}
-function onPermViewToggle(checkbox){
-  // Removing View also removes Edit for that cell — can't edit what you can't view.
-  if(!checkbox.checked){
-    const editBox = document.querySelector(`input[data-tab="${checkbox.dataset.tab}"][data-role="${checkbox.dataset.role}"][data-kind="edit"]`);
-    if(editBox) editBox.checked = false;
+  // Turning off View turns off everything else for that module — can't
+  // create/edit/delete/approve/export what you can't see.
+  if(pt === 'view' && !checkbox.checked){
+    PERMISSION_TYPES.forEach(other => {
+      if(other === 'view') return;
+      permissionMatrix[role][tab][other] = false;
+      const box = document.querySelector(`input[data-tab="${tab}"][data-perm="${other}"]`);
+      if(box) box.checked = false;
+    });
   }
 }
 
 async function saveRolePermissions(){
-  const matrix = { admin:{view:[],edit:[]}, staff:{view:[],edit:[]}, viewer:{view:[],edit:[]} };
-  document.querySelectorAll('#permMatrixBody input[type=checkbox]').forEach(cb => {
-    if(!cb.checked) return;
-    matrix[cb.dataset.role][cb.dataset.kind].push(cb.dataset.tab);
-  });
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/role_permissions`, {
       method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}),
-      body: JSON.stringify({ id:'default', matrix, updated_by: session.email, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ id:'default', matrix: permissionMatrix, updated_by: session.email, updated_at: new Date().toISOString() })
     });
     if(!res.ok) throw new Error(await res.text());
-    rolePermissions = matrix;
     closePermissionsManager();
-    logActivity('save_role_permissions', null, JSON.stringify(matrix));
-    flash('Permissions updated');
+    logActivity('save_role_permissions', null, 'Updated permission matrix');
+    flash('Permissions updated ✓');
     refreshTabVisibility();
   }catch(e){ console.error(e); flash(sbError(e), true); }
 }
@@ -6960,6 +7333,51 @@ async function loadCustomSections(){
   }catch(e){ console.error(e); }
 }
 
+async function loadHomeTrendChart(){
+  const box = document.getElementById('homeTrendChart');
+  if(!box) return;
+  if(!backendReady() || isEmployee() || !canViewTab('att')){ box.innerHTML = ''; return; }
+  try{
+    const start = new Date(); start.setDate(start.getDate() - 29);
+    const startStr = start.toISOString().slice(0,10);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/attendance?select=date,status&date=gte.${startStr}`, { headers: sbHeaders() });
+    const rows = res.ok ? await res.json() : [];
+    if(!rows.length){ box.innerHTML = ''; return; }
+
+    const byDate = {};
+    for(let i = 0; i < 30; i++){
+      const d = new Date(start); d.setDate(d.getDate() + i);
+      byDate[d.toISOString().slice(0,10)] = 0;
+    }
+    rows.forEach(r => {
+      if(r.status === 'present' || r.status === 'late' || r.status === 'missing_checkout'){
+        if(byDate[r.date] !== undefined) byDate[r.date]++;
+      }
+    });
+    const dates = Object.keys(byDate).sort();
+    const values = dates.map(d => byDate[d]);
+    const max = Math.max(...values, 1);
+    const w = 900, h = 90, barW = w / dates.length;
+
+    const bars = values.map((v, i) => {
+      const barH = (v / max) * (h - 16);
+      const x = i * barW;
+      const y = h - barH;
+      const color = v === 0 ? '#e2e8e5' : '#229949';
+      return `<rect x="${x + barW*0.15}" y="${y}" width="${barW*0.7}" height="${barH}" fill="${color}" rx="2"><title>${dates[i]}: ${v} present</title></rect>`;
+    }).join('');
+
+    box.innerHTML = `
+      <div style="background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 4px 14px -8px rgba(10,36,23,.15);">
+        <div style="font-weight:800;color:var(--forest-deep);font-size:.85rem;margin-bottom:8px;">Attendance — Last 30 Days</div>
+        <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:70px;display:block;">${bars}</svg>
+        <div style="display:flex;justify-content:space-between;font-size:.65rem;color:#888;margin-top:4px;">
+          <span>${dates[0]}</span><span>${dates[dates.length-1]}</span>
+        </div>
+      </div>`;
+  }catch(e){ box.innerHTML = ''; }
+}
+
 async function loadHomeAnnouncement(){
   const box = document.getElementById('homeAnnouncementBanner');
   if(!box) return;
@@ -7300,9 +7718,9 @@ async function loadUsers(){
 
     const roleOptions = (current) => {
       const all = isSuperAdmin()
-        ? ['employee','viewer','staff','admin','super_admin']
+        ? ['employee','viewer','staff','warehouse_staff','accountant','reviewer','manager','admin','super_admin']
         : ['employee','viewer','staff'];
-      return all.map(r => `<option value="${r}" ${r===current?'selected':''}>${r}</option>`).join('');
+      return all.map(r => `<option value="${r}" ${r===current?'selected':''}>${ROLE_LABELS[r] || r}</option>`).join('');
     };
     document.getElementById('newUserRole').innerHTML = roleOptions('staff');
 
@@ -7790,6 +8208,20 @@ async function openSOP(id){
 let activeTab = 'home';                // 'home' | 'inv' | 'cf' | 'sop' | 'staff' | 'custom:*'
 let cfRowCount = 0;
 let cfFormId = null;
+let currentStageCF = 'entry';
+
+function setStageCF(stage){
+  if(!STAGES[stage]) stage = 'entry';
+  currentStageCF = stage;
+  const badge = document.getElementById('cfStageBadge');
+  if(badge){
+    badge.textContent = STAGES[stage].label;
+    badge.className = 'stage-badge ' + STAGES[stage].cls;
+  }
+  renderStageActions('cashflow_forms', cfFormId, 'cf');
+  renderApprovalHistory('cashflow_forms', cfFormId);
+}
+
 
 function openDrawer(){
   document.getElementById('drawer').classList.add('open');
@@ -7827,7 +8259,7 @@ function switchTab(tab){
     btn.classList.toggle('active', match);
     if(sheet) sheet.classList.toggle('hidden-tab', !match);
   });
-  if(tab === 'home'){ renderHomeGrid(); loadHomeNotifications(); loadHomeAnnouncement(); }
+  if(tab === 'home'){ renderHomeGrid(); loadHomeNotifications(); loadHomeAnnouncement(); loadHomeTrendChart(); }
   document.querySelector('.toolbar').style.display = (tab === 'home' || isEmployee()) ? 'none' : 'flex';
   if(tab === 'staff') loadEmployees();
   if(tab === 'att') loadAttendanceTab();
@@ -8950,6 +9382,7 @@ function openEmployeeProfileKpi(id){
 function newFormCF(){
   setCFFormId(makeCFFormId());
   restoreCF({});
+  setStageCF('entry');
   flash('New cash flow form started');
 }
 
@@ -8958,10 +9391,20 @@ async function saveCF(){
   if(!cfFormId) setCFFormId(makeCFFormId());
   const newData = serializeCF();
   const oldData = await fetchExistingFormData('cashflow_forms', cfFormId);
+
+  const negFieldChecks = [];
+  (newData.rows || []).forEach((r, i) => {
+    negFieldChecks.push({ value: r.itemsPerPkg, label: `Row ${i+1} Items per Package` });
+    negFieldChecks.push({ value: r.cashflow, label: `Row ${i+1} Cash Flow` });
+    negFieldChecks.push({ value: r.stock, label: `Row ${i+1} Stock` });
+  });
+  const negField = validateNonNegative(negFieldChecks);
+  if(negField){ flash(`${negField} can't be negative. Please fix it before saving.`, true); return; }
+
   const payload = {
     id: cfFormId,
     company_name: document.querySelector('.cf-company').value || '(unnamed)',
-    stage: 'entry',
+    stage: currentStageCF,
     data: newData,
     updated_at: new Date().toISOString(),
     updated_by: session.email || null
@@ -8987,6 +9430,7 @@ async function openCF(id){
     if(!rows.length){ flash('Form not found.', true); return; }
     setCFFormId(rows[0].id);
     restoreCF(rows[0].data || {});
+    setStageCF(rows[0].stage || 'entry');
     closeManager();
     flash('Opened ' + rows[0].id);
   }catch(e){ console.error(e); flash(sbError(e), true); }
@@ -9002,6 +9446,7 @@ setStage('entry');
 // Cash flow tab init
 for(let i=0;i<12;i++) addRowCF();
 setCFFormId(makeCFFormId());
+setStageCF('entry');
 
 // SOP tab init
 restoreSOP({});
