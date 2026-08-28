@@ -17,19 +17,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
-    --ink:#0c2a1c;
+    --ink:#1c2620;
     --forest:#229949;
-    --forest-deep:#0c3a1b;
-    --paper:#f5faf6;
-    --paper-card:#ffffff;
-    --brass:#ffffff;
-    --brass-light:#ffffff;
+    --forest-deep:#0a2f16;
+    --paper:#f6f3ea;
+    --paper-card:#fffdf8;
+    --brass:#b8863a;
+    --brass-light:#f3e6cc;
     --clay:#a8462e;
     --clay-light:#f1ded8;
-    --sage:#eaf4ee;
-    --line:#d9e8de;
-    --line-soft:#e6f1ea;
-    --text:#000000;
+    --sage:#eef4ea;
+    --line:#ddd5bf;
+    --line-soft:#e9e2cd;
+    --text:#1c2620;
     --white:#ffffff;
     /* legacy aliases so existing rules keep working */
     --green-dark:var(--forest-deep);
@@ -254,11 +254,11 @@
   }
   .stage-badge{
     display:inline-flex;align-items:center;gap:6px;
-    padding:5px 12px;border-radius:999px;
-    font-size:.72rem;font-weight:800;letter-spacing:.4px;
+    padding:5px 12px;border-radius:6px;
+    font-size:.7rem;font-weight:700;letter-spacing:.5px;
     text-transform:uppercase;
-    font-family:"IBM Plex Sans",sans-serif;
-    border:2px solid currentColor;
+    font-family:"IBM Plex Mono",monospace;
+    border:1.5px solid currentColor;
   }
   .stage-badge::before{
     content:"";width:8px;height:8px;border-radius:50%;
@@ -475,10 +475,10 @@
   }
   .section-header .title{
     color:var(--white);
-    font-weight:800;
-    font-family:"IBM Plex Sans",sans-serif;
-    font-size:.95rem;
-    letter-spacing:.2px;
+    font-weight:600;
+    font-family:"Fraunces","IBM Plex Sans",sans-serif;
+    font-size:1.05rem;
+    letter-spacing:.1px;
   }
   .section-header .title::after{display:none;}
 
@@ -966,8 +966,9 @@
     align-items:center;gap:10px;font-size:.8rem;color:#555;
   }
   .userbar .role-chip{
-    background:var(--sage);color:var(--forest-deep);border-radius:999px;
-    padding:3px 10px;font-weight:800;font-size:.68rem;text-transform:uppercase;
+    background:var(--sage);color:var(--forest-deep);border-radius:5px;
+    padding:3px 9px;font-weight:700;font-size:.65rem;text-transform:uppercase;
+    font-family:"IBM Plex Mono",monospace;letter-spacing:.5px;border:1px solid rgba(10,47,22,.12);
   }
   .userbar button{
     background:none;border:1px solid var(--line);border-radius:7px;
@@ -1347,17 +1348,21 @@
     to{opacity:1;transform:translateY(0);}
   }
   .home-card{
-    background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 18px;
+    background:var(--paper-card);border:1px solid var(--line);border-radius:14px;padding:22px 18px 22px 26px;
     cursor:pointer;text-align:center;transition:transform .15s cubic-bezier(.2,.8,.3,1), box-shadow .15s ease, border-color .15s ease;
     display:flex;flex-direction:column;align-items:center;gap:8px;
-    box-shadow:0 1px 2px rgba(10,36,23,.04), 0 8px 20px -16px rgba(10,36,23,.15);
-    position:relative;overflow:hidden;
+    box-shadow:0 1px 3px rgba(28,38,32,.05), 0 10px 24px -16px rgba(28,38,32,.18);
+    position:relative;overflow:visible;
     animation:cardRise .45s cubic-bezier(.2,.8,.3,1) both;
     animation-delay:calc(var(--i, 0) * 60ms);
   }
   .home-card::before{
-    content:"";position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--accent,var(--forest));
-    opacity:.85;transition:width .15s ease;
+    content:"";position:absolute;top:10px;bottom:10px;left:0;width:5px;border-radius:0 3px 3px 0;background:var(--accent,var(--forest));
+    opacity:.9;transition:width .15s ease;
+  }
+  .home-card::after{
+    content:"";position:absolute;top:22px;left:0px;width:9px;height:9px;border-radius:50%;
+    background:var(--paper);border:1px solid var(--line);transform:translateX(-2px);
   }
   .home-card:hover::before{width:6px;}
   .home-card:hover{transform:translateY(-4px);box-shadow:0 1px 2px rgba(10,36,23,.06), 0 18px 34px -16px rgba(10,36,23,.35);border-color:var(--accent,var(--forest));}
@@ -1366,8 +1371,8 @@
     font-size:1.5rem;transition:transform .18s cubic-bezier(.2,.8,.3,1);
     width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
   }
-  .home-card .nm{font-weight:800;color:#000;font-size:.95rem;}
-  .home-card .dsc{font-size:.74rem;color:#666;line-height:1.4;}
+  .home-card .nm{font-weight:600;color:var(--ink);font-size:1.08rem;font-family:"Fraunces","IBM Plex Sans",sans-serif;}
+  .home-card .dsc{font-size:.76rem;color:#6b6455;line-height:1.45;}
   @media (prefers-reduced-motion: reduce){
     .home-card{animation:none;}
   }
