@@ -2597,6 +2597,75 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 </div>
 
+<div class="sheet hidden-tab" id="poForm">
+  <header class="title-block">
+    <div class="logo-badge"><img src="" alt="Dalare"></div>
+    <div style="text-align:center;">
+      <h1>Purchase Orders</h1>
+      <div class="sub">Purchase</div>
+    </div>
+  </header>
+  <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
+
+  <div class="section-header"><div class="num">1</div><div class="title">Purchase Orders</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <select id="poStatusFilter" onchange="renderPurchaseOrders()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+      <option value="">All statuses</option>
+      <option value="draft">Draft</option>
+      <option value="confirmed">Confirmed</option>
+      <option value="partially_received">Partially Received</option>
+      <option value="fully_received">Fully Received</option>
+      <option value="completed">Completed</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+    <button class="btn-small" onclick="openPoForm()">+ New Purchase Order</button>
+    <button class="btn-small" onclick="exportPoExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="poTable">
+      <thead><tr><th>PO Number</th><th>Vendor</th><th>Order Date</th><th>Expected Date</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+      <tbody id="poBody"><tr><td colspan="8" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mgr-overlay" id="poFormOverlay">
+  <div class="mgr-panel" style="max-width:640px;">
+    <div class="mgr-head">
+      <h2 id="poFormTitle">New Purchase Order</h2>
+      <button class="mgr-close" onclick="closePoForm()">×</button>
+    </div>
+    <div class="mgr-body">
+      <div class="sb-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <label>Vendor<input type="text" id="poVendor" list="vendorNamesList"></label>
+        <label>Warehouse<input type="text" id="poWarehouse" placeholder="Main Warehouse"></label>
+        <label>Order Date<input type="date" id="poOrderDate"></label>
+        <label>Expected Date<input type="date" id="poExpectedDate"></label>
+        <label style="grid-column:span 2;">Notes<input type="text" id="poNotes"></label>
+      </div>
+
+      <div style="font-weight:800;color:var(--forest-deep);margin:14px 0 6px;">Line Items</div>
+      <div class="price-table-wrap">
+        <table class="pricelist" id="poItemsTable">
+          <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Line Total</th><th></th></tr></thead>
+          <tbody id="poItemsBody"></tbody>
+        </table>
+      </div>
+      <button class="btn-small" style="margin-top:8px;" onclick="addPoItemRow()">+ Add Line</button>
+
+      <div style="text-align:end;margin-top:12px;font-weight:800;font-size:1.05rem;color:var(--forest-deep);">
+        Total: <span id="poGrandTotal">0</span> IQD
+      </div>
+
+      <div class="table-actions" style="margin-top:14px;">
+        <button class="btn-small" onclick="savePurchaseOrder()">💾 Save Purchase Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+<datalist id="vendorNamesList"></datalist>
+<datalist id="productNamesList"></datalist>
+
 <div class="mgr-overlay" id="stageCommentOverlay">
   <div class="mgr-panel" style="max-width:420px;">
     <div class="mgr-head">
@@ -3708,6 +3777,9 @@ function hasPermission(tab, permType){
   if(isSuperAdmin()) return true;
   if(tab === 'home') return permType === 'view';
   if(tab && tab.startsWith('custom:')) return permType === 'view' ? ['admin','staff','viewer'].includes(session.role) : (permType === 'edit' && ['admin','staff'].includes(session.role));
+  // Purchase Orders is a sub-feature of Purchase — it shares the Vendors
+  // permission rather than needing its own separate matrix entry.
+  if(tab === 'purchase_orders') tab = 'vendors';
   const rolePerm = permissionMatrix[session.role];
   if(!rolePerm || !rolePerm[tab]) return false;
   return !!rolePerm[tab][permType];
@@ -5576,6 +5648,171 @@ function exportCustomersExcel(){
   XLSX.writeFile(wb, `customers-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
+// ===================== Purchase: Purchase Orders =====================
+const PO_STATUS_LABELS = { draft:'Draft', confirmed:'Confirmed', partially_received:'Partially Received', fully_received:'Fully Received', completed:'Completed', cancelled:'Cancelled' };
+const PO_STATUS_COLORS = { draft:'#5c6b62', confirmed:'#1d4ed8', partially_received:'#b9770e', fully_received:'#0f7a3d', completed:'#0a2f16', cancelled:'#a8462e' };
+let purchaseOrdersCache = [];
+let poItemCounter = 0;
+let poEditId = null;
+
+async function loadPurchaseOrders(){
+  const body = document.getElementById('poBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/purchase_orders?select=*&deleted_at=is.null&order=order_date.desc`, { headers: sbHeaders() });
+    purchaseOrdersCache = res.ok ? await res.json() : [];
+    renderPurchaseOrders();
+  }catch(e){ body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderPurchaseOrders(){
+  const body = document.getElementById('poBody');
+  const canManage = isSuperAdmin() || session.role === 'admin' || hasPermission('vendors','edit');
+  const statusFilter = document.getElementById('poStatusFilter').value;
+  let rows = purchaseOrdersCache;
+  if(statusFilter) rows = rows.filter(r => r.status === statusFilter);
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;padding:14px;">No purchase orders yet.</td></tr>'; return; }
+  body.innerHTML = rows.map(po => {
+    const items = po.items || [];
+    const total = items.reduce((s,i) => s + (parseFloat(i.qty)||0) * (parseFloat(i.price)||0), 0);
+    const color = PO_STATUS_COLORS[po.status] || '#5c6b62';
+    return `<tr>
+      <td style="font-family:'IBM Plex Mono',monospace;font-weight:700;">${po.id}</td>
+      <td>${(po.vendor_name||'').replace(/</g,'&lt;')}</td>
+      <td>${po.order_date||''}</td>
+      <td>${po.expected_date||'—'}</td>
+      <td>${items.length}</td>
+      <td>${total.toLocaleString()}</td>
+      <td>${canManage
+        ? `<select onchange="updatePoStatus('${po.id}', this.value)" style="color:${color};font-weight:700;font-size:.78rem;border:1px solid ${color}55;border-radius:6px;">
+            ${Object.keys(PO_STATUS_LABELS).map(s => `<option value="${s}" ${s===po.status?'selected':''}>${PO_STATUS_LABELS[s]}</option>`).join('')}
+          </select>`
+        : `<span style="background:${color}1a;color:${color};padding:2px 8px;border-radius:999px;font-weight:700;font-size:.72rem;">${PO_STATUS_LABELS[po.status]||po.status}</span>`}</td>
+      <td>${canManage ? `<button class="btn-small" onclick="openPoForm('${po.id}')">Edit</button>
+        <button class="btn-small remove" onclick="deletePurchaseOrder('${po.id}')">×</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openPoForm(id){
+  if(!isSuperAdmin() && session.role !== 'admin' && !hasPermission('vendors','create')){ flash('You do not have permission to create purchase orders.', true); return; }
+  poEditId = id || null;
+  document.getElementById('vendorNamesList').innerHTML = vendorsCache.map(v => `<option value="${v.name.replace(/"/g,'&quot;')}">`).join('');
+  document.getElementById('productNamesList').innerHTML = productsCache.map(p => `<option value="${p.name.replace(/"/g,'&quot;')}">`).join('');
+  document.getElementById('poItemsBody').innerHTML = '';
+  poItemCounter = 0;
+
+  const po = id ? purchaseOrdersCache.find(p => p.id === id) : null;
+  document.getElementById('poFormTitle').textContent = po ? `Edit ${po.id}` : 'New Purchase Order';
+  document.getElementById('poVendor').value = po ? po.vendor_name : '';
+  document.getElementById('poWarehouse').value = po ? (po.warehouse||'') : '';
+  document.getElementById('poOrderDate').value = po ? po.order_date : new Date().toISOString().slice(0,10);
+  document.getElementById('poExpectedDate').value = po ? (po.expected_date||'') : '';
+  document.getElementById('poNotes').value = po ? (po.notes||'') : '';
+
+  const items = po ? (po.items || []) : [{ product:'', qty:'', price:'' }];
+  items.forEach(it => addPoItemRow(it));
+  updatePoGrandTotal();
+  document.getElementById('poFormOverlay').classList.add('open');
+}
+function closePoForm(){ document.getElementById('poFormOverlay').classList.remove('open'); }
+
+function addPoItemRow(prefill){
+  const id = 'poi-' + (poItemCounter++);
+  const tr = document.createElement('tr');
+  tr.id = id;
+  tr.innerHTML = `
+    <td><input value="${prefill ? (prefill.product||'').replace(/"/g,'&quot;') : ''}" list="productNamesList" data-f="product" oninput="updatePoLineTotal('${id}')" style="width:100%;"></td>
+    <td><input type="number" min="0" value="${prefill ? (prefill.qty||'') : ''}" data-f="qty" oninput="updatePoLineTotal('${id}')" style="width:70px;"></td>
+    <td><input type="number" min="0" value="${prefill ? (prefill.price||'') : ''}" data-f="price" oninput="updatePoLineTotal('${id}')" style="width:90px;"></td>
+    <td class="po-line-total">0</td>
+    <td><button class="btn-small remove" onclick="document.getElementById('${id}').remove(); updatePoGrandTotal();">×</button></td>`;
+  document.getElementById('poItemsBody').appendChild(tr);
+  updatePoLineTotal(id);
+}
+function updatePoLineTotal(rowId){
+  const tr = document.getElementById(rowId);
+  if(!tr) return;
+  const qty = parseFloat(tr.querySelector('[data-f="qty"]').value) || 0;
+  const price = parseFloat(tr.querySelector('[data-f="price"]').value) || 0;
+  tr.querySelector('.po-line-total').textContent = (qty * price).toLocaleString();
+  updatePoGrandTotal();
+}
+function updatePoGrandTotal(){
+  let total = 0;
+  document.querySelectorAll('#poItemsBody tr').forEach(tr => {
+    const qty = parseFloat(tr.querySelector('[data-f="qty"]').value) || 0;
+    const price = parseFloat(tr.querySelector('[data-f="price"]').value) || 0;
+    total += qty * price;
+  });
+  document.getElementById('poGrandTotal').textContent = total.toLocaleString();
+}
+
+async function savePurchaseOrder(){
+  const vendor_name = document.getElementById('poVendor').value.trim();
+  const order_date = document.getElementById('poOrderDate').value;
+  if(!vendor_name || !order_date){ flash('Vendor and Order Date are required.', true); return; }
+
+  const items = Array.from(document.querySelectorAll('#poItemsBody tr')).map(tr => ({
+    product: tr.querySelector('[data-f="product"]').value.trim(),
+    qty: parseFloat(tr.querySelector('[data-f="qty"]').value) || 0,
+    price: parseFloat(tr.querySelector('[data-f="price"]').value) || 0,
+  })).filter(i => i.product);
+  if(!items.length){ flash('Add at least one line item with a product.', true); return; }
+
+  const negField = validateNonNegative(items.flatMap((i,idx) => [{value:i.qty,label:`Line ${idx+1} Qty`},{value:i.price,label:`Line ${idx+1} Price`}]));
+  if(negField){ flash(`${negField} can't be negative.`, true); return; }
+
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  const id = poEditId || 'PO-' + new Date().getFullYear() + '-' + Date.now().toString(36).toUpperCase();
+  const payload = {
+    id, vendor_name, warehouse: document.getElementById('poWarehouse').value.trim() || null,
+    order_date, expected_date: document.getElementById('poExpectedDate').value || null,
+    notes: document.getElementById('poNotes').value.trim() || null,
+    items, status: poEditId ? (purchaseOrdersCache.find(p=>p.id===poEditId)||{}).status || 'draft' : 'draft',
+    created_by: session.email, updated_at: new Date().toISOString()
+  };
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/purchase_orders`, { method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}), body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity(poEditId ? 'update_po' : 'create_po', id, vendor_name);
+    flash(`Purchase Order ${id} saved ✓`);
+    closePoForm();
+    loadPurchaseOrders();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function updatePoStatus(id, status){
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/purchase_orders?id=eq.${encodeURIComponent(id)}`, {
+      method:'PATCH', headers: sbHeaders({'Prefer':'return=minimal'}), body: JSON.stringify({ status, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('po_status_change', id, status);
+    flash(`Status updated to ${PO_STATUS_LABELS[status]} ✓`);
+    loadPurchaseOrders();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+
+async function deletePurchaseOrder(id){
+  if(!confirm(`Move ${id} to Trash?`)) return;
+  await softDelete('purchase_orders', id, loadPurchaseOrders);
+}
+
+function exportPoExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
+  if(!purchaseOrdersCache.length){ flash('Nothing to export.', true); return; }
+  const rows = [];
+  purchaseOrdersCache.forEach(po => {
+    (po.items||[]).forEach(it => {
+      rows.push({ 'PO Number':po.id, 'Vendor':po.vendor_name, 'Order Date':po.order_date, 'Expected Date':po.expected_date||'', 'Status':PO_STATUS_LABELS[po.status]||po.status, 'Product':it.product, 'Qty':it.qty, 'Unit Price':it.price, 'Line Total': (it.qty||0)*(it.price||0) });
+    });
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Purchase Orders');
+  XLSX.writeFile(wb, `purchase-orders-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
 // ---- Assets ----
 async function loadAssets(){
   const body = document.getElementById('assetsBody');
@@ -6841,7 +7078,7 @@ function refreshTabVisibility(){
   if(reportsEl) reportsEl.style.display = isAdmin() ? '' : 'none';
 
   if(!canViewTab(activeTab)){
-    const firstOk = ['home','inv','cf','sop','staff','kpi','att','hr'].find(canViewTab);
+    const firstOk = ['home','inv','cf','sop','staff','kpi','att','hr','products','vendors','customers'].find(canViewTab);
     if(firstOk) switchTab(firstOk);
   }
   applyViewerLock();
@@ -7950,7 +8187,7 @@ const WORKSPACE_DEFS = {
       {ic:'🏭', nm:'Vendors', tab:'vendors', color:'#b8720e', dsc:'Vendor directory, contacts & status'},
       {ic:'📋', nm:'Purchase Requests', color:'#b8720e'},
       {ic:'📨', nm:'RFQ', color:'#b8720e'},
-      {ic:'📦', nm:'Purchase Orders', color:'#b8720e'},
+      {ic:'📦', nm:'Purchase Orders', tab:'purchase_orders', color:'#b8720e', dsc:'Create and track orders with vendors'},
       {ic:'🧾', nm:'Vendor Bills', color:'#b8720e'},
       {ic:'↩️', nm:'Purchase Returns', color:'#a8462e'},
       {ic:'💳', nm:'Payments', color:'#0c8a4a'},
@@ -8905,6 +9142,7 @@ function switchTab(tab){
   document.getElementById('productsForm').classList.toggle('hidden-tab', tab !== 'products');
   document.getElementById('vendorsForm').classList.toggle('hidden-tab', tab !== 'vendors');
   document.getElementById('customersForm').classList.toggle('hidden-tab', tab !== 'customers');
+  document.getElementById('poForm').classList.toggle('hidden-tab', tab !== 'purchase_orders');
   document.getElementById('tabHome').classList.toggle('active', tab === 'home');
   document.getElementById('tabSop').classList.toggle('active', tab === 'sop');
   // Highlight whichever sidebar section this tab belongs to (Finance for
@@ -8912,7 +9150,7 @@ function switchTab(tab){
   // reached through a workspace rather than their own sidebar button.
   document.querySelectorAll('.sidebar-section-btn').forEach(b => b.classList.remove('active'));
   const sectionForTab = { inv:'secFinance', cf:'secFinance', staff:'secHr', att:'secHr', hr:'secHr', kpi:'secHr',
-    products:'secWarehouse', vendors:'secPurchase', customers:'secSales' }[tab];
+    products:'secWarehouse', vendors:'secPurchase', customers:'secSales', purchase_orders:'secPurchase' }[tab];
   if(sectionForTab){
     const el = document.getElementById(sectionForTab);
     if(el) el.classList.add('active');
@@ -8932,6 +9170,7 @@ function switchTab(tab){
   if(tab === 'products') loadProducts();
   if(tab === 'vendors') loadVendors();
   if(tab === 'customers') loadCustomers();
+  if(tab === 'purchase_orders') loadPurchaseOrders();
   if(tab === 'kpi') showKpiDeptPicker();
   if(tab === 'sop') document.querySelectorAll('#sopList textarea').forEach(autoGrow);
   applyViewerLock();
