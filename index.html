@@ -2525,6 +2525,78 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
 </div>
 
+<div class="sheet hidden-tab" id="productsForm">
+  <header class="title-block">
+    <div class="logo-badge"><img src="" alt="Dalare"></div>
+    <div style="text-align:center;">
+      <h1>Products</h1>
+      <div class="sub">Warehouse &amp; Inventory</div>
+    </div>
+  </header>
+  <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
+
+  <div class="section-header"><div class="num">1</div><div class="title">Products</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <input type="text" id="productsSearch" placeholder="Search products…" oninput="renderProducts()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+    <button class="btn-small" onclick="addBlankProductRow()">+ Add Product</button>
+    <button class="btn-small" onclick="exportProductsExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="productsTable">
+      <thead><tr><th>Product Name</th><th>SKU</th><th>Category</th><th>Unit</th><th>Purchase Price</th><th>Sale Price</th><th>Current Stock</th><th>Min Stock</th><th>Status</th><th></th></tr></thead>
+      <tbody id="productsBody"><tr><td colspan="10" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sheet hidden-tab" id="vendorsForm">
+  <header class="title-block">
+    <div class="logo-badge"><img src="" alt="Dalare"></div>
+    <div style="text-align:center;">
+      <h1>Vendors</h1>
+      <div class="sub">Purchase</div>
+    </div>
+  </header>
+  <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
+
+  <div class="section-header"><div class="num">1</div><div class="title">Vendors</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <input type="text" id="vendorsSearch" placeholder="Search vendors…" oninput="renderVendors()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+    <button class="btn-small" onclick="addBlankVendorRow()">+ Add Vendor</button>
+    <button class="btn-small" onclick="exportVendorsExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="vendorsTable">
+      <thead><tr><th>Company Name</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Address</th><th>Tax Number</th><th>Status</th><th></th></tr></thead>
+      <tbody id="vendorsBody"><tr><td colspan="8" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sheet hidden-tab" id="customersForm">
+  <header class="title-block">
+    <div class="logo-badge"><img src="" alt="Dalare"></div>
+    <div style="text-align:center;">
+      <h1>Customers</h1>
+      <div class="sub">Sales</div>
+    </div>
+  </header>
+  <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
+
+  <div class="section-header"><div class="num">1</div><div class="title">Customers</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <input type="text" id="customersSearch" placeholder="Search customers…" oninput="renderCustomers()" style="border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:.82rem;">
+    <button class="btn-small" onclick="addBlankCustomerRow()">+ Add Customer</button>
+    <button class="btn-small" onclick="exportCustomersExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="customersTable">
+      <thead><tr><th>Customer Name</th><th>Contact Person</th><th>Phone</th><th>Email</th><th>Address</th><th>Status</th><th></th></tr></thead>
+      <tbody id="customersBody"><tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
 <div class="mgr-overlay" id="stageCommentOverlay">
   <div class="mgr-panel" style="max-width:420px;">
     <div class="mgr-head">
@@ -3572,7 +3644,7 @@ async function loadEmployeeSelfService(){
   }catch(e){ console.error(e); box.innerHTML = `<div style="text-align:center;color:#888;padding:20px;">${sbError(e)}</div>`; }
 }
 
-const MANAGEABLE_TABS = ['inv','cf','sop','staff','kpi','att','hr'];
+const MANAGEABLE_TABS = ['inv','cf','sop','staff','kpi','att','hr','products','vendors','customers'];
 // ===================== Phase 3: Roles & Permissions =====================
 // Permission types tracked per module. "reject" mirrors "approve" in the
 // UI (whoever can approve a request can also reject it) but is tracked
@@ -3593,15 +3665,15 @@ function editApprovePerms(){ return { ...emptyPerms(), view:true, create:true, e
 // Sensible starting point for each role, per module (MANAGEABLE_TABS ids).
 // Super admin bypasses this entirely (see hasPermission below).
 function defaultPermissionMatrix(){
-  const modules = ['inv','cf','sop','staff','kpi','att','hr'];
+  const modules = ['inv','cf','sop','staff','kpi','att','hr','products','vendors','customers'];
   const m = {};
   ALL_ROLES.forEach(role => { m[role] = {}; });
   modules.forEach(mod => {
     m.admin[mod]           = editPerms();
     m.manager[mod]         = approverPerms();
     m.reviewer[mod]        = viewOnlyPerms();
-    m.accountant[mod]      = (mod === 'inv' || mod === 'cf') ? editApprovePerms() : viewOnlyPerms();
-    m.warehouse_staff[mod] = (mod === 'att') ? editPerms() : (mod === 'kpi' ? viewOnlyPerms() : emptyPerms());
+    m.accountant[mod]      = (mod === 'inv' || mod === 'cf' || mod === 'vendors' || mod === 'customers') ? editApprovePerms() : viewOnlyPerms();
+    m.warehouse_staff[mod] = (mod === 'att' || mod === 'products') ? editPerms() : (mod === 'kpi' ? viewOnlyPerms() : emptyPerms());
     m.staff[mod]           = (mod === 'kpi') ? editPerms() : (mod === 'att' ? viewOnlyPerms() : emptyPerms());
     m.viewer[mod]          = viewOnlyPerms();
     m.employee[mod]        = emptyPerms();
@@ -5270,6 +5342,240 @@ async function loadHrRecordsTab(){
   await Promise.all([loadAssets(), loadExpenses(), loadDisciplinary(), loadTraining()]);
 }
 
+// ===================== Warehouse: Products =====================
+let productsCache = [];
+async function loadProducts(){
+  const body = document.getElementById('productsBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&deleted_at=is.null&order=name.asc`, { headers: sbHeaders() });
+    productsCache = res.ok ? await res.json() : [];
+    renderProducts();
+  }catch(e){ body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderProducts(){
+  const body = document.getElementById('productsBody');
+  const canManage = isSuperAdmin() || session.role === 'admin' || hasPermission('products','edit');
+  const q = (document.getElementById('productsSearch').value || '').toLowerCase();
+  const rows = productsCache.filter(p => !q || (p.name||'').toLowerCase().includes(q) || (p.sku||'').toLowerCase().includes(q));
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#888;padding:14px;">No products recorded yet.</td></tr>'; return; }
+  body.innerHTML = rows.map(p => `
+    <tr data-product-id="${p.id}">
+      <td><input value="${(p.name||'').replace(/"/g,'&quot;')}" data-f="name" ${canManage?'':'readonly'}></td>
+      <td><input value="${(p.sku||'').replace(/"/g,'&quot;')}" data-f="sku" ${canManage?'':'readonly'} style="width:90px;"></td>
+      <td><input value="${(p.category||'').replace(/"/g,'&quot;')}" data-f="category" ${canManage?'':'readonly'}></td>
+      <td><input value="${(p.unit||'').replace(/"/g,'&quot;')}" data-f="unit" ${canManage?'':'readonly'} style="width:70px;"></td>
+      <td><input type="number" min="0" value="${p.purchase_price||''}" data-f="purchase_price" ${canManage?'':'readonly'} style="width:90px;"></td>
+      <td><input type="number" min="0" value="${p.sale_price||''}" data-f="sale_price" ${canManage?'':'readonly'} style="width:90px;"></td>
+      <td><input type="number" min="0" value="${p.current_stock||0}" data-f="current_stock" ${canManage?'':'readonly'} style="width:80px;"></td>
+      <td><input type="number" min="0" value="${p.min_stock||0}" data-f="min_stock" ${canManage?'':'readonly'} style="width:80px;"></td>
+      <td><select data-f="status" ${canManage?'':'disabled'}>
+        <option ${p.status==='active'||!p.status?'selected':''} value="active">Active</option>
+        <option ${p.status==='inactive'?'selected':''} value="inactive">Inactive</option>
+      </select></td>
+      <td>${canManage ? `<button class="btn-small" onclick="saveProductRow('${p.id}')">Save</button>
+        <button class="btn-small remove" onclick="deleteProduct('${p.id}')">×</button>` : ''}</td>
+    </tr>`).join('');
+}
+function addBlankProductRow(){
+  if(!isSuperAdmin() && session.role !== 'admin' && !hasPermission('products','create')){ flash('You do not have permission to add products.', true); return; }
+  const tempId = 'new-' + Date.now().toString(36);
+  productsCache.unshift({ id: tempId, name:'', sku:'', category:'', unit:'', purchase_price:'', sale_price:'', current_stock:0, min_stock:0, status:'active' });
+  renderProducts();
+}
+async function saveProductRow(id){
+  const tr = document.querySelector(`#productsBody tr[data-product-id="${id}"]`);
+  if(!tr) return;
+  const name = tr.querySelector('[data-f="name"]').value.trim();
+  if(!name){ flash('Enter a product name.', true); return; }
+  const negCheck = validateNonNegative([
+    { value: tr.querySelector('[data-f="purchase_price"]').value, label:'Purchase Price' },
+    { value: tr.querySelector('[data-f="sale_price"]').value, label:'Sale Price' },
+    { value: tr.querySelector('[data-f="current_stock"]').value, label:'Current Stock' },
+    { value: tr.querySelector('[data-f="min_stock"]').value, label:'Min Stock' },
+  ]);
+  if(negCheck){ flash(`${negCheck} can't be negative.`, true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  const realId = id.startsWith('new-') ? 'prod-'+Date.now().toString(36) : id;
+  const payload = {
+    id: realId, name, sku: tr.querySelector('[data-f="sku"]').value.trim(),
+    category: tr.querySelector('[data-f="category"]').value.trim(), unit: tr.querySelector('[data-f="unit"]').value.trim(),
+    purchase_price: parseFloat(tr.querySelector('[data-f="purchase_price"]').value) || null,
+    sale_price: parseFloat(tr.querySelector('[data-f="sale_price"]').value) || null,
+    current_stock: parseFloat(tr.querySelector('[data-f="current_stock"]').value) || 0,
+    min_stock: parseFloat(tr.querySelector('[data-f="min_stock"]').value) || 0,
+    status: tr.querySelector('[data-f="status"]').value, updated_at: new Date().toISOString()
+  };
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/products`, { method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}), body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('save_product', realId, name);
+    flash('Saved ✓');
+    loadProducts();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteProduct(id){
+  if(!confirm('Move this product to Trash?')) return;
+  await softDelete('products', id, loadProducts);
+}
+function exportProductsExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
+  if(!productsCache.length){ flash('Nothing to export.', true); return; }
+  const rows = productsCache.map(p => ({ 'Product Name':p.name, 'SKU':p.sku, 'Category':p.category, 'Unit':p.unit, 'Purchase Price':p.purchase_price, 'Sale Price':p.sale_price, 'Current Stock':p.current_stock, 'Min Stock':p.min_stock, 'Status':p.status }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Products');
+  XLSX.writeFile(wb, `products-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ===================== Purchase: Vendors =====================
+let vendorsCache = [];
+async function loadVendors(){
+  const body = document.getElementById('vendorsBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/vendors?select=*&deleted_at=is.null&order=name.asc`, { headers: sbHeaders() });
+    vendorsCache = res.ok ? await res.json() : [];
+    renderVendors();
+  }catch(e){ body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderVendors(){
+  const body = document.getElementById('vendorsBody');
+  const canManage = isSuperAdmin() || session.role === 'admin' || hasPermission('vendors','edit');
+  const q = (document.getElementById('vendorsSearch').value || '').toLowerCase();
+  const rows = vendorsCache.filter(v => !q || (v.name||'').toLowerCase().includes(q));
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#888;padding:14px;">No vendors recorded yet.</td></tr>'; return; }
+  body.innerHTML = rows.map(v => `
+    <tr data-vendor-id="${v.id}">
+      <td><input value="${(v.name||'').replace(/"/g,'&quot;')}" data-f="name" ${canManage?'':'readonly'}></td>
+      <td><input value="${(v.contact_person||'').replace(/"/g,'&quot;')}" data-f="contact_person" ${canManage?'':'readonly'}></td>
+      <td><input value="${(v.phone||'').replace(/"/g,'&quot;')}" data-f="phone" ${canManage?'':'readonly'}></td>
+      <td><input type="email" value="${(v.email||'').replace(/"/g,'&quot;')}" data-f="email" ${canManage?'':'readonly'}></td>
+      <td><input value="${(v.address||'').replace(/"/g,'&quot;')}" data-f="address" ${canManage?'':'readonly'}></td>
+      <td><input value="${(v.tax_number||'').replace(/"/g,'&quot;')}" data-f="tax_number" ${canManage?'':'readonly'} style="width:100px;"></td>
+      <td><select data-f="status" ${canManage?'':'disabled'}>
+        <option ${v.status==='active'||!v.status?'selected':''} value="active">Active</option>
+        <option ${v.status==='warning'?'selected':''} value="warning">Warning</option>
+        <option ${v.status==='blacklisted'?'selected':''} value="blacklisted">Blacklisted</option>
+      </select></td>
+      <td>${canManage ? `<button class="btn-small" onclick="saveVendorRow('${v.id}')">Save</button>
+        <button class="btn-small remove" onclick="deleteVendor('${v.id}')">×</button>` : ''}</td>
+    </tr>`).join('');
+}
+function addBlankVendorRow(){
+  if(!isSuperAdmin() && session.role !== 'admin' && !hasPermission('vendors','create')){ flash('You do not have permission to add vendors.', true); return; }
+  const tempId = 'new-' + Date.now().toString(36);
+  vendorsCache.unshift({ id: tempId, name:'', contact_person:'', phone:'', email:'', address:'', tax_number:'', status:'active' });
+  renderVendors();
+}
+async function saveVendorRow(id){
+  const tr = document.querySelector(`#vendorsBody tr[data-vendor-id="${id}"]`);
+  if(!tr) return;
+  const name = tr.querySelector('[data-f="name"]').value.trim();
+  if(!name){ flash('Enter a company name.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  const realId = id.startsWith('new-') ? 'vendor-'+Date.now().toString(36) : id;
+  const payload = {
+    id: realId, name, contact_person: tr.querySelector('[data-f="contact_person"]').value.trim(),
+    phone: tr.querySelector('[data-f="phone"]').value.trim(), email: tr.querySelector('[data-f="email"]').value.trim(),
+    address: tr.querySelector('[data-f="address"]').value.trim(), tax_number: tr.querySelector('[data-f="tax_number"]').value.trim(),
+    status: tr.querySelector('[data-f="status"]').value, updated_at: new Date().toISOString()
+  };
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/vendors`, { method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}), body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('save_vendor', realId, name);
+    flash('Saved ✓');
+    loadVendors();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteVendor(id){
+  if(!confirm('Move this vendor to Trash?')) return;
+  await softDelete('vendors', id, loadVendors);
+}
+function exportVendorsExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
+  if(!vendorsCache.length){ flash('Nothing to export.', true); return; }
+  const rows = vendorsCache.map(v => ({ 'Company Name':v.name, 'Contact Person':v.contact_person, 'Phone':v.phone, 'Email':v.email, 'Address':v.address, 'Tax Number':v.tax_number, 'Status':v.status }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Vendors');
+  XLSX.writeFile(wb, `vendors-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ===================== Sales: Customers =====================
+let customersCache = [];
+async function loadCustomers(){
+  const body = document.getElementById('customersBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/customers?select=*&deleted_at=is.null&order=name.asc`, { headers: sbHeaders() });
+    customersCache = res.ok ? await res.json() : [];
+    renderCustomers();
+  }catch(e){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderCustomers(){
+  const body = document.getElementById('customersBody');
+  const canManage = isSuperAdmin() || session.role === 'admin' || hasPermission('customers','edit');
+  const q = (document.getElementById('customersSearch').value || '').toLowerCase();
+  const rows = customersCache.filter(c => !q || (c.name||'').toLowerCase().includes(q));
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">No customers recorded yet.</td></tr>'; return; }
+  body.innerHTML = rows.map(c => `
+    <tr data-customer-id="${c.id}">
+      <td><input value="${(c.name||'').replace(/"/g,'&quot;')}" data-f="name" ${canManage?'':'readonly'}></td>
+      <td><input value="${(c.contact_person||'').replace(/"/g,'&quot;')}" data-f="contact_person" ${canManage?'':'readonly'}></td>
+      <td><input value="${(c.phone||'').replace(/"/g,'&quot;')}" data-f="phone" ${canManage?'':'readonly'}></td>
+      <td><input type="email" value="${(c.email||'').replace(/"/g,'&quot;')}" data-f="email" ${canManage?'':'readonly'}></td>
+      <td><input value="${(c.address||'').replace(/"/g,'&quot;')}" data-f="address" ${canManage?'':'readonly'}></td>
+      <td><select data-f="status" ${canManage?'':'disabled'}>
+        <option ${c.status==='active'||!c.status?'selected':''} value="active">Active</option>
+        <option ${c.status==='inactive'?'selected':''} value="inactive">Inactive</option>
+      </select></td>
+      <td>${canManage ? `<button class="btn-small" onclick="saveCustomerRow('${c.id}')">Save</button>
+        <button class="btn-small remove" onclick="deleteCustomer('${c.id}')">×</button>` : ''}</td>
+    </tr>`).join('');
+}
+function addBlankCustomerRow(){
+  if(!isSuperAdmin() && session.role !== 'admin' && !hasPermission('customers','create')){ flash('You do not have permission to add customers.', true); return; }
+  const tempId = 'new-' + Date.now().toString(36);
+  customersCache.unshift({ id: tempId, name:'', contact_person:'', phone:'', email:'', address:'', status:'active' });
+  renderCustomers();
+}
+async function saveCustomerRow(id){
+  const tr = document.querySelector(`#customersBody tr[data-customer-id="${id}"]`);
+  if(!tr) return;
+  const name = tr.querySelector('[data-f="name"]').value.trim();
+  if(!name){ flash('Enter a customer name.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  const realId = id.startsWith('new-') ? 'cust-'+Date.now().toString(36) : id;
+  const payload = {
+    id: realId, name, contact_person: tr.querySelector('[data-f="contact_person"]').value.trim(),
+    phone: tr.querySelector('[data-f="phone"]').value.trim(), email: tr.querySelector('[data-f="email"]').value.trim(),
+    address: tr.querySelector('[data-f="address"]').value.trim(),
+    status: tr.querySelector('[data-f="status"]').value, updated_at: new Date().toISOString()
+  };
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/customers`, { method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}), body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('save_customer', realId, name);
+    flash('Saved ✓');
+    loadCustomers();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteCustomer(id){
+  if(!confirm('Move this customer to Trash?')) return;
+  await softDelete('customers', id, loadCustomers);
+}
+function exportCustomersExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
+  if(!customersCache.length){ flash('Nothing to export.', true); return; }
+  const rows = customersCache.map(c => ({ 'Customer Name':c.name, 'Contact Person':c.contact_person, 'Phone':c.phone, 'Email':c.email, 'Address':c.address, 'Status':c.status }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Customers');
+  XLSX.writeFile(wb, `customers-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
 // ---- Assets ----
 async function loadAssets(){
   const body = document.getElementById('assetsBody');
@@ -6522,13 +6828,17 @@ function refreshTabVisibility(){
   const adminEl = document.getElementById('secAdmin');
   if(adminEl) adminEl.style.display = isAdmin() ? '' : 'none';
 
-  // Sales, Purchase, Warehouse & Inventory, Reports preview the planned ERP
-  // roadmap for managers/admins — not yet real, permission-gated modules,
-  // so keep them out of regular staff view.
-  ['secSales','secPurchase','secWarehouse','secReports'].forEach(id => {
-    const btn = document.getElementById(id);
-    if(btn) btn.style.display = isAdmin() ? '' : 'none';
-  });
+  const salesEl = document.getElementById('secSales');
+  if(salesEl) salesEl.style.display = (canViewTab('customers') || isAdmin()) ? '' : 'none';
+  const purchaseEl = document.getElementById('secPurchase');
+  if(purchaseEl) purchaseEl.style.display = (canViewTab('vendors') || isAdmin()) ? '' : 'none';
+  const warehouseEl = document.getElementById('secWarehouse');
+  if(warehouseEl) warehouseEl.style.display = (canViewTab('products') || isAdmin()) ? '' : 'none';
+
+  // Reports is still fully placeholder — preview the planned ERP roadmap
+  // for managers/admins only, until it has real permission-gated content.
+  const reportsEl = document.getElementById('secReports');
+  if(reportsEl) reportsEl.style.display = isAdmin() ? '' : 'none';
 
   if(!canViewTab(activeTab)){
     const firstOk = ['home','inv','cf','sop','staff','kpi','att','hr'].find(canViewTab);
@@ -6784,7 +7094,7 @@ async function loadRolePermissions(){
     // Any module added to the app after this matrix was last saved won't
     // exist in stored data yet — fill it in with a safe default instead of
     // silently leaving the module invisible to that role.
-    const modules = ['inv','cf','sop','staff','kpi','att','hr'];
+    const modules = ['inv','cf','sop','staff','kpi','att','hr','products','vendors','customers'];
     ALL_ROLES.forEach(role => {
       if(!permissionMatrix[role]) permissionMatrix[role] = {};
       modules.forEach(mod => {
@@ -6795,7 +7105,7 @@ async function loadRolePermissions(){
   }catch(e){ /* keep defaults */ }
 }
 
-const PERM_TAB_LABELS = { inv:'Invoice Verification', cf:'Cash Flow', sop:'SOP', staff:'Employees', kpi:'KPI Evaluation', att:'Attendance', hr:'HR Records' };
+const PERM_TAB_LABELS = { inv:'Accounting Verification', cf:'Cash Flow', sop:'SOP', staff:'Employees', kpi:'KPI Evaluation', att:'Attendance', hr:'HR Records', products:'Products', vendors:'Vendors', customers:'Customers' };
 const CONFIGURABLE_ROLES = ['admin','manager','reviewer','accountant','warehouse_staff','staff','viewer'];
 
 function openPermissionsManager(){
@@ -6895,6 +7205,7 @@ async function loadSiteSettings(){
     }
     if(document.getElementById('kpiGroupsWrap')) renderKpiRows();
     if(rows.length && rows[0].logo_data_url) applyCustomLogo(rows[0].logo_data_url);
+    syncEmptyLogoBadges();
     applySubtitleText();
     applyContactText();
     applySiteLabels();
@@ -6904,6 +7215,11 @@ async function loadSiteSettings(){
 
 function applyCustomLogo(dataUrl){
   document.querySelectorAll('.drawer-logo, .home-logo, .logo-badge img').forEach(img => { img.src = dataUrl; });
+}
+function syncEmptyLogoBadges(){
+  const source = document.querySelector('.logo-badge img[src]:not([src=""])') || document.querySelector('.drawer-logo');
+  if(!source || !source.src) return;
+  document.querySelectorAll('.logo-badge img').forEach(img => { if(!img.src || img.src === window.location.href) img.src = source.src; });
 }
 
 function handleLogoUpload(input){
@@ -7619,7 +7935,7 @@ const WORKSPACE_DEFS = {
   sales: {
     title: 'Sales', subtitle: 'Customer → Quotation → Sales Order → Invoice → Payment.',
     cards: [
-      {ic:'🧑‍🤝‍🧑', nm:'Customers', color:'#2f6fed'},
+      {ic:'🧑‍🤝‍🧑', nm:'Customers', tab:'customers', color:'#2f6fed', dsc:'Customer directory & contact records'},
       {ic:'📝', nm:'Quotations', color:'#2f6fed'},
       {ic:'🛒', nm:'Sales Orders', color:'#2f6fed'},
       {ic:'🧾', nm:'Sales Invoices', color:'#2f6fed'},
@@ -7631,7 +7947,7 @@ const WORKSPACE_DEFS = {
   purchase: {
     title: 'Purchase', subtitle: 'Purchase Request → RFQ → Purchase Order → Vendor Bill → Payment.',
     cards: [
-      {ic:'🏭', nm:'Vendors', color:'#b8720e'},
+      {ic:'🏭', nm:'Vendors', tab:'vendors', color:'#b8720e', dsc:'Vendor directory, contacts & status'},
       {ic:'📋', nm:'Purchase Requests', color:'#b8720e'},
       {ic:'📨', nm:'RFQ', color:'#b8720e'},
       {ic:'📦', nm:'Purchase Orders', color:'#b8720e'},
@@ -7644,7 +7960,7 @@ const WORKSPACE_DEFS = {
   warehouse: {
     title: 'Warehouse & Inventory', subtitle: 'Products, stock movements, transfers, and adjustments.',
     cards: [
-      {ic:'📦', nm:'Products', color:'#8a5a44'},
+      {ic:'📦', nm:'Products', tab:'products', color:'#8a5a44', dsc:'Product catalog, pricing & stock levels'},
       {ic:'🏷️', nm:'Categories', color:'#8a5a44'},
       {ic:'🏬', nm:'Warehouses', color:'#8a5a44'},
       {ic:'📍', nm:'Locations', color:'#8a5a44'},
@@ -7756,7 +8072,8 @@ function renderHomeGrid(){
     finance: canViewTab('inv') || canViewTab('cf'),
     hr: canViewTab('staff') || canViewTab('att') || canViewTab('hr') || canViewTab('kpi'),
     admin: isAdmin(),
-    sales: isAdmin(), purchase: isAdmin(), warehouse: isAdmin(), reports: isAdmin(),
+    sales: canViewTab('customers') || isAdmin(), purchase: canViewTab('vendors') || isAdmin(),
+    warehouse: canViewTab('products') || isAdmin(), reports: isAdmin(),
   };
   const cardDefs = {};
   Object.keys(sectionCardDefs).forEach(key => { if(visibleSections[key]) cardDefs[key] = sectionCardDefs[key]; });
@@ -8585,13 +8902,17 @@ function switchTab(tab){
   document.getElementById('kpiForm').classList.toggle('hidden-tab', tab !== 'kpi');
   document.getElementById('attForm').classList.toggle('hidden-tab', tab !== 'att');
   document.getElementById('hrForm').classList.toggle('hidden-tab', tab !== 'hr');
+  document.getElementById('productsForm').classList.toggle('hidden-tab', tab !== 'products');
+  document.getElementById('vendorsForm').classList.toggle('hidden-tab', tab !== 'vendors');
+  document.getElementById('customersForm').classList.toggle('hidden-tab', tab !== 'customers');
   document.getElementById('tabHome').classList.toggle('active', tab === 'home');
   document.getElementById('tabSop').classList.toggle('active', tab === 'sop');
   // Highlight whichever sidebar section this tab belongs to (Finance for
   // inv/cf, Human Resources for staff/att/hr/kpi), since those tabs are now
   // reached through a workspace rather than their own sidebar button.
   document.querySelectorAll('.sidebar-section-btn').forEach(b => b.classList.remove('active'));
-  const sectionForTab = { inv:'secFinance', cf:'secFinance', staff:'secHr', att:'secHr', hr:'secHr', kpi:'secHr' }[tab];
+  const sectionForTab = { inv:'secFinance', cf:'secFinance', staff:'secHr', att:'secHr', hr:'secHr', kpi:'secHr',
+    products:'secWarehouse', vendors:'secPurchase', customers:'secSales' }[tab];
   if(sectionForTab){
     const el = document.getElementById(sectionForTab);
     if(el) el.classList.add('active');
@@ -8608,6 +8929,9 @@ function switchTab(tab){
   if(tab === 'staff') loadEmployees();
   if(tab === 'att') loadAttendanceTab();
   if(tab === 'hr') loadHrRecordsTab();
+  if(tab === 'products') loadProducts();
+  if(tab === 'vendors') loadVendors();
+  if(tab === 'customers') loadCustomers();
   if(tab === 'kpi') showKpiDeptPicker();
   if(tab === 'sop') document.querySelectorAll('#sopList textarea').forEach(autoGrow);
   applyViewerLock();
