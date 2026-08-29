@@ -3431,6 +3431,11 @@ function applySession(){
   });
 
   document.getElementById('employeeScreen').style.display = isEmployee() ? 'flex' : 'none';
+  document.getElementById('employeeScreen').classList.remove('hidden-tab');
+  if(isEmployee()){
+    const ws = document.getElementById('workspaceScreen');
+    if(ws) ws.classList.add('hidden-tab');
+  }
   applyLanguage();
   if(isEmployee()) loadEmployeeSelfService();
   if(document.getElementById('stageActionBar')) renderStageActions('forms', currentFormId, 'inv');
@@ -7699,7 +7704,7 @@ const WORKSPACE_DEFS = {
 function openWorkspace(sectionKey){
   const def = WORKSPACE_DEFS[sectionKey];
   if(!def) return;
-  document.querySelectorAll('.sheet, .home-screen, .employee-screen').forEach(el => el.classList.add('hidden-tab'));
+  document.querySelectorAll('.sheet, .home-screen').forEach(el => el.classList.add('hidden-tab'));
   document.getElementById('workspaceScreen').classList.remove('hidden-tab');
   document.getElementById('workspaceTitle').textContent = def.title;
   document.getElementById('workspaceSubtitle').textContent = def.subtitle;
@@ -7729,46 +7734,55 @@ function openWorkspace(sectionKey){
 function renderHomeGrid(){
   const grid = document.getElementById('homeGrid');
   if(!grid) return;
-  const cardDefs = {
-    inv: {ic:'🧾', nm:'Accounting Verification', tab:'inv', key:'inv', color:'#2f6fed',
-      dsc:'Accounting verification & pricing', bullets:['Verify invoices','Check pricing','Approve & record']},
-    cf: {ic:'💵', nm:'Cash Flow', tab:'cf', key:'cf', color:'#0c8a4a',
-      dsc:'Product, cash flow & stock tracking', bullets:['Track cash flow entries','Monitor stock','Save & print reports']},
-    sop: {ic:'📋', nm:'SOP', tab:'sop', key:'sop', color:'#b8720e',
-      dsc:'Standard operating procedures', bullets:['View SOP documents','Department procedures','Work instructions']},
-    staff: {ic:'🪪', nm:'Employees', tab:'staff', key:'staff', color:'#7c5cd4',
-      dsc:'Employee directory & ID cards', bullets:['View employee directory','Manage ID cards','Design & QR codes']},
-    kpi: {ic:'📊', nm:'KPI Evaluation', tab:'kpi', key:'kpi', color:'#0e7c86',
-      dsc:'Score employee performance', bullets:['Set targets & accuracy','Auto-calculated scores','Supervisor notes']},
-    att: {ic:'🕐', nm:'Attendance', tab:'att', key:'att', color:'#d4762a',
-      dsc:'Time, leave & payroll', bullets:['Shifts & check-in records','Leave requests & overtime','Payroll summary & payslips']},
-    hr: {ic:'🗂️', nm:'HR Records', tab:'hr', key:'hr', color:'#8a5a44',
-      dsc:'Assets, expenses & discipline', bullets:['Assets & reimbursements','Disciplinary records','Training & certifications']},
+  const sectionCardDefs = {
+    finance: {ic:'💰', nm:'Finance & Accounting', color:'#2f6fed',
+      dsc:'Accounting verification, cash flow & financial records', bullets:['Accounting Verification','Cash Flow','Invoices, Payments & Reports']},
+    sales: {ic:'🛒', nm:'Sales', color:'#2f6fed',
+      dsc:'Customers, quotations & sales orders', bullets:['Customers & Quotations','Sales Orders & Invoices','Sales Reports']},
+    purchase: {ic:'📦', nm:'Purchase', color:'#b8720e',
+      dsc:'Vendors, purchase orders & bills', bullets:['Vendors & RFQ','Purchase Orders','Vendor Bills & Payments']},
+    warehouse: {ic:'🏬', nm:'Warehouse & Inventory', color:'#8a5a44',
+      dsc:'Products, stock & movements', bullets:['Products & Categories','Stock In / Out / Transfer','Inventory Reports']},
+    hr: {ic:'🧑\u200d💼', nm:'Human Resources', color:'#7c5cd4',
+      dsc:'Employees, attendance & records', bullets:['Employees & Attendance','KPI Evaluation','HR Records']},
+    reports: {ic:'📈', nm:'Reports', color:'#6b6455',
+      dsc:'Centralized reporting across every module', bullets:['Accounting & Sales Reports','Warehouse & HR Reports','KPI & Financial Reports']},
+    admin: {ic:'⚙️', nm:'Administration', color:'#5c6b62',
+      dsc:'Users, roles, permissions & settings', bullets:['Users & Audit Log','Roles & Permissions','System Settings']},
   };
-  Object.keys(cardDefs).forEach(id => { if(!canViewTab(id)) delete cardDefs[id]; });
+  // Only show a section card if the user has access to at least one thing
+  // inside it — matches the sidebar's own visibility rules exactly.
+  const visibleSections = {
+    finance: canViewTab('inv') || canViewTab('cf'),
+    hr: canViewTab('staff') || canViewTab('att') || canViewTab('hr') || canViewTab('kpi'),
+    admin: isAdmin(),
+    sales: isAdmin(), purchase: isAdmin(), warehouse: isAdmin(), reports: isAdmin(),
+  };
+  const cardDefs = {};
+  Object.keys(sectionCardDefs).forEach(key => { if(visibleSections[key]) cardDefs[key] = sectionCardDefs[key]; });
 
   const customIds = Object.keys(customSections).filter(id => canViewTab('custom:'+id));
-  // Order: whatever sequence Reorder Tabs has set, core tabs first then any custom ids not yet in tabOrder.
-  const orderedIds = [...tabOrder.filter(id => cardDefs[id]), ...Object.keys(cardDefs).filter(id => !tabOrder.includes(id))];
-  const cards = orderedIds.map(id => cardDefs[id]);
+  const cards = Object.keys(cardDefs).map(id => ({ ...cardDefs[id], key: id }));
   customIds.forEach(id => {
     const s = customSections[id];
     cards.push({ic:'📁', nm:s.name, tab:'custom:'+id, key:null, color:'#64748b', dsc:'Custom section', bullets:['View records','Add new entries','Save & print']});
   });
 
-  grid.innerHTML = cards.map((c,idx) => `
-    <div class="home-card" style="--accent:${c.color};--i:${idx};" onclick="switchTab('${c.tab}')">
+  grid.innerHTML = cards.map((c,idx) => {
+    const action = c.tab ? `switchTab('${c.tab}')` : `openWorkspace('${c.key}')`;
+    return `
+    <div class="home-card" style="--accent:${c.color};--i:${idx};" onclick="${action}">
       <div class="card-top">
         <div class="ic" style="background:${c.color}1a;color:${c.color};">${c.ic}</div>
         <div>
           <div class="nm">${c.nm.replace(/</g,'&lt;')}</div>
-          <div class="dsc"${c.key?` data-label-key="home.${c.key}.dsc"`:''}>${c.dsc}</div>
+          <div class="dsc">${c.dsc}</div>
         </div>
       </div>
-      <ul class="checklist">${c.bullets.map((b,i)=>`<li${c.key?` data-label-key="home.${c.key}.b${i+1}"`:''}>${b}</li>`).join('')}</ul>
-      <button class="go-btn" style="background:${c.color};" onclick="event.stopPropagation(); switchTab('${c.tab}')">Go to Module →</button>
-    </div>
-  `).join('');
+      <ul class="checklist">${c.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>
+      <button class="go-btn" style="background:${c.color};" onclick="event.stopPropagation(); ${action}">Go to Module →</button>
+    </div>`;
+  }).join('');
 
   const line = document.getElementById('homeUserLine');
   if(line && session.email) line.textContent = `${session.email} · ${session.role.replace('_',' ')}`;
