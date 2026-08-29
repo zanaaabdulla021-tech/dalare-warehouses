@@ -1230,6 +1230,14 @@
   .nav-group-items{display:flex;flex-direction:column;gap:3px;padding-inline-start:8px;overflow:hidden;}
   .nav-group.collapsed .nav-group-items{display:none;}
   .nav-group{display:flex;flex-direction:column;}
+  .nav-placeholder-item{
+    border:none;background:transparent;color:#9a9384;border-radius:10px;
+    padding:11px 14px;text-align:left;width:100%;cursor:not-allowed;
+    font-size:.9rem;font-weight:600;font-family:"IBM Plex Sans",sans-serif;
+    display:flex;align-items:center;gap:10px;
+  }
+  .nav-placeholder-item em{font-style:normal;font-size:.68rem;opacity:.75;font-family:"IBM Plex Mono",monospace;}
+  .nav-group-placeholder .nav-group-header{opacity:.6;}
   .tabbar button{
     border:none;background:transparent;color:#5c6b62;border-radius:12px;
     padding:12px 14px;cursor:pointer;text-align:left;
@@ -1844,8 +1852,42 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <span class="nav-group-label">💰 Finance &amp; Accounting</span><span class="nav-chevron">›</span>
       </button>
       <div class="nav-group-items">
-        <button id="tabInv" onclick="switchTab('inv')">🧾 <span data-i18n="nav.inv">Invoice Verification</span></button>
+        <button id="tabInv" onclick="switchTab('inv')">🧾 <span data-i18n="nav.inv">Accounting Verification</span></button>
         <button id="tabCf" onclick="switchTab('cf')">💵 <span data-i18n="nav.cf">Cash Flow</span></button>
+      </div>
+    </div>
+
+    <div class="nav-group nav-group-placeholder" id="navGroupSales">
+      <button class="nav-group-header" onclick="toggleNavGroup('navGroupSales')">
+        <span class="nav-group-label">🛒 Sales</span><span class="nav-chevron">›</span>
+      </button>
+      <div class="nav-group-items">
+        <button disabled class="nav-placeholder-item">Customers <em>· coming soon</em></button>
+        <button disabled class="nav-placeholder-item">Quotations <em>· coming soon</em></button>
+        <button disabled class="nav-placeholder-item">Sales Orders <em>· coming soon</em></button>
+        <button disabled class="nav-placeholder-item">Sales Invoices <em>· coming soon</em></button>
+      </div>
+    </div>
+
+    <div class="nav-group nav-group-placeholder" id="navGroupPurchase">
+      <button class="nav-group-header" onclick="toggleNavGroup('navGroupPurchase')">
+        <span class="nav-group-label">📦 Purchase</span><span class="nav-chevron">›</span>
+      </button>
+      <div class="nav-group-items">
+        <button disabled class="nav-placeholder-item">Vendors <em>· coming soon</em></button>
+        <button disabled class="nav-placeholder-item">Purchase Orders <em>· coming soon</em></button>
+        <button disabled class="nav-placeholder-item">Vendor Bills <em>· coming soon</em></button>
+      </div>
+    </div>
+
+    <div class="nav-group nav-group-placeholder" id="navGroupWarehouse">
+      <button class="nav-group-header" onclick="toggleNavGroup('navGroupWarehouse')">
+        <span class="nav-group-label">🏬 Warehouse &amp; Inventory</span><span class="nav-chevron">›</span>
+      </button>
+      <div class="nav-group-items">
+        <button disabled class="nav-placeholder-item">Products <em>· coming soon</em></button>
+        <button disabled class="nav-placeholder-item">Stock In / Out <em>· coming soon</em></button>
+        <button disabled class="nav-placeholder-item">Transfers <em>· coming soon</em></button>
       </div>
     </div>
 
@@ -1872,6 +1914,15 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <button id="navAdminUsers" onclick="openAdmin()">👥 Users &amp; Audit Log</button>
         <button id="navAdminPerms" onclick="openPermissionsManager()">🔐 Manage Permissions</button>
         <button id="navAdminSettings" onclick="toggleSettingsMenu(this)">🛠️ Site Settings</button>
+      </div>
+    </div>
+
+    <div class="nav-group nav-group-placeholder" id="navGroupReports">
+      <button class="nav-group-header" onclick="toggleNavGroup('navGroupReports')">
+        <span class="nav-group-label">📈 Reports</span><span class="nav-chevron">›</span>
+      </button>
+      <div class="nav-group-items">
+        <button disabled class="nav-placeholder-item">Centralized Reports <em>· coming soon</em></button>
       </div>
     </div>
 
@@ -6271,7 +6322,7 @@ function updateReorderTabsButton(){
 
 const I18N = {
   en: {
-    'nav.home':'Home', 'nav.search':'Search All Forms', 'nav.inv':'Invoice Verification', 'nav.cf':'Cash Flow',
+    'nav.home':'Home', 'nav.search':'Search All Forms', 'nav.inv':'Accounting Verification', 'nav.cf':'Cash Flow',
     'nav.sop':'SOP', 'nav.staff':'Employees', 'nav.kpi':'KPI Evaluation', 'nav.att':'Attendance', 'nav.signout':'Sign out',
     'tb.back':'← Back', 'tb.newform':'+ New Form', 'tb.myforms':'📁 My Forms', 'tb.admin':'⚙️ Admin',
     'tb.cleardata':'🗑️ Clear Data', 'tb.save':'💾 Save', 'tb.print':'🖨️ Print / Save as PDF',
@@ -6279,7 +6330,7 @@ const I18N = {
     'att.leave':'Leave Requests', 'att.reports':'Monthly Reports'
   },
   ku: {
-    'nav.home':'ماڵەوە', 'nav.search':'گەڕان بە هەموو فۆرمەکان', 'nav.inv':'پشکنینی وەصڵ', 'nav.cf':'گەشەی دارایی',
+    'nav.home':'ماڵەوە', 'nav.search':'گەڕان بە هەموو فۆرمەکان', 'nav.inv':'پشکنینی دارایی', 'nav.cf':'گەشەی دارایی',
     'nav.sop':'ڕێنمایی کار', 'nav.staff':'کارمەندان', 'nav.kpi':'هەڵسەنگاندنی KPI', 'nav.att':'ئامادەبوون', 'nav.signout':'چوونەدەرەوە',
     'tb.back':'← گەڕانەوە', 'tb.newform':'+ فۆرمی نوێ', 'tb.myforms':'📁 فۆرمەکانم', 'tb.admin':'⚙️ بەڕێوەبردن',
     'tb.cleardata':'🗑️ سڕینەوەی داتا', 'tb.save':'💾 پاشەکەوتکردن', 'tb.print':'🖨️ چاپکردن / وەک PDF',
@@ -6521,10 +6572,18 @@ function refreshTabVisibility(){
   const navAdminSettings = document.getElementById('navAdminSettings');
   if(navAdminSettings) navAdminSettings.style.display = isSuperAdmin() ? '' : 'none';
 
+  // Placeholder groups (Sales, Purchase, Warehouse & Inventory, Reports)
+  // preview the planned ERP roadmap for managers/admins — not yet real,
+  // permission-gated modules, so keep them out of regular staff view.
+  ['navGroupSales','navGroupPurchase','navGroupWarehouse','navGroupReports'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = isAdmin() ? '' : 'none';
+  });
+
   // Hide a whole module group if every item inside it is hidden — a
   // manager with no Finance access shouldn't see an empty "Finance &
   // Accounting" heading in the sidebar.
-  document.querySelectorAll('.nav-group').forEach(group => {
+  document.querySelectorAll('.nav-group:not(.nav-group-placeholder)').forEach(group => {
     const items = group.querySelectorAll('.nav-group-items > button');
     const anyVisible = Array.from(items).some(b => b.style.display !== 'none');
     group.style.display = anyVisible ? '' : 'none';
@@ -7599,7 +7658,7 @@ function renderHomeGrid(){
   const grid = document.getElementById('homeGrid');
   if(!grid) return;
   const cardDefs = {
-    inv: {ic:'🧾', nm:'Invoice Verification', tab:'inv', key:'inv', color:'#2f6fed',
+    inv: {ic:'🧾', nm:'Accounting Verification', tab:'inv', key:'inv', color:'#2f6fed',
       dsc:'Accounting verification & pricing', bullets:['Verify invoices','Check pricing','Approve & record']},
     cf: {ic:'💵', nm:'Cash Flow', tab:'cf', key:'cf', color:'#0c8a4a',
       dsc:'Product, cash flow & stock tracking', bullets:['Track cash flow entries','Monitor stock','Save & print reports']},
