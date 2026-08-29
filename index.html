@@ -1229,6 +1229,16 @@
   .nav-group.collapsed .nav-chevron{transform:rotate(0deg);}
   .nav-group-items{display:flex;flex-direction:column;gap:3px;padding-inline-start:8px;overflow:hidden;}
   .nav-group.collapsed .nav-group-items{display:none;}
+  .sidebar-section-btn{
+    border:none;background:transparent;color:#5c6b62;border-radius:12px;
+    padding:12px 14px;cursor:pointer;text-align:left;
+    font-size:.9rem;font-weight:700;font-family:"IBM Plex Sans",sans-serif;
+    display:flex;align-items:center;gap:10px;width:100%;
+    transition:background .15s ease, color .15s ease;
+  }
+  .sidebar-section-btn.active{background:var(--forest);color:#fff;box-shadow:0 4px 12px -4px rgba(34,153,73,.5);}
+  .sidebar-section-btn:hover:not(.active){background:var(--sage);color:var(--forest-deep);}
+  .sidebar-section-placeholder{opacity:.55;}
   .nav-group{display:flex;flex-direction:column;}
   .nav-placeholder-item{
     border:none;background:transparent;color:#9a9384;border-radius:10px;
@@ -1844,87 +1854,19 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <button class="drawer-close" onclick="closeDrawer()">×</button>
   </div>
   <div class="tabbar">
-    <button id="tabHome" class="active" onclick="switchTab('home')">🏠 <span data-i18n="nav.home">Home</span></button>
+    <button id="tabHome" class="active" onclick="switchTab('home')">🏠 <span data-i18n="nav.home">Dashboard</span></button>
     <button id="globalSearchTabBtn" onclick="openGlobalSearch()" style="display:none;">🔍 <span data-i18n="nav.search">Search All Forms</span></button>
 
-    <div class="nav-group" id="navGroupFinance">
-      <button class="nav-group-header" onclick="toggleNavGroup('navGroupFinance')">
-        <span class="nav-group-label">💰 Finance &amp; Accounting</span><span class="nav-chevron">›</span>
-      </button>
-      <div class="nav-group-items">
-        <button id="tabInv" onclick="switchTab('inv')">🧾 <span data-i18n="nav.inv">Accounting Verification</span></button>
-        <button id="tabCf" onclick="switchTab('cf')">💵 <span data-i18n="nav.cf">Cash Flow</span></button>
-      </div>
-    </div>
-
-    <div class="nav-group nav-group-placeholder" id="navGroupSales">
-      <button class="nav-group-header" onclick="toggleNavGroup('navGroupSales')">
-        <span class="nav-group-label">🛒 Sales</span><span class="nav-chevron">›</span>
-      </button>
-      <div class="nav-group-items">
-        <button disabled class="nav-placeholder-item">Customers <em>· coming soon</em></button>
-        <button disabled class="nav-placeholder-item">Quotations <em>· coming soon</em></button>
-        <button disabled class="nav-placeholder-item">Sales Orders <em>· coming soon</em></button>
-        <button disabled class="nav-placeholder-item">Sales Invoices <em>· coming soon</em></button>
-      </div>
-    </div>
-
-    <div class="nav-group nav-group-placeholder" id="navGroupPurchase">
-      <button class="nav-group-header" onclick="toggleNavGroup('navGroupPurchase')">
-        <span class="nav-group-label">📦 Purchase</span><span class="nav-chevron">›</span>
-      </button>
-      <div class="nav-group-items">
-        <button disabled class="nav-placeholder-item">Vendors <em>· coming soon</em></button>
-        <button disabled class="nav-placeholder-item">Purchase Orders <em>· coming soon</em></button>
-        <button disabled class="nav-placeholder-item">Vendor Bills <em>· coming soon</em></button>
-      </div>
-    </div>
-
-    <div class="nav-group nav-group-placeholder" id="navGroupWarehouse">
-      <button class="nav-group-header" onclick="toggleNavGroup('navGroupWarehouse')">
-        <span class="nav-group-label">🏬 Warehouse &amp; Inventory</span><span class="nav-chevron">›</span>
-      </button>
-      <div class="nav-group-items">
-        <button disabled class="nav-placeholder-item">Products <em>· coming soon</em></button>
-        <button disabled class="nav-placeholder-item">Stock In / Out <em>· coming soon</em></button>
-        <button disabled class="nav-placeholder-item">Transfers <em>· coming soon</em></button>
-      </div>
-    </div>
-
-    <div class="nav-group" id="navGroupHr">
-      <button class="nav-group-header" onclick="toggleNavGroup('navGroupHr')">
-        <span class="nav-group-label">🧑‍💼 Human Resources</span><span class="nav-chevron">›</span>
-      </button>
-      <div class="nav-group-items">
-        <button id="tabStaff" onclick="switchTab('staff')">🪪 <span data-i18n="nav.staff">Employees</span></button>
-        <button id="tabAtt" onclick="switchTab('att')">🕐 <span data-i18n="nav.att">Attendance</span></button>
-        <button id="tabHr" onclick="switchTab('hr')">🗂️ <span data-i18n="nav.hr">HR Records</span></button>
-        <button id="tabKpi" onclick="switchTab('kpi')">📊 <span data-i18n="nav.kpi">KPI Evaluation</span></button>
-      </div>
-    </div>
+    <button id="secFinance" class="sidebar-section-btn" onclick="openWorkspace('finance')">💰 Finance &amp; Accounting</button>
+    <button id="secSales" class="sidebar-section-btn sidebar-section-placeholder" onclick="openWorkspace('sales')">🛒 Sales</button>
+    <button id="secPurchase" class="sidebar-section-btn sidebar-section-placeholder" onclick="openWorkspace('purchase')">📦 Purchase</button>
+    <button id="secWarehouse" class="sidebar-section-btn sidebar-section-placeholder" onclick="openWorkspace('warehouse')">🏬 Warehouse &amp; Inventory</button>
+    <button id="secHr" class="sidebar-section-btn" onclick="openWorkspace('hr')">🧑‍💼 Human Resources</button>
+    <button id="secReports" class="sidebar-section-btn sidebar-section-placeholder" onclick="openWorkspace('reports')">📈 Reports</button>
+    <button id="secAdmin" class="sidebar-section-btn" onclick="openWorkspace('admin')">⚙️ Administration</button>
 
     <button id="tabSop" onclick="switchTab('sop')">📋 <span data-i18n="nav.sop">SOP</span></button>
     <span id="customTabsSlot"></span>
-
-    <div class="nav-group" id="navGroupAdmin">
-      <button class="nav-group-header" onclick="toggleNavGroup('navGroupAdmin')">
-        <span class="nav-group-label">⚙️ Administration</span><span class="nav-chevron">›</span>
-      </button>
-      <div class="nav-group-items" id="navGroupAdminItems">
-        <button id="navAdminUsers" onclick="openAdmin()">👥 Users &amp; Audit Log</button>
-        <button id="navAdminPerms" onclick="openPermissionsManager()">🔐 Manage Permissions</button>
-        <button id="navAdminSettings" onclick="toggleSettingsMenu(this)">🛠️ Site Settings</button>
-      </div>
-    </div>
-
-    <div class="nav-group nav-group-placeholder" id="navGroupReports">
-      <button class="nav-group-header" onclick="toggleNavGroup('navGroupReports')">
-        <span class="nav-group-label">📈 Reports</span><span class="nav-chevron">›</span>
-      </button>
-      <div class="nav-group-items">
-        <button disabled class="nav-placeholder-item">Centralized Reports <em>· coming soon</em></button>
-      </div>
-    </div>
 
     <button id="langToggleBtn" class="add-section-btn" onclick="toggleLanguage()" title="Switch language" style="width:auto;">🌐 EN</button>
     <div id="settingsMenuWrap" style="position:relative;display:none;">
@@ -2136,6 +2078,15 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="activities-head">Recent Activity</div>
     <div class="activities-list"></div>
   </div>
+</div>
+
+<div class="home-screen hidden-tab" id="workspaceScreen">
+  <div class="workspace-header">
+    <button class="secondary" onclick="switchTab('home')" style="margin-bottom:14px;">← Back to Dashboard</button>
+    <h1 id="workspaceTitle" style="font-family:'Fraunces','IBM Plex Sans',sans-serif;font-weight:600;font-size:1.6rem;color:var(--forest-deep);margin:0 0 4px;"></h1>
+    <p id="workspaceSubtitle" style="color:#6b6455;margin:0 0 18px;"></p>
+  </div>
+  <div class="home-grid" id="workspaceGrid"></div>
 </div>
 
 <div class="sheet" id="form">
@@ -6556,37 +6507,22 @@ function applySubtitleText(){
 }
 
 function refreshTabVisibility(){
-  document.getElementById('tabInv').style.display   = canViewTab('inv')   ? '' : 'none';
-  document.getElementById('tabCf').style.display    = canViewTab('cf')    ? '' : 'none';
-  document.getElementById('tabSop').style.display   = canViewTab('sop')   ? '' : 'none';
-  document.getElementById('tabStaff').style.display = canViewTab('staff') ? 'block' : 'none';
-  document.getElementById('tabKpi').style.display = canViewTab('kpi') ? '' : 'none';
-  document.getElementById('tabAtt').style.display = canViewTab('att') ? '' : 'none';
-  document.getElementById('tabHr').style.display = canViewTab('hr') ? '' : 'none';
+  document.getElementById('tabSop').style.display = canViewTab('sop') ? '' : 'none';
   document.getElementById('globalSearchTabBtn').style.display = isEmployee() ? 'none' : '';
 
-  const navAdminUsers = document.getElementById('navAdminUsers');
-  if(navAdminUsers) navAdminUsers.style.display = isAdmin() ? '' : 'none';
-  const navAdminPerms = document.getElementById('navAdminPerms');
-  if(navAdminPerms) navAdminPerms.style.display = isSuperAdmin() ? '' : 'none';
-  const navAdminSettings = document.getElementById('navAdminSettings');
-  if(navAdminSettings) navAdminSettings.style.display = isSuperAdmin() ? '' : 'none';
+  const el = document.getElementById('secFinance');
+  if(el) el.style.display = (canViewTab('inv') || canViewTab('cf')) ? '' : 'none';
+  const hrEl = document.getElementById('secHr');
+  if(hrEl) hrEl.style.display = (canViewTab('staff') || canViewTab('att') || canViewTab('hr') || canViewTab('kpi')) ? '' : 'none';
+  const adminEl = document.getElementById('secAdmin');
+  if(adminEl) adminEl.style.display = isAdmin() ? '' : 'none';
 
-  // Placeholder groups (Sales, Purchase, Warehouse & Inventory, Reports)
-  // preview the planned ERP roadmap for managers/admins — not yet real,
-  // permission-gated modules, so keep them out of regular staff view.
-  ['navGroupSales','navGroupPurchase','navGroupWarehouse','navGroupReports'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.style.display = isAdmin() ? '' : 'none';
-  });
-
-  // Hide a whole module group if every item inside it is hidden — a
-  // manager with no Finance access shouldn't see an empty "Finance &
-  // Accounting" heading in the sidebar.
-  document.querySelectorAll('.nav-group:not(.nav-group-placeholder)').forEach(group => {
-    const items = group.querySelectorAll('.nav-group-items > button');
-    const anyVisible = Array.from(items).some(b => b.style.display !== 'none');
-    group.style.display = anyVisible ? '' : 'none';
+  // Sales, Purchase, Warehouse & Inventory, Reports preview the planned ERP
+  // roadmap for managers/admins — not yet real, permission-gated modules,
+  // so keep them out of regular staff view.
+  ['secSales','secPurchase','secWarehouse','secReports'].forEach(id => {
+    const btn = document.getElementById(id);
+    if(btn) btn.style.display = isAdmin() ? '' : 'none';
   });
 
   if(!canViewTab(activeTab)){
@@ -7654,6 +7590,142 @@ async function loadHomeNotifications(){
   }catch(e){ box.innerHTML = ''; }
 }
 
+// ===================== ERP Workspaces =====================
+// Each section's workspace lists every function from the DALARE ERP spec.
+// Cards with a `tab` open a real, already-working feature inside the same
+// layout. Cards with `fn` call an existing function directly (used for
+// Administration, which routes to modals rather than tabs). Cards with
+// neither are placeholders for modules not built yet — clicking flashes
+// "coming soon" instead of silently doing nothing.
+const WORKSPACE_DEFS = {
+  finance: {
+    title: 'Finance & Accounting', subtitle: 'Accounting verification, cash flow, and financial records.',
+    cards: [
+      {ic:'📊', nm:'Accounting Dashboard', color:'#2f6fed'},
+      {ic:'🧾', nm:'Accounting Verification', tab:'inv', color:'#2f6fed', dsc:'Verify invoices, check pricing, approve & record'},
+      {ic:'💵', nm:'Cash Flow', tab:'cf', color:'#0c8a4a', dsc:'Track cash flow entries, monitor stock, save & print reports'},
+      {ic:'📄', nm:'Invoices', color:'#2f6fed'},
+      {ic:'💳', nm:'Payments', color:'#2f6fed'},
+      {ic:'📈', nm:'Income', color:'#0c8a4a'},
+      {ic:'📉', nm:'Expenses', color:'#a8462e'},
+      {ic:'📑', nm:'Accounting Reports', color:'#6b6455'},
+    ]
+  },
+  sales: {
+    title: 'Sales', subtitle: 'Customer → Quotation → Sales Order → Invoice → Payment.',
+    cards: [
+      {ic:'🧑‍🤝‍🧑', nm:'Customers', color:'#2f6fed'},
+      {ic:'📝', nm:'Quotations', color:'#2f6fed'},
+      {ic:'🛒', nm:'Sales Orders', color:'#2f6fed'},
+      {ic:'🧾', nm:'Sales Invoices', color:'#2f6fed'},
+      {ic:'↩️', nm:'Sales Returns', color:'#a8462e'},
+      {ic:'💳', nm:'Payments', color:'#0c8a4a'},
+      {ic:'📑', nm:'Sales Reports', color:'#6b6455'},
+    ]
+  },
+  purchase: {
+    title: 'Purchase', subtitle: 'Purchase Request → RFQ → Purchase Order → Vendor Bill → Payment.',
+    cards: [
+      {ic:'🏭', nm:'Vendors', color:'#b8720e'},
+      {ic:'📋', nm:'Purchase Requests', color:'#b8720e'},
+      {ic:'📨', nm:'RFQ', color:'#b8720e'},
+      {ic:'📦', nm:'Purchase Orders', color:'#b8720e'},
+      {ic:'🧾', nm:'Vendor Bills', color:'#b8720e'},
+      {ic:'↩️', nm:'Purchase Returns', color:'#a8462e'},
+      {ic:'💳', nm:'Payments', color:'#0c8a4a'},
+      {ic:'📑', nm:'Purchase Reports', color:'#6b6455'},
+    ]
+  },
+  warehouse: {
+    title: 'Warehouse & Inventory', subtitle: 'Products, stock movements, transfers, and adjustments.',
+    cards: [
+      {ic:'📦', nm:'Products', color:'#8a5a44'},
+      {ic:'🏷️', nm:'Categories', color:'#8a5a44'},
+      {ic:'🏬', nm:'Warehouses', color:'#8a5a44'},
+      {ic:'📍', nm:'Locations', color:'#8a5a44'},
+      {ic:'📊', nm:'Stock', color:'#8a5a44'},
+      {ic:'⬇️', nm:'Stock In', color:'#0c8a4a'},
+      {ic:'⬆️', nm:'Stock Out', color:'#a8462e'},
+      {ic:'🔄', nm:'Stock Transfers', color:'#8a5a44'},
+      {ic:'⚖️', nm:'Inventory Adjustment', color:'#8a5a44'},
+      {ic:'📜', nm:'Stock Movements', color:'#8a5a44'},
+      {ic:'⚠️', nm:'Low Stock', color:'#b9770e'},
+      {ic:'📑', nm:'Inventory Reports', color:'#6b6455'},
+    ]
+  },
+  hr: {
+    title: 'Human Resources', subtitle: 'Employees, attendance, shifts, leave, and records.',
+    cards: [
+      {ic:'🪪', nm:'Employees', tab:'staff', color:'#7c5cd4', dsc:'Employee directory, ID cards, QR codes'},
+      {ic:'🏢', nm:'Departments', color:'#7c5cd4'},
+      {ic:'💼', nm:'Positions', color:'#7c5cd4'},
+      {ic:'🕐', nm:'Attendance', tab:'att', color:'#d4762a', dsc:'Shifts, check-in records, leave & payroll'},
+      {ic:'👆', nm:'Fingerprint Attendance', color:'#9a9384'},
+      {ic:'📅', nm:'Shifts', tab:'att', color:'#d4762a', dsc:'Managed inside Attendance'},
+      {ic:'🌴', nm:'Leave', tab:'att', color:'#d4762a', dsc:'Managed inside Attendance'},
+      {ic:'🗂️', nm:'Employee Records', tab:'hr', color:'#8a5a44', dsc:'Assets, expenses, discipline & training'},
+      {ic:'📊', nm:'KPI Evaluation', tab:'kpi', color:'#0e7c86', dsc:'Score employee performance'},
+      {ic:'📑', nm:'HR Reports', color:'#6b6455'},
+    ]
+  },
+  reports: {
+    title: 'Reports', subtitle: 'Centralized reporting across every module.',
+    cards: [
+      {ic:'💰', nm:'Accounting Reports', color:'#2f6fed'},
+      {ic:'🛒', nm:'Sales Reports', color:'#2f6fed'},
+      {ic:'📦', nm:'Purchase Reports', color:'#b8720e'},
+      {ic:'🏬', nm:'Warehouse Reports', color:'#8a5a44'},
+      {ic:'📊', nm:'Inventory Reports', color:'#8a5a44'},
+      {ic:'🧑‍💼', nm:'HR Reports', color:'#7c5cd4'},
+      {ic:'🕐', nm:'Attendance Reports', tab:'att', color:'#d4762a', dsc:'Payroll Summary lives inside Attendance'},
+      {ic:'📈', nm:'KPI Reports', tab:'kpi', color:'#0e7c86', dsc:'Company KPI Overview lives inside KPI'},
+      {ic:'📑', nm:'Financial Reports', color:'#2f6fed'},
+    ]
+  },
+  admin: {
+    title: 'Administration', subtitle: 'Users, roles, permissions, and system settings.',
+    cards: [
+      {ic:'👥', nm:'Users', fn:'openAdmin()', color:'#5c6b62', dsc:'Create accounts, assign roles, view audit log'},
+      {ic:'🔐', nm:'Roles &amp; Permissions', fn:'openPermissionsManager()', color:'#5c6b62', dsc:'Configure the 8-permission matrix per role'},
+      {ic:'🏢', nm:'Companies', color:'#5c6b62'},
+      {ic:'🏬', nm:'Branches', color:'#5c6b62'},
+      {ic:'📜', nm:'Audit Log', fn:'openAdmin()', color:'#5c6b62', dsc:'Inside Users & Audit Log'},
+      {ic:'🔔', nm:'Notifications', fn:'toggleNotifPanel()', color:'#5c6b62'},
+      {ic:'🛠️', nm:'System Settings', fn:'toggleSettingsMenu()', color:'#5c6b62', dsc:'Logo, announcements, backup, security PIN'},
+    ]
+  },
+};
+
+function openWorkspace(sectionKey){
+  const def = WORKSPACE_DEFS[sectionKey];
+  if(!def) return;
+  document.querySelectorAll('.sheet, .home-screen, .employee-screen').forEach(el => el.classList.add('hidden-tab'));
+  document.getElementById('workspaceScreen').classList.remove('hidden-tab');
+  document.getElementById('workspaceTitle').textContent = def.title;
+  document.getElementById('workspaceSubtitle').textContent = def.subtitle;
+  document.querySelectorAll('.sidebar-section-btn').forEach(b => b.classList.remove('active'));
+  const activeBtn = document.getElementById('sec' + sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1));
+  if(activeBtn) activeBtn.classList.add('active');
+  document.getElementById('tabHome').classList.remove('active');
+
+  const grid = document.getElementById('workspaceGrid');
+  grid.innerHTML = def.cards.map((c,idx) => {
+    const clickable = c.tab || c.fn;
+    const action = c.tab ? `switchTab('${c.tab}')` : (c.fn || `flash('${c.nm.replace(/'/g,"\\'")} — coming soon.')`);
+    return `
+    <div class="home-card ${clickable ? '' : 'sidebar-section-placeholder'}" style="--accent:${c.color};--i:${idx};" onclick="${action}">
+      <div class="card-top">
+        <div class="ic" style="background:${c.color}1a;color:${c.color};">${c.ic}</div>
+        <div>
+          <div class="nm">${c.nm}</div>
+          <div class="dsc">${c.dsc || (clickable ? '' : 'Coming soon')}</div>
+        </div>
+      </div>
+      ${clickable ? `<button class="go-btn" style="background:${c.color};" onclick="event.stopPropagation(); ${action}">Open →</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
 function renderHomeGrid(){
   const grid = document.getElementById('homeGrid');
   if(!grid) return;
@@ -8490,6 +8562,7 @@ function switchTab(tab){
   closeDrawer();
   if(!canViewTab(tab)) return;
   activeTab = tab;
+  document.getElementById('workspaceScreen').classList.add('hidden-tab');
   document.getElementById('homeScreen').classList.toggle('hidden-tab', tab !== 'home');
   document.getElementById('form').classList.toggle('hidden-tab', tab !== 'inv');
   document.getElementById('cfForm').classList.toggle('hidden-tab', tab !== 'cf');
@@ -8499,13 +8572,16 @@ function switchTab(tab){
   document.getElementById('attForm').classList.toggle('hidden-tab', tab !== 'att');
   document.getElementById('hrForm').classList.toggle('hidden-tab', tab !== 'hr');
   document.getElementById('tabHome').classList.toggle('active', tab === 'home');
-  document.getElementById('tabInv').classList.toggle('active', tab === 'inv');
-  document.getElementById('tabCf').classList.toggle('active', tab === 'cf');
   document.getElementById('tabSop').classList.toggle('active', tab === 'sop');
-  document.getElementById('tabStaff').classList.toggle('active', tab === 'staff');
-  document.getElementById('tabKpi').classList.toggle('active', tab === 'kpi');
-  document.getElementById('tabAtt').classList.toggle('active', tab === 'att');
-  document.getElementById('tabHr').classList.toggle('active', tab === 'hr');
+  // Highlight whichever sidebar section this tab belongs to (Finance for
+  // inv/cf, Human Resources for staff/att/hr/kpi), since those tabs are now
+  // reached through a workspace rather than their own sidebar button.
+  document.querySelectorAll('.sidebar-section-btn').forEach(b => b.classList.remove('active'));
+  const sectionForTab = { inv:'secFinance', cf:'secFinance', staff:'secHr', att:'secHr', hr:'secHr', kpi:'secHr' }[tab];
+  if(sectionForTab){
+    const el = document.getElementById(sectionForTab);
+    if(el) el.classList.add('active');
+  }
   document.querySelectorAll('.custom-tab-btn').forEach(btn=>{
     const sid = btn.id.replace('tab_custom_','');
     const sheet = document.getElementById('customForm_' + sid);
