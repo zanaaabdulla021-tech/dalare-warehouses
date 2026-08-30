@@ -1375,6 +1375,32 @@
   .home-grid{
     display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;
   }
+  /* ---------- App launcher grid (Home screen) ---------- */
+  .app-launcher{position:relative;padding:30px 10px 10px;}
+  .app-watermark{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:min(520px,80%);opacity:.05;pointer-events:none;user-select:none;z-index:0;
+  }
+  .app-watermark img{width:100%;display:block;filter:grayscale(1);}
+  .app-grid{
+    position:relative;z-index:1;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:6px;
+  }
+  .app-tile{
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    padding:14px 6px;border-radius:12px;cursor:pointer;text-align:center;
+    background:transparent;border:none;transition:background .12s ease, transform .12s ease;
+    animation:cardRise .4s cubic-bezier(.2,.8,.3,1) both;animation-delay:calc(var(--i,0) * 22ms);
+  }
+  .app-tile:hover{background:var(--sage);transform:translateY(-2px);}
+  .app-tile .app-ic{
+    width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    font-size:1.5rem;box-shadow:0 2px 6px rgba(10,36,23,.08);
+  }
+  .app-tile .app-nm{font-size:.72rem;font-weight:600;color:var(--ink);line-height:1.25;}
+  @media (prefers-reduced-motion: reduce){
+    .app-tile{animation:none;}
+  }
   @keyframes cardRise{
     from{opacity:0;transform:translateY(14px);}
     to{opacity:1;transform:translateY(0);}
@@ -2073,7 +2099,10 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   <div id="homeNotifBanner"></div>
   <div class="home-stats" id="homeStats"></div>
   <div id="homeTrendChart" style="max-width:960px;margin:0 auto 18px;"></div>
-  <div class="home-grid" id="homeGrid"></div>
+  <div class="app-launcher">
+    <div class="app-watermark"><img src="" alt="" id="homeWatermarkLogo"></div>
+    <div class="app-grid" id="homeGrid"></div>
+  </div>
   <div class="home-activities" id="homeActivities" style="display:none;">
     <div class="activities-head">Recent Activity</div>
     <div class="activities-list"></div>
@@ -2758,7 +2787,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
   </div>
   <div class="price-table-wrap">
     <table class="pricelist" id="stockTable">
-      <thead><tr><th>Date</th><th>Type</th><th>Product</th><th>Qty</th><th>Reference</th><th>Notes</th><th>By</th></tr></thead>
+      <thead><tr><th>Date</th><th>Type</th><th>Product</th><th>Warehouse</th><th>Qty</th><th>Reference</th><th>Notes</th><th>By</th></tr></thead>
       <tbody id="stockBody"><tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
     </table>
   </div>
@@ -2773,6 +2802,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <div class="mgr-body">
       <div class="sb-fields">
         <label>Product<input type="text" id="stockProduct" list="productNamesList"></label>
+        <label>Warehouse<input type="text" id="stockWarehouse" list="warehouseNamesList"></label>
         <label>Quantity <span id="stockQtyHint" style="font-weight:400;color:#888;"></span><input type="number" id="stockQty"></label>
         <label>Reference (PO/SO number, optional)<input type="text" id="stockReference"></label>
         <label>Notes<input type="text" id="stockNotes"></label>
@@ -2781,6 +2811,30 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <button class="btn-small" onclick="saveStockMovement()">💾 Save</button>
       </div>
     </div>
+  </div>
+</div>
+<datalist id="warehouseNamesList"></datalist>
+
+<div class="sheet hidden-tab" id="whForm">
+  <header class="title-block">
+    <div class="logo-badge"><img src="" alt="Dalare"></div>
+    <div style="text-align:center;">
+      <h1>Warehouses</h1>
+      <div class="sub">Warehouse &amp; Inventory</div>
+    </div>
+  </header>
+  <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
+
+  <div class="section-header"><div class="num">1</div><div class="title">Warehouses &amp; Locations</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <button class="btn-small" onclick="addBlankWarehouseRow()">+ Add Warehouse</button>
+    <button class="btn-small" onclick="exportWarehousesExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="warehousesTable">
+      <thead><tr><th>Name</th><th>Location</th><th>Manager</th><th>Status</th><th></th></tr></thead>
+      <tbody id="warehousesBody"><tr><td colspan="5" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
   </div>
 </div>
 
@@ -3064,6 +3118,52 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <button class="btn-small" onclick="savePurchaseRequest()">💾 Save Request</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="sheet hidden-tab" id="warehousesForm">
+  <header class="title-block">
+    <div class="logo-badge"><img src="" alt="Dalare"></div>
+    <div style="text-align:center;">
+      <h1>Warehouses</h1>
+      <div class="sub">Warehouse &amp; Inventory</div>
+    </div>
+  </header>
+  <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
+
+  <div class="section-header"><div class="num">1</div><div class="title">Warehouses &amp; Locations</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <button class="btn-small" onclick="addBlankWarehouseRow()">+ Add Warehouse</button>
+    <button class="btn-small" onclick="exportWarehousesExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="warehousesTable">
+      <thead><tr><th>Name</th><th>Location / Address</th><th>Manager</th><th>Status</th><th></th></tr></thead>
+      <tbody id="warehousesBody"><tr><td colspan="5" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="sheet hidden-tab" id="branchesForm">
+  <header class="title-block">
+    <div class="logo-badge"><img src="" alt="Dalare"></div>
+    <div style="text-align:center;">
+      <h1>Branches</h1>
+      <div class="sub">Administration</div>
+    </div>
+  </header>
+  <div class="subtitle-bar"><span class="subtitle-text">DALARE WAREHOUSE — BUILDING TRUST, DELIVERING QUALITY</span></div>
+
+  <div class="section-header"><div class="num">1</div><div class="title">Company Branches</div></div>
+  <div class="table-actions no-print" style="flex-wrap:wrap;">
+    <button class="btn-small" onclick="addBlankBranchRow()">+ Add Branch</button>
+    <button class="btn-small" onclick="exportBranchesExcel()">⬇ Export to Excel</button>
+  </div>
+  <div class="price-table-wrap">
+    <table class="pricelist" id="branchesTable">
+      <thead><tr><th>Branch Name</th><th>City</th><th>Address</th><th>Phone</th><th>Manager</th><th>Status</th><th></th></tr></thead>
+      <tbody id="branchesBody"><tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">Loading…</td></tr></tbody>
+    </table>
   </div>
 </div>
 
@@ -4187,6 +4287,8 @@ function hasPermission(tab, permType){
   if(tab === 'vendor_bills') tab = 'vendors';
   if(tab === 'quotations') tab = 'customers';
   if(tab === 'purchase_requests') tab = 'vendors';
+  if(tab === 'warehouses') tab = 'products';
+  if(tab === 'branches') return permType === 'view' || isSuperAdmin();
   const rolePerm = permissionMatrix[session.role];
   if(!rolePerm || !rolePerm[tab]) return false;
   return !!rolePerm[tab][permType];
@@ -6427,10 +6529,12 @@ function openStockForm(type){
   document.getElementById('stockFormTitle').textContent = 'Record ' + STOCK_TYPE_LABELS[type];
   document.getElementById('stockQtyHint').textContent = type === 'adjustment' ? '(use a negative number to reduce stock)' : '';
   document.getElementById('stockProduct').value = '';
+  document.getElementById('stockWarehouse').value = warehousesCache.length ? warehousesCache[0].name : '';
   document.getElementById('stockQty').value = '';
   document.getElementById('stockReference').value = '';
   document.getElementById('stockNotes').value = '';
   document.getElementById('productNamesList').innerHTML = productsCache.map(p => `<option value="${p.name.replace(/"/g,'&quot;')}">`).join('');
+  document.getElementById('warehouseNamesList').innerHTML = warehousesCache.map(w => `<option value="${w.name.replace(/"/g,'&quot;')}">`).join('');
   document.getElementById('stockFormOverlay').classList.add('open');
 }
 function closeStockForm(){ document.getElementById('stockFormOverlay').classList.remove('open'); }
@@ -6469,6 +6573,7 @@ async function saveStockMovement(){
       method:'POST', headers: sbHeaders({'Prefer':'return=minimal'}),
       body: JSON.stringify({
         product_name, movement_type: stockFormType, quantity: delta,
+        warehouse: document.getElementById('stockWarehouse').value.trim() || null,
         reference: document.getElementById('stockReference').value.trim() || null,
         notes: document.getElementById('stockNotes').value.trim() || null,
         created_by: session.email, created_at: new Date().toISOString()
@@ -7237,6 +7342,145 @@ function exportPrExcel(){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Purchase Requests');
   XLSX.writeFile(wb, `purchase-requests-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ===================== Warehouse: Warehouses & Locations =====================
+let warehousesCache = [];
+async function loadWarehouses(){
+  const body = document.getElementById('warehousesBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/warehouses?select=*&deleted_at=is.null&order=name.asc`, { headers: sbHeaders() });
+    warehousesCache = res.ok ? await res.json() : [];
+    renderWarehouses();
+  }catch(e){ body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderWarehouses(){
+  const body = document.getElementById('warehousesBody');
+  const canManage = isSuperAdmin() || session.role === 'admin' || hasPermission('products','edit');
+  if(!warehousesCache.length){ body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:14px;">No warehouses recorded yet.</td></tr>'; return; }
+  body.innerHTML = warehousesCache.map(w => `
+    <tr data-warehouse-id="${w.id}">
+      <td><input value="${(w.name||'').replace(/"/g,'&quot;')}" data-f="name" ${canManage?'':'readonly'}></td>
+      <td><input value="${(w.location||'').replace(/"/g,'&quot;')}" data-f="location" ${canManage?'':'readonly'}></td>
+      <td><input value="${(w.manager||'').replace(/"/g,'&quot;')}" data-f="manager" ${canManage?'':'readonly'}></td>
+      <td><select data-f="status" ${canManage?'':'disabled'}>
+        <option ${w.status==='active'||!w.status?'selected':''} value="active">Active</option>
+        <option ${w.status==='inactive'?'selected':''} value="inactive">Inactive</option>
+      </select></td>
+      <td>${canManage ? `<button class="btn-small" onclick="saveWarehouseRow('${w.id}')">Save</button>
+        <button class="btn-small remove" onclick="deleteWarehouse('${w.id}')">×</button>` : ''}</td>
+    </tr>`).join('');
+}
+function addBlankWarehouseRow(){
+  if(!isSuperAdmin() && session.role !== 'admin' && !hasPermission('products','create')){ flash('You do not have permission to add warehouses.', true); return; }
+  const tempId = 'new-' + Date.now().toString(36);
+  warehousesCache.unshift({ id: tempId, name:'', location:'', manager:'', status:'active' });
+  renderWarehouses();
+}
+async function saveWarehouseRow(id){
+  const tr = document.querySelector(`#warehousesBody tr[data-warehouse-id="${id}"]`);
+  if(!tr) return;
+  const name = tr.querySelector('[data-f="name"]').value.trim();
+  if(!name){ flash('Enter a warehouse name.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  const realId = id.startsWith('new-') ? 'wh-'+Date.now().toString(36) : id;
+  const payload = {
+    id: realId, name, location: tr.querySelector('[data-f="location"]').value.trim(),
+    manager: tr.querySelector('[data-f="manager"]').value.trim(), status: tr.querySelector('[data-f="status"]').value,
+    updated_at: new Date().toISOString()
+  };
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/warehouses`, { method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}), body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('save_warehouse', realId, name);
+    flash('Saved ✓');
+    loadWarehouses();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteWarehouse(id){
+  if(!confirm('Move this warehouse to Trash?')) return;
+  await softDelete('warehouses', id, loadWarehouses);
+}
+function exportWarehousesExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
+  if(!warehousesCache.length){ flash('Nothing to export.', true); return; }
+  const rows = warehousesCache.map(w => ({ 'Name':w.name, 'Location':w.location, 'Manager':w.manager, 'Status':w.status }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Warehouses');
+  XLSX.writeFile(wb, `warehouses-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ===================== Administration: Branches =====================
+let branchesCache = [];
+async function loadBranches(){
+  const body = document.getElementById('branchesBody');
+  if(!backendReady()){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Backend not configured.</td></tr>'; return; }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/branches?select=*&deleted_at=is.null&order=name.asc`, { headers: sbHeaders() });
+    branchesCache = res.ok ? await res.json() : [];
+    renderBranches();
+  }catch(e){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">'+sbError(e)+'</td></tr>'; }
+}
+function renderBranches(){
+  const body = document.getElementById('branchesBody');
+  const canManage = isSuperAdmin();
+  if(!branchesCache.length){ body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:14px;">No branches recorded yet.</td></tr>'; return; }
+  body.innerHTML = branchesCache.map(b => `
+    <tr data-branch-id="${b.id}">
+      <td><input value="${(b.name||'').replace(/"/g,'&quot;')}" data-f="name" ${canManage?'':'readonly'}></td>
+      <td><input value="${(b.city||'').replace(/"/g,'&quot;')}" data-f="city" ${canManage?'':'readonly'}></td>
+      <td><input value="${(b.address||'').replace(/"/g,'&quot;')}" data-f="address" ${canManage?'':'readonly'}></td>
+      <td><input value="${(b.phone||'').replace(/"/g,'&quot;')}" data-f="phone" ${canManage?'':'readonly'}></td>
+      <td><input value="${(b.manager||'').replace(/"/g,'&quot;')}" data-f="manager" ${canManage?'':'readonly'}></td>
+      <td><select data-f="status" ${canManage?'':'disabled'}>
+        <option ${b.status==='active'||!b.status?'selected':''} value="active">Active</option>
+        <option ${b.status==='inactive'?'selected':''} value="inactive">Inactive</option>
+      </select></td>
+      <td>${canManage ? `<button class="btn-small" onclick="saveBranchRow('${b.id}')">Save</button>
+        <button class="btn-small remove" onclick="deleteBranch('${b.id}')">×</button>` : ''}</td>
+    </tr>`).join('');
+}
+function addBlankBranchRow(){
+  if(!isSuperAdmin()){ flash('Only a super admin can manage branches.', true); return; }
+  const tempId = 'new-' + Date.now().toString(36);
+  branchesCache.unshift({ id: tempId, name:'', city:'', address:'', phone:'', manager:'', status:'active' });
+  renderBranches();
+}
+async function saveBranchRow(id){
+  const tr = document.querySelector(`#branchesBody tr[data-branch-id="${id}"]`);
+  if(!tr) return;
+  const name = tr.querySelector('[data-f="name"]').value.trim();
+  if(!name){ flash('Enter a branch name.', true); return; }
+  if(!backendReady()){ flash('Backend not configured.', true); return; }
+  const realId = id.startsWith('new-') ? 'branch-'+Date.now().toString(36) : id;
+  const payload = {
+    id: realId, name, city: tr.querySelector('[data-f="city"]').value.trim(),
+    address: tr.querySelector('[data-f="address"]').value.trim(), phone: tr.querySelector('[data-f="phone"]').value.trim(),
+    manager: tr.querySelector('[data-f="manager"]').value.trim(), status: tr.querySelector('[data-f="status"]').value,
+    updated_at: new Date().toISOString()
+  };
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/branches`, { method:'POST', headers: sbHeaders({'Prefer':'resolution=merge-duplicates'}), body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(await res.text());
+    logActivity('save_branch', realId, name);
+    flash('Saved ✓');
+    loadBranches();
+  }catch(e){ console.error(e); flash(sbError(e), true); }
+}
+async function deleteBranch(id){
+  if(!confirm('Move this branch to Trash?')) return;
+  await softDelete('branches', id, loadBranches);
+}
+function exportBranchesExcel(){
+  if(typeof XLSX === 'undefined'){ flash('Excel library failed to load.', true); return; }
+  if(!branchesCache.length){ flash('Nothing to export.', true); return; }
+  const rows = branchesCache.map(b => ({ 'Branch Name':b.name, 'City':b.city, 'Address':b.address, 'Phone':b.phone, 'Manager':b.manager, 'Status':b.status }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Branches');
+  XLSX.writeFile(wb, `branches-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 // ---- Assets ----
@@ -8877,12 +9121,12 @@ async function loadSiteSettings(){
 }
 
 function applyCustomLogo(dataUrl){
-  document.querySelectorAll('.drawer-logo, .home-logo, .logo-badge img').forEach(img => { img.src = dataUrl; });
+  document.querySelectorAll('.drawer-logo, .home-logo, .logo-badge img, #homeWatermarkLogo').forEach(img => { img.src = dataUrl; });
 }
 function syncEmptyLogoBadges(){
   const source = document.querySelector('.logo-badge img[src]:not([src=""])') || document.querySelector('.drawer-logo');
   if(!source || !source.src) return;
-  document.querySelectorAll('.logo-badge img').forEach(img => { if(!img.src || img.src === window.location.href) img.src = source.src; });
+  document.querySelectorAll('.logo-badge img, #homeWatermarkLogo').forEach(img => { if(!img.src || img.src === window.location.href) img.src = source.src; });
 }
 
 function handleLogoUpload(input){
@@ -9625,8 +9869,8 @@ const WORKSPACE_DEFS = {
     cards: [
       {ic:'📦', nm:'Products', tab:'products', color:'#8a5a44', dsc:'Product catalog, pricing & stock levels'},
       {ic:'🏷️', nm:'Categories', color:'#8a5a44'},
-      {ic:'🏬', nm:'Warehouses', color:'#8a5a44'},
-      {ic:'📍', nm:'Locations', color:'#8a5a44'},
+      {ic:'🏬', nm:'Warehouses', tab:'warehouses', color:'#8a5a44', dsc:'Manage warehouse locations'},
+      {ic:'📍', nm:'Locations', tab:'warehouses', color:'#8a5a44', dsc:'Managed inside Warehouses'},
       {ic:'📊', nm:'Stock', tab:'stock', color:'#8a5a44', dsc:'View stock movement history'},
       {ic:'⬇️', nm:'Stock In', tab:'stock', color:'#0c8a4a', dsc:'Record incoming stock'},
       {ic:'⬆️', nm:'Stock Out', tab:'stock', color:'#a8462e', dsc:'Record outgoing stock'},
@@ -9672,7 +9916,7 @@ const WORKSPACE_DEFS = {
       {ic:'👥', nm:'Users', fn:'openAdmin()', color:'#5c6b62', dsc:'Create accounts, assign roles, view audit log'},
       {ic:'🔐', nm:'Roles &amp; Permissions', fn:'openPermissionsManager()', color:'#5c6b62', dsc:'Configure the 8-permission matrix per role'},
       {ic:'🏢', nm:'Companies', color:'#5c6b62'},
-      {ic:'🏬', nm:'Branches', color:'#5c6b62'},
+      {ic:'🏬', nm:'Branches', tab:'branches', color:'#5c6b62', dsc:'Company branch locations'},
       {ic:'📜', nm:'Audit Log', fn:'openAdmin()', color:'#5c6b62', dsc:'Inside Users & Audit Log'},
       {ic:'🔔', nm:'Notifications', fn:'toggleNotifPanel()', color:'#5c6b62'},
       {ic:'🛠️', nm:'System Settings', fn:'toggleSettingsMenu()', color:'#5c6b62', dsc:'Logo, announcements, backup, security PIN'},
@@ -9713,54 +9957,49 @@ function openWorkspace(sectionKey){
 function renderHomeGrid(){
   const grid = document.getElementById('homeGrid');
   if(!grid) return;
-  const sectionCardDefs = {
-    finance: {ic:'💰', nm:'Finance & Accounting', color:'#2f6fed',
-      dsc:'Accounting verification, cash flow & financial records', bullets:['Accounting Verification','Cash Flow','Invoices, Payments & Reports']},
-    sales: {ic:'🛒', nm:'Sales', color:'#2f6fed',
-      dsc:'Customers, quotations & sales orders', bullets:['Customers & Quotations','Sales Orders & Invoices','Sales Reports']},
-    purchase: {ic:'📦', nm:'Purchase', color:'#b8720e',
-      dsc:'Vendors, purchase orders & bills', bullets:['Vendors & RFQ','Purchase Orders','Vendor Bills & Payments']},
-    warehouse: {ic:'🏬', nm:'Warehouse & Inventory', color:'#8a5a44',
-      dsc:'Products, stock & movements', bullets:['Products & Categories','Stock In / Out / Transfer','Inventory Reports']},
-    hr: {ic:'🧑\u200d💼', nm:'Human Resources', color:'#7c5cd4',
-      dsc:'Employees, attendance & records', bullets:['Employees & Attendance','KPI Evaluation','HR Records']},
-    reports: {ic:'📈', nm:'Reports', color:'#6b6455',
-      dsc:'Centralized reporting across every module', bullets:['Accounting & Sales Reports','Warehouse & HR Reports','KPI & Financial Reports']},
-    admin: {ic:'⚙️', nm:'Administration', color:'#5c6b62',
-      dsc:'Users, roles, permissions & settings', bullets:['Users & Audit Log','Roles & Permissions','System Settings']},
-  };
-  // Only show a section card if the user has access to at least one thing
-  // inside it — matches the sidebar's own visibility rules exactly.
-  const visibleSections = {
-    finance: canViewTab('inv') || canViewTab('cf'),
-    hr: canViewTab('staff') || canViewTab('att') || canViewTab('hr') || canViewTab('kpi'),
-    admin: isAdmin(),
-    sales: canViewTab('customers') || isAdmin(), purchase: canViewTab('vendors') || isAdmin(),
-    warehouse: canViewTab('products') || isAdmin(), reports: isAdmin(),
-  };
-  const cardDefs = {};
-  Object.keys(sectionCardDefs).forEach(key => { if(visibleSections[key]) cardDefs[key] = sectionCardDefs[key]; });
 
+  // Every real, working feature as its own app tile — Odoo-style flat
+  // launcher, not grouped section cards. The sidebar still groups these
+  // by business function; Home is the "everything at a glance" view.
+  const allApps = [
+    { ic:'🧾', nm:'Accounting Verification', tab:'inv', color:'#2f6fed', need:()=>canViewTab('inv') },
+    { ic:'💵', nm:'Cash Flow', tab:'cf', color:'#0c8a4a', need:()=>canViewTab('cf') },
+    { ic:'📋', nm:'SOP', tab:'sop', color:'#b8720e', need:()=>canViewTab('sop') },
+    { ic:'🧑‍🤝‍🧑', nm:'Customers', tab:'customers', color:'#2f6fed', need:()=>canViewTab('customers') },
+    { ic:'📝', nm:'Quotations', tab:'quotations', color:'#2f6fed', need:()=>canViewTab('customers') },
+    { ic:'🛒', nm:'Sales Orders', tab:'sales_orders', color:'#2f6fed', need:()=>canViewTab('customers') },
+    { ic:'🧾', nm:'Sales Invoices', tab:'sales_invoices', color:'#2f6fed', need:()=>canViewTab('customers') },
+    { ic:'🏭', nm:'Vendors', tab:'vendors', color:'#b8720e', need:()=>canViewTab('vendors') },
+    { ic:'📋', nm:'Purchase Requests', tab:'purchase_requests', color:'#b8720e', need:()=>canViewTab('vendors') },
+    { ic:'📦', nm:'Purchase Orders', tab:'purchase_orders', color:'#b8720e', need:()=>canViewTab('vendors') },
+    { ic:'🧾', nm:'Vendor Bills', tab:'vendor_bills', color:'#b8720e', need:()=>canViewTab('vendors') },
+    { ic:'📦', nm:'Products', tab:'products', color:'#8a5a44', need:()=>canViewTab('products') },
+    { ic:'📊', nm:'Stock', tab:'stock', color:'#8a5a44', need:()=>canViewTab('products') },
+    { ic:'🏬', nm:'Warehouses', tab:'warehouses', color:'#8a5a44', need:()=>canViewTab('products') },
+    { ic:'🪪', nm:'Employees', tab:'staff', color:'#7c5cd4', need:()=>canViewTab('staff') },
+    { ic:'🕐', nm:'Attendance', tab:'att', color:'#d4762a', need:()=>canViewTab('att') },
+    { ic:'🗂️', nm:'HR Records', tab:'hr', color:'#8a5a44', need:()=>canViewTab('hr') },
+    { ic:'📊', nm:'KPI Evaluation', tab:'kpi', color:'#0e7c86', need:()=>canViewTab('kpi') },
+    { ic:'👥', nm:'Users', fn:"openAdmin()", color:'#5c6b62', need:()=>isAdmin() },
+    { ic:'🔐', nm:'Permissions', fn:"openPermissionsManager()", color:'#5c6b62', need:()=>isSuperAdmin() },
+    { ic:'🏬', nm:'Branches', tab:'branches', color:'#5c6b62', need:()=>isAdmin() },
+    { ic:'🛠️', nm:'Settings', fn:"toggleSettingsMenu()", color:'#5c6b62', need:()=>isSuperAdmin() },
+    { ic:'🔍', nm:'Search', fn:"openGlobalSearch()", color:'#5c6b62', need:()=>!isEmployee() },
+  ];
+
+  const apps = allApps.filter(a => a.need());
   const customIds = Object.keys(customSections).filter(id => canViewTab('custom:'+id));
-  const cards = Object.keys(cardDefs).map(id => ({ ...cardDefs[id], key: id }));
   customIds.forEach(id => {
     const s = customSections[id];
-    cards.push({ic:'📁', nm:s.name, tab:'custom:'+id, key:null, color:'#64748b', dsc:'Custom section', bullets:['View records','Add new entries','Save & print']});
+    apps.push({ ic:'📁', nm:s.name, tab:'custom:'+id, color:'#64748b' });
   });
 
-  grid.innerHTML = cards.map((c,idx) => {
-    const action = c.tab ? `switchTab('${c.tab}')` : `openWorkspace('${c.key}')`;
+  grid.innerHTML = apps.map((c,idx) => {
+    const action = c.tab ? `switchTab('${c.tab}')` : c.fn;
     return `
-    <div class="home-card" style="--accent:${c.color};--i:${idx};" onclick="${action}">
-      <div class="card-top">
-        <div class="ic" style="background:${c.color}1a;color:${c.color};">${c.ic}</div>
-        <div>
-          <div class="nm">${c.nm.replace(/</g,'&lt;')}</div>
-          <div class="dsc">${c.dsc}</div>
-        </div>
-      </div>
-      <ul class="checklist">${c.bullets.map(b=>`<li>${b}</li>`).join('')}</ul>
-      <button class="go-btn" style="background:${c.color};" onclick="event.stopPropagation(); ${action}">Go to Module →</button>
+    <div class="app-tile" style="--i:${idx};" onclick="${action}">
+      <div class="app-ic" style="background:${c.color}1a;color:${c.color};">${c.ic}</div>
+      <div class="app-nm">${c.nm.replace(/</g,'&lt;')}</div>
     </div>`;
   }).join('');
 
@@ -10575,6 +10814,8 @@ function switchTab(tab){
   document.getElementById('vbForm').classList.toggle('hidden-tab', tab !== 'vendor_bills');
   document.getElementById('quoteForm').classList.toggle('hidden-tab', tab !== 'quotations');
   document.getElementById('prForm').classList.toggle('hidden-tab', tab !== 'purchase_requests');
+  document.getElementById('warehousesForm').classList.toggle('hidden-tab', tab !== 'warehouses');
+  document.getElementById('branchesForm').classList.toggle('hidden-tab', tab !== 'branches');
   document.getElementById('tabHome').classList.toggle('active', tab === 'home');
   document.getElementById('tabSop').classList.toggle('active', tab === 'sop');
   // Highlight whichever sidebar section this tab belongs to (Finance for
@@ -10582,7 +10823,7 @@ function switchTab(tab){
   // reached through a workspace rather than their own sidebar button.
   document.querySelectorAll('.sidebar-section-btn').forEach(b => b.classList.remove('active'));
   const sectionForTab = { inv:'secFinance', cf:'secFinance', staff:'secHr', att:'secHr', hr:'secHr', kpi:'secHr',
-    products:'secWarehouse', vendors:'secPurchase', customers:'secSales', purchase_orders:'secPurchase', sales_orders:'secSales', stock:'secWarehouse', sales_invoices:'secSales', vendor_bills:'secPurchase', quotations:'secSales', purchase_requests:'secPurchase' }[tab];
+    products:'secWarehouse', vendors:'secPurchase', customers:'secSales', purchase_orders:'secPurchase', sales_orders:'secSales', stock:'secWarehouse', sales_invoices:'secSales', vendor_bills:'secPurchase', quotations:'secSales', purchase_requests:'secPurchase', warehouses:'secWarehouse', branches:'secAdmin' }[tab];
   if(sectionForTab){
     const el = document.getElementById(sectionForTab);
     if(el) el.classList.add('active');
@@ -10609,6 +10850,8 @@ function switchTab(tab){
   if(tab === 'vendor_bills') loadVendorBills();
   if(tab === 'quotations') loadQuotations();
   if(tab === 'purchase_requests') loadPurchaseRequests();
+  if(tab === 'warehouses') loadWarehouses();
+  if(tab === 'branches') loadBranches();
   if(tab === 'kpi') showKpiDeptPicker();
   if(tab === 'sop') document.querySelectorAll('#sopList textarea').forEach(autoGrow);
   applyViewerLock();
