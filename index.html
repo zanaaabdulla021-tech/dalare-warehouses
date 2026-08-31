@@ -1540,6 +1540,14 @@
   .cd-field-row label{flex:1;font-size:.85rem;color:#000;display:flex;align-items:center;gap:8px;cursor:pointer;}
   .cd-field-row input[type="checkbox"]{width:16px;height:16px;}
   .staff-tools .btn-small.cd-btn{background:var(--forest-deep);}
+  .breadcrumb-bar{
+    max-width:960px;margin:0 auto 8px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;
+    font-size:.82rem;font-weight:600;color:#6b6455;min-height:20px;
+  }
+  .breadcrumb-bar .crumb{cursor:pointer;color:#6b6455;transition:color .12s ease;}
+  .breadcrumb-bar .crumb:hover{color:var(--forest-deep);text-decoration:underline;}
+  .breadcrumb-bar .crumb.current{color:var(--forest-deep);font-weight:800;cursor:default;text-decoration:none;}
+  .breadcrumb-bar .sep{color:#c9c0a8;font-size:.75rem;}
   .toolbar{
     max-width:960px;
     margin:0 auto 12px;
@@ -1910,6 +1918,8 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
     <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
   </div>
 </div>
+
+<div class="breadcrumb-bar no-print" id="breadcrumbBar"></div>
 
 <div class="toolbar">
   <button class="secondary" onclick="switchTab('home')" title="Back to Home"><span data-i18n="tb.back">← Back</span></button>
@@ -9927,6 +9937,7 @@ const WORKSPACE_DEFS = {
 function openWorkspace(sectionKey){
   const def = WORKSPACE_DEFS[sectionKey];
   if(!def) return;
+  updateBreadcrumb(null, sectionKey, def.title);
   document.querySelectorAll('.sheet, .home-screen').forEach(el => el.classList.add('hidden-tab'));
   document.getElementById('workspaceScreen').classList.remove('hidden-tab');
   document.getElementById('workspaceTitle').textContent = def.title;
@@ -10791,10 +10802,51 @@ function closeDrawer(){
   document.getElementById('drawerOverlay').classList.remove('open');
 }
 
+// Odoo-style breadcrumb trail: 🏠 Home / Section / Page. Section and Home
+// are clickable; the current page is not.
+const BREADCRUMB_MAP = {
+  inv: { section:'Finance & Accounting', sectionKey:'finance', page:'Accounting Verification' },
+  cf: { section:'Finance & Accounting', sectionKey:'finance', page:'Cash Flow' },
+  sop: { section:null, page:'SOP' },
+  customers: { section:'Sales', sectionKey:'sales', page:'Customers' },
+  quotations: { section:'Sales', sectionKey:'sales', page:'Quotations' },
+  sales_orders: { section:'Sales', sectionKey:'sales', page:'Sales Orders' },
+  sales_invoices: { section:'Sales', sectionKey:'sales', page:'Sales Invoices' },
+  vendors: { section:'Purchase', sectionKey:'purchase', page:'Vendors' },
+  purchase_requests: { section:'Purchase', sectionKey:'purchase', page:'Purchase Requests' },
+  purchase_orders: { section:'Purchase', sectionKey:'purchase', page:'Purchase Orders' },
+  vendor_bills: { section:'Purchase', sectionKey:'purchase', page:'Vendor Bills' },
+  products: { section:'Warehouse & Inventory', sectionKey:'warehouse', page:'Products' },
+  stock: { section:'Warehouse & Inventory', sectionKey:'warehouse', page:'Stock' },
+  warehouses: { section:'Warehouse & Inventory', sectionKey:'warehouse', page:'Warehouses' },
+  staff: { section:'Human Resources', sectionKey:'hr', page:'Employees' },
+  att: { section:'Human Resources', sectionKey:'hr', page:'Attendance' },
+  hr: { section:'Human Resources', sectionKey:'hr', page:'HR Records' },
+  kpi: { section:'Human Resources', sectionKey:'hr', page:'KPI Evaluation' },
+  branches: { section:'Administration', sectionKey:'admin', page:'Branches' },
+};
+
+function updateBreadcrumb(tab, workspaceSectionKey, workspaceSectionTitle){
+  const bar = document.getElementById('breadcrumbBar');
+  if(!bar) return;
+  const parts = [`<span class="crumb" onclick="switchTab('home')">🏠 Home</span>`];
+  if(workspaceSectionKey){
+    parts.push(`<span class="sep">/</span><span class="crumb current">${workspaceSectionTitle}</span>`);
+  }else if(tab && tab !== 'home'){
+    const info = BREADCRUMB_MAP[tab];
+    if(info && info.section){
+      parts.push(`<span class="sep">/</span><span class="crumb" onclick="openWorkspace('${info.sectionKey}')">${info.section}</span>`);
+    }
+    parts.push(`<span class="sep">/</span><span class="crumb current">${info ? info.page : ''}</span>`);
+  }
+  bar.innerHTML = parts.join('');
+}
+
 function switchTab(tab){
   closeDrawer();
   if(!canViewTab(tab)) return;
   activeTab = tab;
+  updateBreadcrumb(tab);
   document.getElementById('workspaceScreen').classList.add('hidden-tab');
   document.getElementById('homeScreen').classList.toggle('hidden-tab', tab !== 'home');
   document.getElementById('form').classList.toggle('hidden-tab', tab !== 'inv');
@@ -12162,7 +12214,27 @@ function printInv(){
   }catch(e){
     // never let a prep-step error block the actual print call
   }
-  window.print();
+  waitForVisibleImages().then(() => window.print());
+}
+
+// QR codes and the logo can be fetched from an external URL (api.qrserver.com)
+// or a slow connection, so window.print() firing before they finish loading
+// would print a broken image icon instead of the actual QR/logo. This waits
+// for every currently-visible <img> to finish (success or failure) before
+// printing, capped at 1.5s so one stuck image never blocks printing.
+function waitForVisibleImages(){
+  const imgs = Array.from(document.querySelectorAll('img')).filter(img => {
+    const rect = img.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && img.offsetParent !== null;
+  });
+  const pending = imgs.filter(img => !img.complete);
+  if(!pending.length) return Promise.resolve();
+  const perImage = pending.map(img => new Promise(resolve => {
+    img.addEventListener('load', resolve, { once:true });
+    img.addEventListener('error', resolve, { once:true });
+  }));
+  const timeout = new Promise(resolve => setTimeout(resolve, 1500));
+  return Promise.race([Promise.all(perImage), timeout]);
 }
 
 window.addEventListener('afterprint', restoreAfterPrint);
