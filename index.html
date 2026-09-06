@@ -2680,7 +2680,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <label>Warehouse<input type="text" id="poWarehouse" placeholder="Main Warehouse"></label>
         <label>Order Date<input type="date" id="poOrderDate"></label>
         <label>Expected Date<input type="date" id="poExpectedDate"></label>
-        <label style="grid-column:span 2;">Notes<input type="text" id="poNotes"></label>
+        <label style="grid-column:span 2;">Notes<textarea id="poNotes" style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
       </div>
 
       <div style="font-weight:800;color:var(--forest-deep);margin:14px 0 6px;">Line Items</div>
@@ -2749,7 +2749,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <label>Customer<input type="text" id="soCustomer" list="customerNamesList"></label>
         <label>Delivery Date<input type="date" id="soDeliveryDate"></label>
         <label>Order Date<input type="date" id="soOrderDate"></label>
-        <label style="grid-column:span 2;">Notes<input type="text" id="soNotes"></label>
+        <label style="grid-column:span 2;">Notes<textarea id="soNotes" style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
       </div>
 
       <div style="font-weight:800;color:var(--forest-deep);margin:14px 0 6px;">Line Items</div>
@@ -2815,7 +2815,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <label>Warehouse<input type="text" id="stockWarehouse" list="warehouseNamesList"></label>
         <label>Quantity <span id="stockQtyHint" style="font-weight:400;color:#888;"></span><input type="number" id="stockQty"></label>
         <label>Reference (PO/SO number, optional)<input type="text" id="stockReference"></label>
-        <label>Notes<input type="text" id="stockNotes"></label>
+        <label>Notes<textarea id="stockNotes" style="width:100%;min-height:60px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
       </div>
       <div class="table-actions" style="margin-top:14px;">
         <button class="btn-small" onclick="saveStockMovement()">💾 Save</button>
@@ -3047,7 +3047,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <label>Customer<input type="text" id="quoteCustomer" list="customerNamesList"></label>
         <label>Valid Until<input type="date" id="quoteValidUntil"></label>
         <label>Quote Date<input type="date" id="quoteDate"></label>
-        <label style="grid-column:span 2;">Notes<input type="text" id="quoteNotes"></label>
+        <label style="grid-column:span 2;">Notes<textarea id="quoteNotes" style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
       </div>
 
       <div style="font-weight:800;color:var(--forest-deep);margin:14px 0 6px;">Line Items</div>
@@ -3112,7 +3112,7 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
         <label>Requested For (department/purpose)<input type="text" id="prRequestedFor"></label>
         <label>Needed By<input type="date" id="prNeededBy"></label>
         <label>Request Date<input type="date" id="prDate"></label>
-        <label style="grid-column:span 2;">Notes / Justification<input type="text" id="prNotes"></label>
+        <label style="grid-column:span 2;">Notes / Justification<textarea id="prNotes" style="width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;"></textarea></label>
       </div>
 
       <div style="font-weight:800;color:var(--forest-deep);margin:14px 0 6px;">Requested Items</div>
@@ -4664,16 +4664,6 @@ async function saveInv(){
   const newData = serializeForm();
   const oldData = await fetchExistingFormData('forms', currentFormId);
   const companyName = document.querySelector('.company-name-input').value || '(unnamed)';
-
-  const negFieldChecks = [];
-  (newData.rows || []).forEach((r, i) => {
-    negFieldChecks.push({ value: r.price, label: `Row ${i+1} Price` });
-    negFieldChecks.push({ value: r.bonus, label: `Row ${i+1} Bonus` });
-    negFieldChecks.push({ value: r.cashback, label: `Row ${i+1} Cash Back` });
-    negFieldChecks.push({ value: r.discount, label: `Row ${i+1} Discount` });
-  });
-  const negField = validateNonNegative(negFieldChecks);
-  if(negField){ flash(`${negField} can't be negative. Please fix it before saving.`, true); return; }
 
   const dupeInvoiceNos = findDuplicateInvoiceNumbers(newData);
   if(dupeInvoiceNos.length){
