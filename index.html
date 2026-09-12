@@ -2055,6 +2055,96 @@ table.pricelist input:focus, table.pricelist select:focus, table.pricelist texta
 table.pricelist button, .price-table-wrap table button{border-radius:5px!important;box-shadow:none!important;padding:6px 9px!important;min-height:32px!important}
 @media(max-width:760px){.price-table-wrap{border-radius:6px!important}table.pricelist th,.price-table-wrap table th{padding:10px!important;font-size:11px!important}table.pricelist td,.price-table-wrap table td{padding:10px!important;font-size:12px!important}}
 </style>
+
+<!-- Ultra Simple Tables & Inputs Override -->
+<style>
+/* ===== ULTRA SIMPLE FORM INPUTS ===== */
+.field, .form-group, .input-group { box-shadow:none !important; background:transparent !important; }
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(0,0,0,.18) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-height: 38px !important;
+  padding: 7px 2px !important;
+  outline: none !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):focus, select:focus, textarea:focus {
+  border-bottom-color: currentColor !important;
+  box-shadow: none !important;
+}
+textarea { min-height: 70px !important; }
+label, .field label, .label { margin-bottom: 4px !important; font-weight: 600 !important; }
+
+/* ===== ULTRA SIMPLE STANDARD TABLES ===== */
+.table-wrap, .table-container, .table-card, .pricelist-wrap {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+table, table.pricelist, .pricelist {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+table thead, table thead tr, table thead th {
+  background: transparent !important;
+  color: inherit !important;
+}
+table th {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+  padding: 10px 8px !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(0,0,0,.22) !important;
+  white-space: nowrap !important;
+}
+table td {
+  background: transparent !important;
+  padding: 8px !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(0,0,0,.10) !important;
+  vertical-align: middle !important;
+}
+table tbody tr { background: transparent !important; }
+table tbody tr:hover { background: transparent !important; }
+table td input, table td select, table td textarea {
+  width: 100% !important;
+  min-height: 32px !important;
+  padding: 5px 2px !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(0,0,0,.14) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+/* remove dark / heavy table appearance */
+table th *, table td * { box-shadow: none !important; }
+
+/* action cells stay compact and clean */
+table button, table .btn, table .icon-btn {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+/* QR block removal where present */
+.qr-table, .qr-table-wrap, .qr-code-table, .qr-panel, .qr-box { display:none !important; }
+
+/* mobile */
+@media (max-width: 720px){
+  table th, table td { padding: 7px 5px !important; }
+  table { font-size: 12px !important; }
+}
+</style>
+
 </head>
 <body>
 
