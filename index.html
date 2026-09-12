@@ -1935,6 +1935,108 @@ input:focus,select:focus,textarea:focus{border-color:var(--forest)!important;out
 @media print{body{background:#fff!important}.userbar,.toolbar,.no-print{display:none!important}.sheet,.card,.home-card,.employee-card,.kpi-stat{border-color:#ddd!important}}
 </style>
 
+
+<!-- Simple Minimal Form Override -->
+<style id="simple-minimal-form-override">
+/* Keep original colors — simplify only form layout and decoration */
+form, .form, [class*="form-"]{
+  box-shadow:none !important;
+}
+/* form containers */
+form, .modal form, .panel form, .page form, .content form{
+  background:transparent !important;
+}
+fieldset{
+  border:0 !important;
+  padding:0 !important;
+  margin:0 0 20px !important;
+  min-width:0;
+}
+legend{
+  font-size:1rem !important;
+  font-weight:700 !important;
+  margin:0 0 12px !important;
+  padding:0 !important;
+}
+/* simple spacing between fields */
+label{
+  display:block !important;
+  margin:0 0 6px !important;
+  font-size:.82rem !important;
+  font-weight:600 !important;
+  letter-spacing:0 !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+select,
+textarea{
+  width:100% !important;
+  min-height:44px !important;
+  padding:10px 12px !important;
+  background:#fff !important;
+  border:1px solid rgba(16,24,20,.16) !important;
+  border-radius:10px !important;
+  box-shadow:none !important;
+  font-size:.95rem !important;
+  line-height:1.35 !important;
+}
+textarea{
+  min-height:96px !important;
+  resize:vertical !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+select:focus,
+textarea:focus{
+  box-shadow:0 0 0 2px rgba(34,153,73,.14) !important;
+  border-color:var(--forest, #229949) !important;
+}
+/* remove nested card look inside forms */
+form .card,
+form [class*="card"],
+form [class*="section"],
+form [class*="group"],
+form [class*="field"]{
+  box-shadow:none !important;
+}
+/* compact grid where forms already use flex/grid */
+form [class*="grid"],
+form [class*="row"],
+.form-grid,
+.form-row{
+  gap:14px !important;
+}
+/* simple helper / validation text */
+small, .help, .hint, [class*="hint"], [class*="help"]{
+  font-size:.76rem !important;
+  opacity:.72;
+}
+/* buttons stay clean and flat */
+form button,
+.form-actions button,
+form input[type="submit"],
+form input[type="button"]{
+  min-height:42px !important;
+  border-radius:10px !important;
+  box-shadow:none !important;
+}
+/* simple checkbox and radio rows */
+input[type="checkbox"], input[type="radio"]{
+  width:16px !important;
+  height:16px !important;
+  margin-inline-end:7px !important;
+  vertical-align:middle;
+}
+/* mobile: one clear column */
+@media (max-width: 700px){
+  form [class*="grid"], form [class*="row"], .form-grid, .form-row{
+    grid-template-columns:1fr !important;
+    flex-direction:column !important;
+  }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea{
+    font-size:16px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
