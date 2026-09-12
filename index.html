@@ -901,6 +901,25 @@
     position:relative;z-index:1;direction:rtl;
     margin:52px 0 0;display:flex;flex-direction:column;gap:22px;
   }
+  .sop-format-toolbar{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    background:var(--sage);border-radius:10px;padding:8px 10px;margin-bottom:10px;
+  }
+  .sop-format-toolbar button, .sop-format-toolbar select{
+    background:#fff;border:1px solid var(--line);border-radius:6px;
+    padding:5px 10px;cursor:pointer;font-size:.82rem;color:var(--ink);
+  }
+  .sop-format-toolbar button:hover{background:var(--forest);color:#fff;border-color:var(--forest);}
+  .sop-color-swatch{
+    display:inline-flex;align-items:center;gap:4px;cursor:pointer;
+    background:#fff;border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:.9rem;
+  }
+  .sop-color-swatch input[type="color"]{width:20px;height:20px;padding:0;border:none;cursor:pointer;}
+  .sop-item-content{
+    flex:1;min-height:1.6em;outline:none;padding:6px 8px;border:1px solid transparent;border-radius:6px;
+    font-family:"IBM Plex Sans",sans-serif;font-size:.9rem;line-height:1.5;
+  }
+  .sop-item-content:focus{border-color:var(--line);background:#fffef9;}
   .sop-item{display:flex;align-items:flex-start;gap:8px;}
   .sop-num{
     flex-shrink:0;font-family:"IBM Plex Sans",sans-serif;
@@ -3238,6 +3257,23 @@ body.print-fit html, body.print-fit body{background:#fff;padding:0;margin:0;heig
       </div>
     </div>
 
+    <div class="sop-format-toolbar no-print">
+      <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('bold')" title="Bold" style="font-weight:800;">B</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('italic')" title="Italic" style="font-style:italic;">I</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('underline')" title="Underline" style="text-decoration:underline;">U</button>
+      <select onmousedown="event.preventDefault()" onchange="applySopFormat('fontName', this.value)" title="Font">
+        <option value="">Font…</option>
+        <option value="IBM Plex Sans">IBM Plex Sans</option>
+        <option value="IBM Plex Mono">IBM Plex Mono</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Arial">Arial</option>
+        <option value="Courier New">Courier New</option>
+      </select>
+      <label class="sop-color-swatch" title="Text color" onmousedown="event.preventDefault()">
+        🎨<input type="color" value="#0c2a1c" onchange="applySopFormat('foreColor', this.value)">
+      </label>
+      <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('removeFormat')" title="Clear formatting">✕ Clear</button>
+    </div>
     <div class="sop-list" id="sopList"></div>
 
     <div class="table-actions no-print">
@@ -4347,10 +4383,12 @@ function applyViewerLock(){
   if(scope){
     document.querySelectorAll(`${scope} input, ${scope} textarea, ${scope} select`)
       .forEach(el => { el.disabled = locked; });
+    document.querySelectorAll(`${scope} [contenteditable]`)
+      .forEach(el => { el.contentEditable = !locked; });
   }
 
   // hide row/step-adding buttons; keep Print working
-  document.querySelectorAll('.btn-small, .sop-del, .table-actions')
+  document.querySelectorAll('.btn-small, .sop-del, .table-actions, .sop-format-toolbar')
     .forEach(el => { el.style.display = locked ? 'none' : ''; });
 
   document.querySelectorAll('.toolbar button').forEach(btn=>{
@@ -10658,14 +10696,31 @@ function addSopItem(text){
   div.className = 'sop-item';
   div.innerHTML = `
     <span class="sop-num"></span>
-    <textarea rows="1" oninput="autoGrow(this)"></textarea>
+    <div class="sop-item-content" contenteditable="true"></div>
     <button class="sop-del no-print" onclick="removeSopItem(this)">×</button>
   `;
   list.appendChild(div);
-  const ta = div.querySelector('textarea');
-  ta.value = text || '';
+  const content = div.querySelector('.sop-item-content');
+  // Old saved SOPs stored plain text; new ones may contain formatting
+  // (bold/color/font) as HTML. A plain string with no tags is safe to
+  // drop straight into innerHTML either way.
+  content.innerHTML = text || '';
   renumberSop();
-  autoGrow(ta);
+}
+
+let sopLastFocusedItem = null;
+document.addEventListener('focusin', (e) => {
+  if(e.target.classList && e.target.classList.contains('sop-item-content')) sopLastFocusedItem = e.target;
+});
+
+function applySopFormat(command, value){
+  const target = sopLastFocusedItem;
+  if(!target || !document.getElementById('sopList').contains(target)){
+    flash('Click inside an SOP step first, then apply formatting.', true);
+    return;
+  }
+  target.focus();
+  document.execCommand(command, false, value || null);
 }
 
 function removeSopItem(btn){
@@ -10684,7 +10739,7 @@ function makeSopFormId(){
 function serializeSOP(){
   return {
     department: document.querySelector('.sop-dept').value,
-    items: Array.from(document.querySelectorAll('#sopList textarea')).map(t => t.value),
+    items: Array.from(document.querySelectorAll('#sopList .sop-item-content')).map(t => t.innerHTML),
     signLine: document.querySelector('.sop-signline').value,
     signName: document.querySelector('.sop-signname').value
   };
