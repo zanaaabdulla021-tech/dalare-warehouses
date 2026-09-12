@@ -2037,6 +2037,24 @@ input[type="checkbox"], input[type="radio"]{
 }
 </style>
 
+
+<!-- Apple Minimal Standard Table Override -->
+<style id="standard-table-override">
+/* Simple, standard tables — same Dalare color system */
+.price-table-wrap{overflow-x:auto;border:1px solid var(--line,#e5e7eb)!important;border-radius:8px!important;background:#fff!important;box-shadow:none!important;margin:12px 0 14px!important}
+table.pricelist, .price-table-wrap table{width:100%!important;border-collapse:collapse!important;border-spacing:0!important;background:#fff!important;border:0!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important}
+table.pricelist thead, .price-table-wrap table thead{background:#f7f8f7!important}
+table.pricelist th, .price-table-wrap table th{background:#f7f8f7!important;color:#334155!important;font-size:12px!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important;text-align:left!important;padding:11px 12px!important;border:0!important;border-bottom:1px solid var(--line,#e5e7eb)!important;white-space:nowrap!important}
+table.pricelist td, .price-table-wrap table td{background:#fff!important;color:#374151!important;font-size:13px!important;font-weight:400!important;padding:11px 12px!important;border:0!important;border-bottom:1px solid #eef0f2!important;vertical-align:middle!important;box-shadow:none!important}
+table.pricelist tbody tr, .price-table-wrap table tbody tr{background:#fff!important;transition:background .12s ease!important}
+table.pricelist tbody tr:hover, .price-table-wrap table tbody tr:hover{background:#fafcfb!important}
+table.pricelist tbody tr:hover td, .price-table-wrap table tbody tr:hover td{background:#fafcfb!important}
+table.pricelist tbody tr:last-child td, .price-table-wrap table tbody tr:last-child td{border-bottom:0!important}
+table.pricelist input, table.pricelist select, table.pricelist textarea,.price-table-wrap table input,.price-table-wrap table select,.price-table-wrap table textarea{width:100%!important;min-height:34px!important;padding:6px 8px!important;border:1px solid #d9dedb!important;border-radius:5px!important;background:#fff!important;box-shadow:none!important;font-size:13px!important;color:#334155!important}
+table.pricelist input:focus, table.pricelist select:focus, table.pricelist textarea:focus,.price-table-wrap table input:focus,.price-table-wrap table select:focus,.price-table-wrap table textarea:focus{outline:none!important;border-color:var(--green,#198754)!important;box-shadow:0 0 0 2px rgba(25,135,84,.08)!important}
+table.pricelist button, .price-table-wrap table button{border-radius:5px!important;box-shadow:none!important;padding:6px 9px!important;min-height:32px!important}
+@media(max-width:760px){.price-table-wrap{border-radius:6px!important}table.pricelist th,.price-table-wrap table th{padding:10px!important;font-size:11px!important}table.pricelist td,.price-table-wrap table td{padding:10px!important;font-size:12px!important}}
+</style>
 </head>
 <body>
 
