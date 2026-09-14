@@ -2437,6 +2437,176 @@ table.pricelist.pricelist input[type="checkbox"]{
 })();
 </script>
 
+
+<style id="final-a4-print">
+/* FINAL A4 PRINT OVERRIDE */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 7mm;
+  }
+
+  html, body {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide application controls, keep the complete report/form content. */
+  .userbar,
+  .toolbar,
+  .no-print,
+  .drawer,
+  .drawer-overlay,
+  .tabbar,
+  .hamburger-btn,
+  .qr-block,
+  .qr-modal,
+  .emp-actions,
+  .contact-edit,
+  .table-actions,
+  .pagination,
+  button,
+  .btn,
+  .btn-small,
+  .go-btn {
+    display: none !important;
+  }
+
+  .sheet,
+  .card,
+  .home-card,
+  .employee-card,
+  .report-card,
+  .section-card,
+  .main-wrap,
+  .page-wrap,
+  .container,
+  .form-container {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+  }
+
+  header.title-block {
+    width: 100% !important;
+    margin: 0 0 5mm !important;
+    padding: 0 0 3mm !important;
+    box-shadow: none !important;
+    break-after: avoid !important;
+  }
+
+  .price-table-wrap,
+  .table-wrap {
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  table.pricelist,
+  table.kpi-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    font-size: 7.2pt !important;
+  }
+
+  table.pricelist th,
+  table.kpi-table th {
+    padding: 2.5mm 1.5mm !important;
+    font-size: 7pt !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    border: 0.3mm solid #aeb4af !important;
+  }
+
+  table.pricelist td,
+  table.kpi-table td {
+    padding: 1.8mm 1.2mm !important;
+    font-size: 7pt !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    border: 0.3mm solid #c7cbc8 !important;
+  }
+
+  table.pricelist input:not([type="checkbox"]),
+  table.pricelist select,
+  table.pricelist textarea,
+  table.kpi-table input:not([type="checkbox"]),
+  table.kpi-table select,
+  table.kpi-table textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 7pt !important;
+    line-height: 1.1 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .section-header,
+  .section-card,
+  .report-card,
+  .ep-info-item,
+  .kpi-stat,
+  .notes-box,
+  .signatures,
+  .final-status {
+    break-inside: avoid !important;
+  }
+
+  .section-header {
+    padding: 2.5mm 0 !important;
+    margin-top: 3mm !important;
+  }
+
+  .notes-box textarea {
+    min-height: 12mm !important;
+    height: auto !important;
+  }
+
+  .signatures {
+    margin-top: 3mm !important;
+  }
+
+  footer.contact {
+    padding: 2mm 0 !important;
+    font-size: 6.5pt !important;
+  }
+
+  /* Prevent accidental horizontal overflow from any legacy desktop rule. */
+  * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
