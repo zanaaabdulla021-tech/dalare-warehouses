@@ -2396,6 +2396,25 @@ table.pricelist.pricelist input[type="checkbox"]{
 .drawer.drawer .add-section-btn:hover{background:rgba(255,255,255,.07) !important;color:#fff !important;}
 .drawer.drawer .tabbar button span,
 .drawer.drawer .sidebar-section-btn span{display:inline !important;color:inherit !important;}
+
+/* ================================================================
+   FINAL MODAL CLOSE BUTTON FIX — placed last on purpose.
+   A later customization changed every modal header (.mgr-head)
+   background from dark green to white, but never updated the "×"
+   close button's color to match — it was still white-on-white,
+   making every single modal's close button invisible across the
+   whole app (Search, Purchase Order, Sales Order, Users, Trash,
+   Site Text Editor, and 30+ others all share this .mgr-close class).
+   ================================================================ */
+.mgr-head.mgr-head .mgr-close{
+  background:rgba(10,47,22,.08) !important;
+  color:var(--forest-deep,#0a2f16) !important;
+  border:1px solid rgba(10,47,22,.12) !important;
+}
+.mgr-head.mgr-head .mgr-close:hover{
+  background:rgba(10,47,22,.16) !important;
+}
+.mgr-head.mgr-head h2{color:var(--forest-deep,#0a2f16) !important;}
 </style>
 <script>
 (function(){
@@ -12929,6 +12948,8 @@ function hideEmptyForPrint(){
 }
 
 function restoreAfterPrint(){
+  document.body.classList.remove('print-fit');
+  document.body.style.zoom = '';
   document.querySelectorAll('.print-hide').forEach(el => el.classList.remove('print-hide'));
   removePrintColumnOverrides();
   const sigContainer = document.querySelector('.signatures');
@@ -12943,11 +12964,32 @@ function setFormTheme(status){
   if(sheet) sheet.dataset.status = status;
 }
 
+// Fixed CSS compression (.print-fit) helps, but a form with many filled
+// rows can still be taller than one A4 page even at the smallest sizes
+// that stay legible. This measures the actual visible sheet's height and
+// applies a zoom factor to shrink it until it fits within one page's
+// printable area, rather than guessing at fixed font sizes.
+function fitContentToOnePage(){
+  const visibleSheet = Array.from(document.querySelectorAll('.sheet, .home-screen'))
+    .find(el => !el.classList.contains('hidden-tab') && el.offsetParent !== null);
+  if(!visibleSheet) return;
+  visibleSheet.style.transform = '';
+  document.body.style.zoom = '';
+  // A4 at 96dpi minus the 6mm page margin on each side (see pageOrientStyle).
+  const pageHeightPx = 1122 - (2 * (6 / 25.4 * 96));
+  const contentHeight = visibleSheet.scrollHeight;
+  if(contentHeight > pageHeightPx){
+    const scale = Math.max(0.45, pageHeightPx / contentHeight);
+    document.body.style.zoom = scale;
+  }
+}
+
 function printInv(){
   try{
-    document.body.classList.remove('print-fit');
+    document.body.classList.add('print-fit');
     document.body.style.zoom = '';
     hideEmptyForPrint();
+    fitContentToOnePage();
   }catch(e){
     // never let a prep-step error block the actual print call
   }
