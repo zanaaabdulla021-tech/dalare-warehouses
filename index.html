@@ -252,6 +252,16 @@
     font-family:"IBM Plex Mono",monospace;
     font-size:1rem;font-weight:700;color:#000;letter-spacing:.5px;
   }
+  .stage-stepper{display:flex;align-items:center;flex-wrap:wrap;gap:0;margin-bottom:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .stage-step{
+    flex:1;text-align:center;padding:9px 6px;font-size:.72rem;font-weight:700;
+    color:#9a9384;background:var(--paper-card);position:relative;white-space:nowrap;
+  }
+  .stage-step:not(:last-child)::after{
+    content:"";position:absolute;right:-1px;top:0;bottom:0;width:1px;background:var(--line);
+  }
+  .stage-step.done{color:var(--forest-deep);background:var(--sage);}
+  .stage-step.current{color:#fff;background:var(--forest);font-weight:800;}
   .stage-badge{
     display:inline-flex;align-items:center;gap:6px;
     padding:5px 12px;border-radius:6px;
@@ -3216,14 +3226,16 @@ table.pricelist input[type="checkbox"], table.kpi-table input[type="checkbox"]{
 </div>
 
 <div class="mgr-overlay" id="poFormOverlay">
-  <div class="mgr-panel" style="max-width:640px;">
+  <div class="mgr-panel" style="max-width:680px;">
     <div class="mgr-head">
       <h2 id="poFormTitle">New Purchase Order</h2>
       <button class="mgr-close" onclick="closePoForm()">×</button>
     </div>
     <div class="mgr-body">
+      <div id="poStageStepper" class="stage-stepper"></div>
       <div class="sb-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <label>Vendor<input type="text" id="poVendor" list="vendorNamesList"></label>
+        <label>Vendor Reference<input type="text" id="poVendorRef" placeholder="Vendor's own quote/PO number"></label>
         <label>Warehouse<input type="text" id="poWarehouse" placeholder="Main Warehouse"></label>
         <label>Order Date<input type="date" id="poOrderDate"></label>
         <label>Expected Date<input type="date" id="poExpectedDate"></label>
@@ -3243,7 +3255,8 @@ table.pricelist input[type="checkbox"], table.kpi-table input[type="checkbox"]{
         Total: <span id="poGrandTotal">0</span> IQD
       </div>
 
-      <div class="table-actions" style="margin-top:14px;">
+      <div class="table-actions" style="margin-top:14px;justify-content:space-between;">
+        <button class="btn-small" id="poCreateBillBtn" style="display:none;background:var(--brass);" onclick="createBillFromOpenPo()">🧾 Create Bill</button>
         <button class="btn-small" onclick="savePurchaseOrder()">💾 Save Purchase Order</button>
       </div>
     </div>
@@ -6779,10 +6792,17 @@ function openPoForm(id){
   const po = id ? purchaseOrdersCache.find(p => p.id === id) : null;
   document.getElementById('poFormTitle').textContent = po ? `Edit ${po.id}` : 'New Purchase Order';
   document.getElementById('poVendor').value = po ? po.vendor_name : '';
+  document.getElementById('poVendorRef').value = po ? (po.vendor_ref||'') : '';
   document.getElementById('poWarehouse').value = po ? (po.warehouse||'') : '';
   document.getElementById('poOrderDate').value = po ? po.order_date : new Date().toISOString().slice(0,10);
   document.getElementById('poExpectedDate').value = po ? (po.expected_date||'') : '';
   document.getElementById('poNotes').value = po ? (po.notes||'') : '';
+  renderPoStageStepper(po ? po.status : 'draft');
+  // "Create Bill" only makes sense once the order actually exists and isn't
+  // already fully billed/cancelled — matches Odoo only showing it on a
+  // confirmed PO, not a brand-new draft that hasn't been saved yet.
+  const canBill = po && po.status !== 'cancelled' && po.status !== 'completed';
+  document.getElementById('poCreateBillBtn').style.display = canBill ? '' : 'none';
 
   const items = po ? (po.items || []) : [{ product:'', qty:'', price:'' }];
   items.forEach(it => addPoItemRow(it));
@@ -6790,6 +6810,25 @@ function openPoForm(id){
   document.getElementById('poFormOverlay').classList.add('open');
 }
 function closePoForm(){ document.getElementById('poFormOverlay').classList.remove('open'); }
+
+function renderPoStageStepper(currentStatus){
+  const stages = ['draft','confirmed','partially_received','fully_received','completed'];
+  const box = document.getElementById('poStageStepper');
+  const currentIdx = stages.indexOf(currentStatus);
+  box.innerHTML = stages.map((s, idx) => {
+    const cls = idx === currentIdx ? 'current' : (idx < currentIdx ? 'done' : '');
+    return `<div class="stage-step ${cls}">${PO_STATUS_LABELS[s]}</div>`;
+  }).join('');
+}
+
+async function createBillFromOpenPo(){
+  if(!poEditId){ flash('Save the purchase order first.', true); return; }
+  const targetId = poEditId;
+  closePoForm();
+  switchTab('vendor_bills');
+  await loadPurchaseOrders();
+  convertPoToBill(targetId);
+}
 
 function addPoItemRow(prefill){
   const id = 'poi-' + (poItemCounter++);
@@ -6840,7 +6879,8 @@ async function savePurchaseOrder(){
   if(!backendReady()){ flash('Backend not configured.', true); return; }
   const id = poEditId || 'PO-' + new Date().getFullYear() + '-' + Date.now().toString(36).toUpperCase();
   const payload = {
-    id, vendor_name, warehouse: document.getElementById('poWarehouse').value.trim() || null,
+    id, vendor_name, vendor_ref: document.getElementById('poVendorRef').value.trim() || null,
+    warehouse: document.getElementById('poWarehouse').value.trim() || null,
     order_date, expected_date: document.getElementById('poExpectedDate').value || null,
     notes: document.getElementById('poNotes').value.trim() || null,
     items, status: poEditId ? (purchaseOrdersCache.find(p=>p.id===poEditId)||{}).status || 'draft' : 'draft',
