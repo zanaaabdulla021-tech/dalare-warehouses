@@ -2473,6 +2473,38 @@ table.pricelist.pricelist{
   background:rgba(10,47,22,.16) !important;
 }
 .mgr-head.mgr-head h2{color:var(--forest-deep,#0a2f16) !important;}
+
+/* ================================================================
+   FINAL SECTION HEADER FIX — placed last on purpose, same root
+   cause as the modal close button fix above: an older customization
+   changed .section-header's background to white without updating
+   the nested .title text color to match, leaving white text
+   invisible on a white background for many section headers
+   throughout the app (both on screen and, worse, in print).
+   ================================================================ */
+.section-header.section-header{
+  background:linear-gradient(120deg, var(--forest,#229949) 0%, var(--forest-deep,#0a2f16) 100%) !important;
+  border:none !important;
+  color:#fff !important;
+}
+.section-header.section-header .title{
+  color:#fff !important;
+}
+.section-header.section-header .num{
+  background:rgba(255,255,255,.22) !important;
+  color:#fff !important;
+}
+@media print{
+  .section-header.section-header{
+    background:linear-gradient(120deg, var(--forest,#229949) 0%, var(--forest-deep,#0a2f16) 100%) !important;
+    color:#fff !important;
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
+  .section-header.section-header .title, .section-header.section-header .num{
+    color:#fff !important;
+  }
+}
 </style>
 
 <style id="final-a4-print">
