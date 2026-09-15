@@ -13282,39 +13282,16 @@ function setFormTheme(status){
 // applies a zoom factor to shrink it until it fits within one page's
 // printable area, rather than guessing at fixed font sizes.
 function fitContentToOnePage(){
+  // Disabled: dynamic shrinking to force everything onto one page made
+  // text noticeably smaller than standard size on real printed pages
+  // (confirmed against an actual physical printout). Printing now always
+  // uses the form's normal, standard size — longer content prints at
+  // full readable size and may spill onto a second page instead of ever
+  // being scaled down.
   const visibleSheet = Array.from(document.querySelectorAll('.sheet, .home-screen'))
     .find(el => !el.classList.contains('hidden-tab') && el.offsetParent !== null);
-  if(!visibleSheet) return;
-  visibleSheet.style.transform = '';
+  if(visibleSheet) visibleSheet.style.transform = '';
   document.body.style.zoom = '';
-
-  // Some sheets (like SOP) have a fixed min-height on an inner wrapper so
-  // they look page-sized on screen even with little content — that would
-  // make scrollHeight always read as "already full page" regardless of
-  // actual content. Temporarily clear those so the measurement reflects
-  // the real content height; the print zoom scales the min-height along
-  // with everything else, so restoring it after is harmless.
-  const minHeightEls = Array.from(visibleSheet.querySelectorAll('*')).filter(el => {
-    const mh = getComputedStyle(el).minHeight;
-    return mh && mh !== '0px' && mh !== 'none' && mh !== 'auto';
-  });
-  const prevMinHeights = minHeightEls.map(el => el.style.minHeight);
-  minHeightEls.forEach(el => { el.style.minHeight = '0'; });
-
-  // Empirically calibrated for portrait (800px); landscape's printable
-  // height is proportionally shorter (A4 short side vs long side), so
-  // scale the estimate down when landscape is the active orientation.
-  const orientStyle = document.getElementById('pageOrientStyle');
-  const isLandscape = orientStyle && orientStyle.textContent.includes('landscape');
-  const pageHeightPx = isLandscape ? 566 : 800;
-  const contentHeight = visibleSheet.scrollHeight;
-
-  minHeightEls.forEach((el, i) => { el.style.minHeight = prevMinHeights[i]; });
-
-  if(contentHeight > pageHeightPx){
-    const scale = Math.max(0.45, (pageHeightPx / contentHeight) * 0.92);
-    document.body.style.zoom = scale;
-  }
 }
 
 function printInv(){
