@@ -939,6 +939,17 @@
   }
   .sop-item-content:focus{border-color:var(--line);background:#fffef9;}
   .sop-item{display:flex;align-items:flex-start;gap:8px;}
+  .sop-list.sop-cols-2, .sop-list.sop-cols-3{
+    display:block;column-gap:28px;
+  }
+  .sop-list.sop-cols-2{column-count:2;}
+  .sop-list.sop-cols-3{column-count:3;}
+  .sop-list.sop-cols-2 .sop-item, .sop-list.sop-cols-3 .sop-item{
+    break-inside:avoid;margin-bottom:var(--sop-gap, 22px);
+  }
+  .sop-col-controls{display:inline-flex;align-items:center;gap:3px;}
+  .sop-col-controls button{min-width:30px;}
+  .sop-col-controls button.active{background:var(--forest);color:#fff;border-color:var(--forest);}
   .sop-num{
     flex-shrink:0;font-family:"IBM Plex Sans",sans-serif;
     font-size:1.05rem;font-weight:600;color:#111;min-width:26px;text-align:left;
@@ -3965,6 +3976,13 @@ table.pricelist.pricelist{
       <span style="font-size:.72rem;color:#6b6455;font-weight:700;">Spacing</span>
       <button type="button" onmousedown="event.preventDefault()" onclick="adjustSopSpacing(-1)" title="Reduce space between steps">−</button>
       <button type="button" onmousedown="event.preventDefault()" onclick="adjustSopSpacing(1)" title="Increase space between steps">+</button>
+      <span style="width:1px;align-self:stretch;background:var(--line);margin:0 2px;"></span>
+      <span style="font-size:.72rem;color:#6b6455;font-weight:700;">Columns</span>
+      <div class="sop-col-controls" id="sopColControls">
+        <button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(1)" title="1 column">1</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(2)" title="2 columns">2</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(3)" title="3 columns">3</button>
+      </div>
     </div>
     <div class="sop-list" id="sopList"></div>
 
@@ -11467,6 +11485,24 @@ function adjustSopSpacing(direction){
   applySopGap();
 }
 applySopGap();
+
+function applySopColumns(){
+  const cols = parseInt(localStorage.getItem('dalare_sop_cols'), 10) || 1;
+  const list = document.getElementById('sopList');
+  if(list){
+    list.classList.remove('sop-cols-2', 'sop-cols-3');
+    if(cols === 2) list.classList.add('sop-cols-2');
+    if(cols === 3) list.classList.add('sop-cols-3');
+  }
+  document.querySelectorAll('#sopColControls button').forEach(btn => {
+    btn.classList.toggle('active', btn.textContent.trim() === String(cols));
+  });
+}
+function setSopColumns(cols){
+  localStorage.setItem('dalare_sop_cols', cols);
+  applySopColumns();
+}
+applySopColumns();
 
 function removeSopItem(btn){
   btn.closest('.sop-item').remove();
