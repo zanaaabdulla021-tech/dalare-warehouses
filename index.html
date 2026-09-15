@@ -917,7 +917,7 @@
 
   .sop-list{
     position:relative;z-index:1;direction:rtl;
-    margin:52px 0 0;display:flex;flex-direction:column;gap:22px;
+    margin:52px 0 0;display:flex;flex-direction:column;gap:var(--sop-gap, 22px);
   }
   .sop-format-toolbar{
     display:flex;align-items:center;gap:6px;flex-wrap:wrap;
@@ -3961,6 +3961,10 @@ table.pricelist.pricelist{
         🎨<input type="color" value="#0c2a1c" onchange="applySopFormat('foreColor', this.value)">
       </label>
       <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('removeFormat')" title="Clear formatting">✕ Clear</button>
+      <span style="width:1px;align-self:stretch;background:var(--line);margin:0 2px;"></span>
+      <span style="font-size:.72rem;color:#6b6455;font-weight:700;">Spacing</span>
+      <button type="button" onmousedown="event.preventDefault()" onclick="adjustSopSpacing(-1)" title="Reduce space between steps">−</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="adjustSopSpacing(1)" title="Increase space between steps">+</button>
     </div>
     <div class="sop-list" id="sopList"></div>
 
@@ -11445,6 +11449,24 @@ function applySopFormat(command, value){
   target.focus();
   document.execCommand(command, false, value || null);
 }
+
+const SOP_GAP_STEPS = [4, 8, 12, 16, 22, 28, 36];
+function getSopGapIndex(){
+  const saved = parseInt(localStorage.getItem('dalare_sop_gap'), 10);
+  const idx = SOP_GAP_STEPS.indexOf(saved);
+  return idx >= 0 ? idx : SOP_GAP_STEPS.indexOf(22);
+}
+function applySopGap(){
+  const idx = getSopGapIndex();
+  document.documentElement.style.setProperty('--sop-gap', SOP_GAP_STEPS[idx] + 'px');
+}
+function adjustSopSpacing(direction){
+  let idx = getSopGapIndex();
+  idx = Math.min(SOP_GAP_STEPS.length - 1, Math.max(0, idx + direction));
+  localStorage.setItem('dalare_sop_gap', SOP_GAP_STEPS[idx]);
+  applySopGap();
+}
+applySopGap();
 
 function removeSopItem(btn){
   btn.closest('.sop-item').remove();
