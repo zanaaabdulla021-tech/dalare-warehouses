@@ -2295,7 +2295,10 @@ table.pricelist input[type="checkbox"], table.kpi-table input[type="checkbox"]{
 .logo-badge img{display:block !important;visibility:visible !important;opacity:1 !important;}
 /* ===== PRINT: CLEAN A4 REPORT ===== */
 @media print{
-  @page{size:A4 landscape;margin:8mm;}
+  /* Orientation is controlled by the Portrait/Landscape dropdown via the
+     dynamic #pageOrientStyle rule — a static override here would always
+     win over that dropdown regardless of what the user picks, forcing
+     every printout to landscape. */
   .logo-badge{
     display:flex !important;
     visibility:visible !important;
@@ -2470,6 +2473,144 @@ table.pricelist.pricelist{
   background:rgba(10,47,22,.16) !important;
 }
 .mgr-head.mgr-head h2{color:var(--forest-deep,#0a2f16) !important;}
+</style>
+
+<style id="final-a4-print">
+/* ================================================================
+   FINAL A4 PRINT — adapted from a version the user confirmed works
+   reliably for them. Orientation itself is intentionally left out of
+   this block (no hardcoded @page size) so the existing Portrait/
+   Landscape dropdown keeps controlling that — this block only adds
+   the detailed, fixed-size compact print rules that made the layout
+   itself print cleanly.
+   ================================================================ */
+@media print {
+  html, body {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .sheet,
+  .card,
+  .home-card,
+  .employee-card,
+  .report-card,
+  .section-card,
+  .main-wrap,
+  .page-wrap,
+  .container,
+  .form-container {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+  }
+
+  header.title-block {
+    width: 100% !important;
+    margin: 0 0 5mm !important;
+    padding: 0 0 3mm !important;
+    box-shadow: none !important;
+    break-after: avoid !important;
+  }
+
+  .price-table-wrap,
+  .table-wrap {
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  table.pricelist,
+  table.kpi-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    font-size: 7.2pt !important;
+  }
+
+  table.pricelist th,
+  table.kpi-table th {
+    padding: 2.5mm 1.5mm !important;
+    font-size: 7pt !important;
+    line-height: 1.1 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    border: 0.3mm solid #aeb4af !important;
+  }
+
+  table.pricelist td,
+  table.kpi-table td {
+    padding: 1.8mm 1.2mm !important;
+    font-size: 7pt !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    border: 0.3mm solid #c7cbc8 !important;
+  }
+
+  table.pricelist input:not([type="checkbox"]),
+  table.pricelist select,
+  table.pricelist textarea,
+  table.kpi-table input:not([type="checkbox"]),
+  table.kpi-table select,
+  table.kpi-table textarea {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 7pt !important;
+    line-height: 1.1 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  .section-header,
+  .section-card,
+  .report-card,
+  .ep-info-item,
+  .kpi-stat,
+  .notes-box,
+  .signatures,
+  .final-status {
+    break-inside: avoid !important;
+  }
+
+  .section-header {
+    padding: 2.5mm 0 !important;
+    margin-top: 3mm !important;
+  }
+
+  .notes-box textarea {
+    min-height: 12mm !important;
+    height: auto !important;
+  }
+
+  .signatures {
+    margin-top: 3mm !important;
+  }
+
+  footer.contact {
+    padding: 2mm 0 !important;
+    font-size: 6.5pt !important;
+  }
+}
 </style>
 <script>
 (function(){
@@ -13160,11 +13301,12 @@ function fitContentToOnePage(){
   const prevMinHeights = minHeightEls.map(el => el.style.minHeight);
   minHeightEls.forEach(el => { el.style.minHeight = '0'; });
 
-  // Empirically calibrated: how `zoom` interacts with the browser's print
-  // pagination isn't simple 1:1 scaling against a theoretical 96dpi A4
-  // height, so this constant was tuned by testing actual print output
-  // rather than computed from page dimensions.
-  const pageHeightPx = 800;
+  // Empirically calibrated for portrait (800px); landscape's printable
+  // height is proportionally shorter (A4 short side vs long side), so
+  // scale the estimate down when landscape is the active orientation.
+  const orientStyle = document.getElementById('pageOrientStyle');
+  const isLandscape = orientStyle && orientStyle.textContent.includes('landscape');
+  const pageHeightPx = isLandscape ? 566 : 800;
   const contentHeight = visibleSheet.scrollHeight;
 
   minHeightEls.forEach((el, i) => { el.style.minHeight = prevMinHeights[i]; });
