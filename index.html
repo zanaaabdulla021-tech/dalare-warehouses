@@ -2695,10 +2695,51 @@ table.pricelist.pricelist{
 
 /* SOP toolbar docked in top bar */
 .toolbar > .sop-format-toolbar{flex:1 1 100%!important;order:99;position:static!important;margin:8px 0 0!important;box-shadow:none!important}
-body.sop-active .toolbar{position:sticky!important;top:69px!important;z-index:2500!important;background:#f7f7f5!important}
+
 .toolbar .sop-format-toolbar button{background:#fff!important;color:#1a2a20!important;border:1px solid #d6dccf!important;box-shadow:none!important;font-weight:600!important}
 .toolbar .sop-format-toolbar button:hover{background:#229949!important;color:#fff!important}
 .toolbar .sop-format-toolbar #sopColControls button.active,.toolbar .sop-format-toolbar button.active{background:#229949!important;color:#fff!important}
+
+/* BIGGER SOP TOOLBAR */
+.toolbar .sop-format-toolbar{gap:8px!important;padding:12px 14px!important}
+.toolbar .sop-format-toolbar button{height:44px!important;min-width:44px!important;font-size:1.05rem!important;padding:0 12px!important;border-radius:10px!important}
+.toolbar .sop-format-toolbar select{height:44px!important;font-size:1rem!important;max-width:170px!important;padding:2px 10px!important;border-radius:10px!important}
+.toolbar .sop-format-toolbar label{height:44px!important;padding:0 8px!important;font-size:1.15rem!important;border-radius:10px!important}
+.toolbar .sop-format-toolbar label input[type=color]{width:30px!important;height:30px!important}
+.toolbar .sop-format-toolbar .sop-tb-lbl,.toolbar .sop-format-toolbar span{font-size:.85rem!important}
+
+/* RIBBON GROUPS */
+.toolbar .sop-format-toolbar{align-items:stretch!important;gap:10px!important;background:#eef3ea!important}
+.sop-format-toolbar .tbg{display:flex;flex-direction:column;justify-content:space-between;background:#fff;border:1px solid #d6dccf;border-radius:12px;padding:8px 8px 4px}
+.sop-format-toolbar .tbg-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sop-format-toolbar .tbg-row br{flex-basis:100%;height:0}
+.sop-format-toolbar .tbg-lbl{text-align:center;font-size:.72rem;color:#6b7a6c;font-weight:700;margin-top:4px;border-top:1px solid #e6ebe2;padding-top:3px}
+.sop-format-toolbar .tbl2{font-size:.75rem!important;color:#6b7a6c;font-weight:700}
+.toolbar .sop-format-toolbar .tbg button,.toolbar .sop-format-toolbar .tbg select,.toolbar .sop-format-toolbar .tbg label{height:38px!important;min-width:38px!important}
+.toolbar .sop-format-toolbar .tbg button{padding:0 8px!important;font-size:.95rem!important}
+.toolbar .sop-format-toolbar .tbg label{border:1px solid #d6dccf!important}
+
+body > .sop-format-toolbar, .sop-format-toolbar{position:sticky!important;top:69px!important;z-index:2500!important;max-width:1280px;margin:0 auto 12px!important;box-shadow:0 6px 16px -8px rgba(10,36,23,.35)!important}
+.sop-format-toolbar{gap:6px!important;padding:6px 8px!important}
+.sop-format-toolbar .tbg{padding:5px 6px 2px!important}
+.sop-format-toolbar .tbg-row{gap:4px!important}
+.sop-format-toolbar .tbg-lbl{margin-top:2px!important;font-size:.65rem!important}
+.sop-format-toolbar .tbg button,.sop-format-toolbar .tbg select,.sop-format-toolbar .tbg label{height:32px!important;min-width:32px!important}
+.sop-format-toolbar .tbg button{padding:0 6px!important;font-size:.9rem!important}
+.sop-format-toolbar .tbg select{max-width:120px!important;font-size:.85rem!important}
+
+.sop-format-toolbar.sop-format-toolbar{top:69px!important;margin:0 auto 8px!important;border-radius:0 0 14px 14px!important}
+
+.sop-format-toolbar .tbg input[type=text],.sop-format-toolbar #sopFindIn,.sop-format-toolbar #sopReplIn{width:90px!important;height:32px!important;padding:2px 8px!important;border:1px solid #d6dccf!important;border-radius:8px!important;font-size:.85rem!important;margin:0!important}
+body.painting #sopList{cursor:copy}
+
+.sop-format-toolbar .tb-collapse{position:absolute!important;right:10px;top:-2px;height:24px!important;min-width:0!important;font-size:.75rem!important;padding:0 8px!important;z-index:2}
+.sop-format-toolbar.collapsed .tbg:nth-of-type(n+3){display:none!important}
+
+/* overlays must sit above sticky toolbar/userbar */
+.mgr-overlay.mgr-overlay{z-index:5000!important}
+.sop-format-toolbar.sop-format-toolbar{z-index:1500!important}
+body:has(.mgr-overlay.open) .sop-format-toolbar{visibility:hidden!important}
 </style>
 <script>
 (function(){
@@ -4185,38 +4226,7 @@ body.sop-active .toolbar{position:sticky!important;top:69px!important;z-index:25
       </div>
     </div>
 
-    <div class="sop-format-toolbar no-print">
-      <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('bold')" title="Bold" style="font-weight:800;">B</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('italic')" title="Italic" style="font-style:italic;">I</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('underline')" title="Underline" style="text-decoration:underline;">U</button>
-      <select onmousedown="event.preventDefault()" onchange="applySopFormat('fontName', this.value)" title="Font">
-        <option value="">Font…</option>
-        <option value="IBM Plex Sans">IBM Plex Sans</option>
-        <option value="IBM Plex Mono">IBM Plex Mono</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Arial">Arial</option>
-        <option value="Courier New">Courier New</option>
-      </select>
-      <label class="sop-color-swatch" title="Text color">
-        🎨<input type="color" value="#0c2a1c" onchange="applySopFormat('foreColor', this.value)">
-      </label>
-      <button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('strikeThrough')" title="Strikethrough"><s>S</s></button><select title="Text size" onchange="applySopFormat('fontSize', this.value); this.selectedIndex=0;"><option value="" selected>Size</option><option value="1">8</option><option value="2">10</option><option value="3">12</option><option value="4">14</option><option value="5">18</option><option value="6">24</option><option value="7">36</option></select><label title="Highlight color" style="cursor:pointer">🖍<input type="color" value="#ffff00" onchange="applySopFormat('hiliteColor', this.value)" style="width:22px;height:22px;padding:0;border:0;vertical-align:middle"></label><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('justifyLeft')" title="Align left">⇤</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('justifyCenter')" title="Center">≡</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('justifyRight')" title="Align right">⇥</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('justifyFull')" title="Justify">☰</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('insertUnorderedList')" title="Bullets">•≡</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('insertOrderedList')" title="Numbering">1.</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('outdent')" title="Outdent">⇠</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('indent')" title="Indent">⇢</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('undo')" title="Undo">↶</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('redo')" title="Redo">↷</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('removeFormat')" title="Clear formatting">✕ Clear</button>
-      <span style="width:1px;align-self:stretch;background:var(--line);margin:0 2px;"></span>
-      <span style="font-size:.72rem;color:#6b6455;font-weight:700;">Spacing</span>
-      <button type="button" onmousedown="event.preventDefault()" onclick="adjustSopSpacing(-1)" title="Reduce space between steps">−</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="adjustSopSpacing(1)" title="Increase space between steps">+</button>
-      <span style="width:1px;align-self:stretch;background:var(--line);margin:0 2px;"></span>
-      <span style="font-size:.72rem;color:#6b6455;font-weight:700;">Columns</span>
-      <div class="sop-col-controls" id="sopColControls">
-        <button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(1)" title="1 column">1</button>
-        <button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(2)" title="2 columns">2</button>
-        <button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(3)" title="3 columns">3</button>
-      </div>
-      <span style="width:1px;align-self:stretch;background:var(--line);margin:0 2px;"></span>
-      <span style="font-size:.72rem;color:#6b6455;font-weight:700;">Font Size</span>
-      <button type="button" onmousedown="event.preventDefault()" onclick="adjustSopFontSize(-1)" title="Decrease font size">A−</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="adjustSopFontSize(1)" title="Increase font size">A+</button>
-    </div>
+    <div class="sop-format-toolbar no-print"><button type="button" class="tb-collapse" onmousedown="event.preventDefault()" onclick="const t=this.closest('.sop-format-toolbar');t.classList.toggle('collapsed');this.textContent=t.classList.contains('collapsed')?'▼ More tools':'▲ Less';" title="Show/hide more tools">▲ Less</button><div class="tbg"><div class="tbg-row"><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('undo')" title="Undo">↶</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('redo')" title="Redo">↷</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('copy')" title="Copy">📄</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('cut')" title="Cut">✂️</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('selectAll')" title="Select all">☑</button></div><div class="tbg-lbl">Clipboard</div></div><div class="tbg"><div class="tbg-row"><select onchange="applySopFormat('fontName', this.value)" title="Font"><option value="">Font…</option><option value="IBM Plex Sans">IBM Plex Sans</option><option value="IBM Plex Mono">IBM Plex Mono</option><option value="Georgia">Georgia</option><option value="Arial">Arial</option><option value="Courier New">Courier New</option><option value="Times New Roman">Times New Roman</option><option value="Tahoma">Tahoma</option><option value="Verdana">Verdana</option><option value="Calibri">Calibri</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Segoe UI">Segoe UI</option><option value="Impact">Impact</option></select><select title="Text size" onchange="applySopFormat('fontSize', this.value); this.selectedIndex=0;"><option value="" selected>Size</option><option value="1">8</option><option value="2">10</option><option value="3">12</option><option value="4">14</option><option value="5">18</option><option value="6">24</option><option value="7">36</option></select><br><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('bold')" title="Bold" style="font-weight:800;">B</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('italic')" title="Italic" style="font-style:italic;">I</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('underline')" title="Underline" style="text-decoration:underline;">U</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('strikeThrough')" title="Strikethrough"><s>S</s></button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('subscript')" title="Subscript">x₂</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('superscript')" title="Superscript">x²</button><label class="sop-color-swatch" title="Text color">🎨<input type="color" value="#0c2a1c" onchange="applySopFormat('foreColor', this.value)"></label><label title="Highlight color" style="cursor:pointer">🖍<input type="color" value="#ffff00" onchange="applySopFormat('hiliteColor', this.value)"></label><button type="button" onmousedown="event.preventDefault()" onclick="sopCase('upper')" title="UPPERCASE">AA</button><button type="button" onmousedown="event.preventDefault()" onclick="sopCase('lower')" title="lowercase">aa</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('removeFormat')" title="Clear formatting">✕ Clear</button></div><div class="tbg-lbl">Font</div></div><div class="tbg"><div class="tbg-row"><select title="Paragraph style" onchange="sopBlock(this.value);this.selectedIndex=0;"><option value="">Style</option><option value="P">Normal</option><option value="H1">Heading 1</option><option value="H2">Heading 2</option><option value="H3">Heading 3</option><option value="BLOCKQUOTE">Quote</option></select><select title="Line spacing" onchange="sopLineHeight(this.value);this.selectedIndex=0;"><option value="">Line ↕</option><option value="1">1.0</option><option value="1.15">1.15</option><option value="1.5">1.5</option><option value="2">2.0</option><option value="2.5">2.5</option></select><br><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('justifyLeft')" title="Align left">⇤</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('justifyCenter')" title="Center">≡</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('justifyRight')" title="Align right">⇥</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('justifyFull')" title="Justify">☰</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('insertUnorderedList')" title="Bullets">•≡</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('insertOrderedList')" title="Numbering">1.</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('outdent')" title="Outdent">⇠</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('indent')" title="Indent">⇢</button><button type="button" onmousedown="event.preventDefault()" onclick="sopDir('rtl')" title="Right-to-left">¶◂</button><button type="button" onmousedown="event.preventDefault()" onclick="sopDir('ltr')" title="Left-to-right">¶▸</button></div><div class="tbg-lbl">Paragraph</div></div><div class="tbg"><div class="tbg-row"><button type="button" onmousedown="event.preventDefault()" onclick="sopLink()" title="Insert link">🔗</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('unlink')" title="Remove link">⛓️‍💥</button><button type="button" onmousedown="event.preventDefault()" onclick="applySopFormat('insertHorizontalRule')" title="Horizontal line">―</button><button type="button" onmousedown="event.preventDefault()" onclick="sopTable()" title="Insert table">▦</button></div><div class="tbg-lbl">Insert</div></div><div class="tbg"><div class="tbg-row"><button type="button" onmousedown="event.preventDefault()" onclick="sopPainter()" title="Format painter (copy format, then select text)">🖌</button><button type="button" onmousedown="event.preventDefault()" onclick="sopFontStep(1)" title="Grow font">A▲</button><button type="button" onmousedown="event.preventDefault()" onclick="sopFontStep(-1)" title="Shrink font">A▼</button><label title="Paragraph shading" style="cursor:pointer">▨<input type="color" value="#e8f5e9" onchange="sopShade(this.value)"></label><button type="button" onmousedown="event.preventDefault()" onclick="sopPastePlain()" title="Paste as plain text">📋</button></div><div class="tbg-lbl">Editing</div></div><div class="tbg"><div class="tbg-row"><select title="Insert symbol" onchange="sopInsertText(this.value);this.selectedIndex=0;"><option value="">Symbol Ω</option><option value="©">©</option><option value="®">®</option><option value="™">™</option><option value="✓">✓</option><option value="✗">✗</option><option value="→">→</option><option value="←">←</option><option value="↑">↑</option><option value="↓">↓</option><option value="★">★</option><option value="☎">☎</option><option value="€">€</option><option value="$">$</option><option value="°">°</option><option value="±">±</option><option value="×">×</option><option value="÷">÷</option><option value="≠">≠</option><option value="≤">≤</option><option value="≥">≥</option><option value="¶">¶</option><option value="§">§</option><option value="•">•</option><option value="◆">◆</option></select><button type="button" onmousedown="event.preventDefault()" onclick="sopInsertText(new Date().toLocaleDateString('en-GB'))" title="Insert date">📅</button><button type="button" onmousedown="event.preventDefault()" onclick="sopInsertHTML('☐&nbsp;')" title="Checkbox">☐</button><button type="button" onmousedown="event.preventDefault()" onclick="sopImage()" title="Insert image">🖼</button><button type="button" onmousedown="event.preventDefault()" onclick="sopInsertHTML('<hr style=&quot;page-break-after:always&quot;>')" title="Page break">⤓</button><button type="button" onmousedown="event.preventDefault()" onclick="sopTableAdd('row')" title="Add table row">+▤</button><button type="button" onmousedown="event.preventDefault()" onclick="sopTableAdd('col')" title="Add table column">+▥</button><button type="button" onmousedown="event.preventDefault()" onclick="sopTableDel()" title="Delete table">🗑▦</button></div><div class="tbg-lbl">Insert +</div></div><div class="tbg"><div class="tbg-row"><input id="sopFindIn" placeholder="Find" onkeydown="if(event.key==='Enter')sopFind()"><input id="sopReplIn" placeholder="Replace"><button type="button" onmousedown="event.preventDefault()" onclick="sopFind()" title="Find next">🔍</button><button type="button" onmousedown="event.preventDefault()" onclick="sopReplace(false)" title="Replace">↻</button><button type="button" onmousedown="event.preventDefault()" onclick="sopReplace(true)" title="Replace all">↻∗</button></div><div class="tbg-lbl">Find & Replace</div></div><div class="tbg"><div class="tbg-row"><span id="sopCount" class="tbl2">0 words</span></div><div class="tbg-lbl">Info</div></div><div class="tbg"><div class="tbg-row"><span class="tbl2">Spacing</span><button type="button" onmousedown="event.preventDefault()" onclick="adjustSopSpacing(-1)" title="Reduce space between steps">−</button><button type="button" onmousedown="event.preventDefault()" onclick="adjustSopSpacing(1)" title="Increase space between steps">+</button><span class="tbl2">Columns</span><div class="sop-col-controls" id="sopColControls"><button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(1)" title="1 column">1</button><button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(2)" title="2 columns">2</button><button type="button" onmousedown="event.preventDefault()" onclick="setSopColumns(3)" title="3 columns">3</button></div></div><div class="tbg-lbl">Page</div></div></div>
     <div class="sop-list" id="sopList"></div>
 
     <div class="table-actions no-print">
@@ -11692,13 +11702,84 @@ document.addEventListener('focusin', (e) => {
   if(e.target.classList && e.target.classList.contains('sop-item-content')) sopLastFocusedItem = e.target;
 });
 
+
+let sopSavedRange=null;
+document.addEventListener('selectionchange',()=>{
+  const sel=window.getSelection();
+  if(sel.rangeCount){const r=sel.getRangeAt(0);const l=document.getElementById('sopList');
+    if(l&&l.contains(r.commonAncestorContainer)) sopSavedRange=r.cloneRange();}
+});
+function sopRestore(){
+  const t=sopLastFocusedItem; if(!t) return false;
+  t.focus();
+  if(sopSavedRange && t.contains(sopSavedRange.commonAncestorContainer)){
+    const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(sopSavedRange);
+  }
+  return true;
+}
+function sopOk(){
+  const t=sopLastFocusedItem;
+  if(!t || !document.getElementById('sopList').contains(t)){flash('Click inside an SOP step first.',true);return false;}
+  return sopRestore();
+}
+
+let sopPainterFmt=null;
+function sopInsertText(t){ if(!t||!sopOk())return; document.execCommand('insertText',false,t); }
+function sopInsertHTML(h){ if(!sopOk())return; document.execCommand('insertHTML',false,h); }
+function sopShade(c){ if(!sopOk())return; document.execCommand('styleWithCSS',false,true); if(!document.execCommand('hiliteColor',false,c)){} 
+  const b=sopLastFocusedItem; b.style.backgroundColor=c; }
+function sopFontStep(d){ if(!sopOk())return; const sel=window.getSelection(); if(!sel.rangeCount||sel.isCollapsed){flash('Select text first.',true);return;}
+  let el=sel.anchorNode; el=el.nodeType===3?el.parentElement:el; const cur=parseFloat(getComputedStyle(el).fontSize)||14; const n=Math.max(8,Math.min(72,cur+d*2));
+  document.execCommand('styleWithCSS',false,true); document.execCommand('fontSize',false,7);
+  sopLastFocusedItem.querySelectorAll('font[size="7"],span[style*="xxx-large"]').forEach(f=>{f.removeAttribute('size');f.style.fontSize=n+'px';}); }
+async function sopPastePlain(){ if(!sopOk())return; try{const t=await navigator.clipboard.readText(); document.execCommand('insertText',false,t);}catch(e){flash('Allow clipboard access, or use Ctrl+Shift+V',true);} }
+function sopImage(){ if(!sopOk())return; const i=document.createElement('input'); i.type='file'; i.accept='image/*';
+  i.onchange=()=>{const f=i.files[0]; if(!f)return; const r=new FileReader(); r.onload=()=>{sopRestore(); document.execCommand('insertHTML',false,'<img src="'+r.result+'" style="max-width:100%;height:auto">');}; r.readAsDataURL(f);}; i.click(); }
+function sopCell(){ const sel=window.getSelection(); let n=sel.anchorNode; while(n&&n.nodeName!=='TD'&&n.nodeName!=='TH') n=n.parentNode; return n; }
+function sopTableAdd(w){ if(!sopOk())return; const td=sopCell(); if(!td){flash('Click inside a table cell first.',true);return;}
+  const tr=td.parentNode, tbl=tr.closest('table');
+  if(w==='row'){ const nr=tr.cloneNode(true); nr.querySelectorAll('td,th').forEach(c=>c.innerHTML='&nbsp;'); tr.after(nr); }
+  else { const idx=[...tr.children].indexOf(td); tbl.querySelectorAll('tr').forEach(r=>{const c=r.children[idx]; if(c){const n=c.cloneNode(false); n.innerHTML='&nbsp;'; c.after(n);}}); } }
+function sopTableDel(){ if(!sopOk())return; const td=sopCell(); if(!td)return; td.closest('table').remove(); }
+function sopPainter(){ if(!sopOk())return; const sel=window.getSelection(); if(sopPainterFmt){ 
+    const f=sopPainterFmt; sopPainterFmt=null; document.body.classList.remove('painting');
+    if(!sel.rangeCount||sel.isCollapsed){flash('Select the text to apply format to.',true);return;}
+    ['bold','italic','underline'].forEach(c=>{ if(document.queryCommandState(c)!==f[c]) document.execCommand(c); });
+    document.execCommand('styleWithCSS',false,true);
+    document.execCommand('foreColor',false,f.color); document.execCommand('fontName',false,f.font);
+    if(f.size){ document.execCommand('fontSize',false,7); sopLastFocusedItem.querySelectorAll('font[size="7"]').forEach(x=>{x.removeAttribute('size');x.style.fontSize=f.size;}); }
+    return; }
+  let el=sel.anchorNode; el=el&&el.nodeType===3?el.parentElement:el; if(!el)return; const cs=getComputedStyle(el);
+  sopPainterFmt={bold:document.queryCommandState('bold'),italic:document.queryCommandState('italic'),underline:document.queryCommandState('underline'),color:cs.color,font:cs.fontFamily.split(',')[0].replace(/["']/g,''),size:cs.fontSize};
+  document.body.classList.add('painting'); flash('Format copied — select text and press 🖌 again.'); }
+function sopFind(){ const q=document.getElementById('sopFindIn').value; if(!q)return; if(!window.find(q,false,false,true)) flash('Not found',true); }
+function sopReplace(all){ const q=document.getElementById('sopFindIn').value, r=document.getElementById('sopReplIn').value; if(!q)return;
+  if(all){ let n=0; document.querySelectorAll('#sopList .sop-item-content').forEach(it=>{ const w=document.createTreeWalker(it,NodeFilter.SHOW_TEXT); let t; while(t=w.nextNode()){ if(t.nodeValue.includes(q)){ n+=t.nodeValue.split(q).length-1; t.nodeValue=t.nodeValue.split(q).join(r);} } }); flash('Replaced '+n); }
+  else { const sel=window.getSelection(); if(sel.toString()===q){ document.execCommand('insertText',false,r); } sopFind(); } }
+function sopUpdateCount(){ const el=document.getElementById('sopCount'); if(!el)return; const t=[...document.querySelectorAll('#sopList .sop-item-content')].map(e=>e.innerText).join(' ').trim();
+  el.textContent=(t?t.split(/\s+/).length:0)+' words · '+t.length+' chars'; }
+document.addEventListener('input',e=>{ if(e.target.closest&&e.target.closest('#sopList')) sopUpdateCount(); });
+setInterval(sopUpdateCount,2000);
+function sopBlock(tag){ if(!tag||!sopOk())return; document.execCommand('formatBlock',false,tag); }
+function sopLineHeight(v){ if(!v||!sopOk())return; sopLastFocusedItem.style.lineHeight=v; }
+function sopDir(d){ if(!sopOk())return; sopLastFocusedItem.setAttribute('dir',d); sopLastFocusedItem.style.textAlign=d==='rtl'?'right':'left'; }
+function sopLink(){ if(!sopOk())return; const u=prompt('Link URL:','https://'); if(u) document.execCommand('createLink',false,u); }
+function sopTable(){ if(!sopOk())return;
+  const r=parseInt(prompt('Rows:','2'),10), c=parseInt(prompt('Columns:','2'),10);
+  if(!r||!c) return;
+  let h='<table style="border-collapse:collapse;width:100%">';
+  for(let i=0;i<r;i++){h+='<tr>';for(let j=0;j<c;j++)h+='<td style="border:1px solid #333;padding:6px">&nbsp;</td>';h+='</tr>';}
+  document.execCommand('insertHTML',false,h+'</table><br>'); }
+function sopCase(m){ if(!sopOk())return; const t=window.getSelection().toString(); if(!t)return;
+  document.execCommand('insertText',false,m==='upper'?t.toUpperCase():t.toLowerCase()); }
 function applySopFormat(command, value){
   const target = sopLastFocusedItem;
   if(!target || !document.getElementById('sopList').contains(target)){
     flash('Click inside an SOP step first, then apply formatting.', true);
     return;
   }
-  target.focus();
+  sopRestore();
+  document.execCommand('styleWithCSS', false, command==='hiliteColor'||command==='foreColor');
   document.execCommand(command, false, value || null);
 }
 
@@ -13469,7 +13550,7 @@ window.addEventListener('afterprint', restoreAfterPrint);
 (function(){
   function dock(){
     const t=document.querySelector('.sop-format-toolbar'), bar=document.querySelector('.toolbar');
-    if(t&&bar&&t.parentNode!==bar) bar.appendChild(t);
+    const bc=document.getElementById('breadcrumbBar'); if(t&&bc&&t.nextElementSibling!==bc) bc.parentNode.insertBefore(t,bc);
     const on = !document.getElementById('sopForm').classList.contains('hidden-tab');
     document.body.classList.toggle('sop-active', on);
     if(t) t.style.display = on ? '' : 'none';
