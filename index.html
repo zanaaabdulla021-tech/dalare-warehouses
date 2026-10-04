@@ -2740,6 +2740,8 @@ body.painting #sopList{cursor:copy}
 .mgr-overlay.mgr-overlay{z-index:5000!important}
 .sop-format-toolbar.sop-format-toolbar{z-index:1500!important}
 body:has(.mgr-overlay.open) .sop-format-toolbar{visibility:hidden!important}
+
+@media print{.sop-format-toolbar.sop-format-toolbar,.sop-format-toolbar *,.tb-collapse{display:none!important;visibility:hidden!important;height:0!important;margin:0!important;padding:0!important;border:0!important}}
 </style>
 <script>
 (function(){
